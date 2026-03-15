@@ -140,10 +140,27 @@ services:
         max-size: "10m"
         max-file: "3"
 
-  # ─── Nginx Reverse Proxy (optional, not needed with Cloudflare Tunnel) ───
-  # nginx:
-  #   image: nginx:1.25-alpine
-  #   Cloudflare Tunnel handles SSL and routing directly to ports 97/98/99
+  # ─── Cloudflare Tunnel ────────────────────────────────────────
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared
+    restart: unless-stopped
+    command: tunnel run
+    environment:
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN}
+    depends_on:
+      - api
+      - web
+      - admin
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 volumes:
   pgdata:
