@@ -1,0 +1,47 @@
+FROM node:20-alpine AS base
+WORKDIR /app
+
+# Install dependencies
+FROM base AS deps
+COPY package.json package-lock.json* ./
+COPY apps/admin/package.json ./apps/admin/
+COPY packages/shared/package.json ./packages/shared/
+RUN npm ci --workspace=apps/admin --workspace=packages/shared --include-workspace-root
+
+# Build shared package
+FROM deps AS build-shared
+COPY packages/shared ./packages/shared
+COPY tsconfig.base.json ./
+RUN npm run build --workspace=packages/shared
+
+# Build Next.js admin app
+FROM build-shared AS build
+COPY apps/admin ./apps/admin
+
+# Set build-time env vars
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+
+RUN npm run build --workspace=apps/admin
+
+# Production image
+FROM node:20-alpine AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs
+
+COPY --from=build /app/apps/admin/.next/standalone ./
+COPY --from=build /app/apps/admin/.next/static ./apps/admin/.next/static
+COPY --from=build /app/apps/admin/public ./apps/admin/public
+
+USER nextjs
+
+EXPOSE 98
+
+ENV PORT=98
+ENV HOSTNAME="0.0.0.0"
+
+CMD ["node", "apps/admin/server.js"]

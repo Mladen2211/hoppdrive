@@ -1,0 +1,187 @@
+version: "3.9"
+
+services:
+  # ─── PostgreSQL ─────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: hoppdrive
+      POSTGRES_USER: hoppdrive
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    deploy:
+      resources:
+        limits:
+          memory: 1536M
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hoppdrive"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─── Redis ──────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redisdata:/data
+    ports:
+      - "6379:6379"
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─── Backend API (hoppdrive-api:97) ─────────────────────────
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "97:97"
+    environment:
+      NODE_ENV: production
+      PORT: 97
+      DATABASE_URL: postgresql://hoppdrive:${POSTGRES_PASSWORD:-changeme}@postgres:5432/hoppdrive
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      CORS_ORIGIN: ${CORS_ORIGIN:-https://hoppdrive.ch}
+      BREVO_API_KEY: ${BREVO_API_KEY:-}
+      BREVO_SENDER_EMAIL: ${BREVO_SENDER_EMAIL:-noreply@hoppdrive.ch}
+      BREVO_SENDER_NAME: ${BREVO_SENDER_NAME:-HoppDrive}
+      ADMIN_NOTIFICATION_EMAIL: ${ADMIN_NOTIFICATION_EMAIL:-info@hoppdrive.ch}
+      UPLOAD_DIR: /app/uploads
+      MAX_IMAGE_SIZE: ${MAX_IMAGE_SIZE:-5242880}
+    volumes:
+      - uploads:/app/uploads
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ─── Frontend (Next.js B2C) (hoppdrive:99) ─────────────────
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://hoppdrive.ch/api}
+        NEXT_PUBLIC_ADMIN_URL: ${NEXT_PUBLIC_ADMIN_URL:-https://hoppdrive-admin.ch}
+        NEXT_PUBLIC_GA4_ID: ${NEXT_PUBLIC_GA4_ID:-}
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "99:99"
+    environment:
+      PORT: 99
+      HOSTNAME: "0.0.0.0"
+      API_INTERNAL_URL: http://api:97/api
+    deploy:
+      resources:
+        limits:
+          memory: 1024M
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ─── Admin CMS (Next.js) (hoppdrive-admin:98) ──────────────
+  admin:
+    build:
+      context: .
+      dockerfile: apps/admin/Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://hoppdrive.ch/api}
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "98:98"
+    environment:
+      PORT: 98
+      HOSTNAME: "0.0.0.0"
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ─── Nginx Reverse Proxy ───────────────────────────────────
+  nginx:
+    image: nginx:1.25-alpine
+    restart: unless-stopped
+    depends_on:
+      - web
+      - admin
+      - api
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - uploads:/app/uploads:ro
+      - certbot-conf:/etc/letsencrypt:ro
+      - certbot-www:/var/www/certbot:ro
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ─── Certbot (SSL) ─────────────────────────────────────────
+  certbot:
+    image: certbot/certbot
+    volumes:
+      - certbot-conf:/etc/letsencrypt
+      - certbot-www:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+
+volumes:
+  pgdata:
+  redisdata:
+  uploads:
+  certbot-conf:
+  certbot-www:

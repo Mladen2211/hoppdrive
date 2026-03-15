@@ -1,0 +1,163 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Admin ─────────────────────────────────────────────────────
+
+model Admin {
+  id                String     @id @default(uuid())
+  email             String     @unique
+  name              String
+  passwordHash      String     @map("password_hash")
+  mustResetPassword Boolean    @default(true) @map("must_reset_password")
+  createdAt         DateTime   @default(now()) @map("created_at")
+  updatedAt         DateTime   @updatedAt @map("updated_at")
+  auditLogs         AuditLog[]
+
+  @@map("admins")
+}
+
+// ─── Vehicle ───────────────────────────────────────────────────
+
+model Vehicle {
+  id              String         @id @default(uuid())
+  brand           String
+  model           String
+  type            VehicleType
+  year            Int
+  basePricePerDay Decimal        @map("base_price_per_day") @db.Decimal(10, 2)
+  currency        String         @default("CHF")
+  horsepower      Int
+  transmission    Transmission
+  seats           Int
+  fuelType        FuelType       @map("fuel_type")
+  range           String?
+  isAvailable     Boolean        @default(true) @map("is_available")
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
+  images          VehicleImage[]
+  bookings        Booking[]
+
+  @@map("vehicles")
+}
+
+model VehicleImage {
+  id        String  @id @default(uuid())
+  vehicleId String  @map("vehicle_id")
+  url       String
+  alt       String  @default("")
+  sortOrder Int     @default(0) @map("sort_order")
+  isPrimary Boolean @default(false) @map("is_primary")
+  vehicle   Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@map("vehicle_images")
+}
+
+enum VehicleType {
+  sedan
+  suv
+  estate
+  coupe
+  convertible
+  electric
+  van
+}
+
+enum Transmission {
+  automatic
+  manual
+}
+
+enum FuelType {
+  petrol
+  diesel
+  electric
+  hybrid
+}
+
+// ─── Contact Request ───────────────────────────────────────────
+
+model ContactRequest {
+  id                 String               @id @default(uuid())
+  fullName           String               @map("full_name")
+  email              String
+  phone              String
+  vehicleOfInterest  String?              @map("vehicle_of_interest")
+  message            String
+  privacyConsent     Boolean              @map("privacy_consent")
+  marketingConsent   Boolean              @default(false) @map("marketing_consent")
+  status             ContactRequestStatus @default(pending)
+  createdAt          DateTime             @default(now()) @map("created_at")
+  updatedAt          DateTime             @updatedAt @map("updated_at")
+
+  @@map("contact_requests")
+}
+
+enum ContactRequestStatus {
+  pending
+  reviewed
+  responded
+  converted
+  archived
+}
+
+// ─── Booking ───────────────────────────────────────────────────
+
+model Booking {
+  id           String        @id @default(uuid())
+  vehicleId    String        @map("vehicle_id")
+  customerName String        @map("customer_name")
+  startDate    DateTime      @map("start_date")
+  endDate      DateTime      @map("end_date")
+  totalPrice   Decimal       @map("total_price") @db.Decimal(10, 2)
+  currency     String        @default("CHF")
+  status       BookingStatus @default(reserved)
+  notes        String?
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+  vehicle      Vehicle       @relation(fields: [vehicleId], references: [id])
+
+  @@map("bookings")
+}
+
+enum BookingStatus {
+  reserved
+  active
+  completed
+  cancelled
+}
+
+// ─── Pricing Rules ─────────────────────────────────────────────
+
+model PricingRule {
+  id              String   @id @default(uuid())
+  fromDay         Int      @map("from_day")
+  toDay           Int?     @map("to_day")
+  discountPercent Decimal  @map("discount_percent") @db.Decimal(5, 2)
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("pricing_rules")
+}
+
+// ─── Audit Log (FADP Compliance) ───────────────────────────────
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  adminId    String   @map("admin_id")
+  action     String
+  resource   String
+  resourceId String?  @map("resource_id")
+  details    String?
+  createdAt  DateTime @default(now()) @map("created_at")
+  admin      Admin    @relation(fields: [adminId], references: [id])
+
+  @@index([adminId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}

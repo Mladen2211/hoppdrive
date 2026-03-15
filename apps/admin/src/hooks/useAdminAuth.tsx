@@ -1,0 +1,109 @@
+'use client';
+
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useCallback,
+  type ReactNode,
+} from 'react';
+import { useRouter, usePathname } from 'next/navigation';
+import { api } from '@/lib/api';
+
+interface AdminUser {
+  id: string;
+  email: string;
+  name: string;
+  mustResetPassword: boolean;
+}
+
+interface AdminAuthContextValue {
+  admin: AdminUser | null;
+  token: string | null;
+  loading: boolean;
+  logout: () => void;
+  refreshAuth: () => Promise<void>;
+}
+
+const AdminAuthContext = createContext<AdminAuthContextValue>({
+  admin: null,
+  token: null,
+  loading: true,
+  logout: () => {},
+  refreshAuth: async () => {},
+});
+
+export function useAdminAuth() {
+  return useContext(AdminAuthContext);
+}
+
+const PUBLIC_ROUTES = ['/login', '/reset-password'];
+
+export function AdminAuthProvider({ children }: { children: ReactNode }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const [admin, setAdmin] = useState<AdminUser | null>(null);
+  const [token, setToken] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const logout = useCallback(() => {
+    sessionStorage.removeItem('accessToken');
+    sessionStorage.removeItem('admin');
+    setAdmin(null);
+    setToken(null);
+    api.logout().catch(() => {});
+    router.push('/login');
+  }, [router]);
+
+  const refreshAuth = useCallback(async () => {
+    try {
+      const result = await api.refreshToken();
+      sessionStorage.setItem('accessToken', result.accessToken);
+      sessionStorage.setItem('admin', JSON.stringify(result.admin));
+      setToken(result.accessToken);
+      setAdmin(result.admin);
+    } catch {
+      logout();
+    }
+  }, [logout]);
+
+  useEffect(() => {
+    const storedToken = sessionStorage.getItem('accessToken');
+    const storedAdmin = sessionStorage.getItem('admin');
+
+    if (storedToken && storedAdmin) {
+      setToken(storedToken);
+      setAdmin(JSON.parse(storedAdmin));
+    }
+    setLoading(false);
+  }, []);
+
+  // Redirect unauthenticated users (except on public routes)
+  useEffect(() => {
+    if (loading) return;
+
+    const isPublicRoute = PUBLIC_ROUTES.includes(pathname);
+
+    if (!token && !isPublicRoute) {
+      router.push('/login');
+    }
+
+    if (token && admin?.mustResetPassword && pathname !== '/reset-password') {
+      router.push('/reset-password');
+    }
+  }, [loading, token, admin, pathname, router]);
+
+  // Auto-refresh token every 13 minutes (tokens expire at 15 min)
+  useEffect(() => {
+    if (!token) return;
+    const interval = setInterval(refreshAuth, 13 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [token, refreshAuth]);
+
+  return (
+    <AdminAuthContext.Provider value={{ admin, token, loading, logout, refreshAuth }}>
+      {children}
+    </AdminAuthContext.Provider>
+  );
+}
