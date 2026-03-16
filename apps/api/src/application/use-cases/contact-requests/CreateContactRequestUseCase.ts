@@ -36,8 +36,6 @@ export class CreateContactRequestUseCase {
       desiredStartDate: input.desiredStartDate ? new Date(input.desiredStartDate) : null,
       desiredEndDate: input.desiredEndDate ? new Date(input.desiredEndDate) : null,
       message: input.message,
-      desiredStartDate: input.desiredStartDate ? new Date(input.desiredStartDate) : null,
-      desiredEndDate: input.desiredEndDate ? new Date(input.desiredEndDate) : null,
       privacyConsent: input.privacyConsent,
       marketingConsent: input.marketingConsent,
       status: 'pending',

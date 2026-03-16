@@ -82,8 +82,6 @@ function mapContact(c: any) {
     desiredStartDate: c.desiredStartDate,
     desiredEndDate: c.desiredEndDate,
     message: c.message,
-    desiredStartDate: c.desiredStartDate,
-    desiredEndDate: c.desiredEndDate,
     privacyConsent: c.privacyConsent,
     marketingConsent: c.marketingConsent,
     status: c.status,
