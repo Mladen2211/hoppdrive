@@ -145,6 +145,8 @@ services:
     image: cloudflare/cloudflared:latest
     container_name: cloudflared
     restart: unless-stopped
+    environment:
+      TUNNEL_TRANSPORT_PROTOCOL: http2
     depends_on:
       - api
       - web
