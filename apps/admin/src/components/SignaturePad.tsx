@@ -29,10 +29,51 @@ export default function SignaturePad({
     setIsEmpty(true);
   }
 
+  /** Manual trim — the alpha version's getTrimmedCanvas() is broken */
+  function getTrimmedDataUrl(): string {
+    const canvas = sigRef.current?.getCanvas();
+    if (!canvas) return '';
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return canvas.toDataURL('image/png');
+
+    const { width, height } = canvas;
+    const pixels = ctx.getImageData(0, 0, width, height);
+    const { data } = pixels;
+
+    let top = height, bottom = 0, left = width, right = 0;
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        if (data[(y * width + x) * 4 + 3] > 0) {
+          if (y < top) top = y;
+          if (y > bottom) bottom = y;
+          if (x < left) left = x;
+          if (x > right) right = x;
+        }
+      }
+    }
+
+    if (top >= bottom || left >= right) return canvas.toDataURL('image/png');
+
+    const pad = 10;
+    top = Math.max(0, top - pad);
+    left = Math.max(0, left - pad);
+    bottom = Math.min(height - 1, bottom + pad);
+    right = Math.min(width - 1, right + pad);
+
+    const tw = right - left + 1;
+    const th = bottom - top + 1;
+    const trimmed = document.createElement('canvas');
+    trimmed.width = tw;
+    trimmed.height = th;
+    trimmed.getContext('2d')!.drawImage(canvas, left, top, tw, th, 0, 0, tw, th);
+    return trimmed.toDataURL('image/png');
+  }
+
   function handleConfirm() {
     if (!sigRef.current || sigRef.current.isEmpty()) return;
-    const dataUrl = sigRef.current.getTrimmedCanvas().toDataURL('image/png');
-    onConfirm(dataUrl);
+    const dataUrl = getTrimmedDataUrl();
+    if (dataUrl) onConfirm(dataUrl);
   }
 
   return (

@@ -88,9 +88,9 @@ function AdminSidebar() {
 
       {/* Sidebar — sits behind main content for depth effect */}
       <aside
-        className={`fixed top-0 left-0 h-full bg-neutral-100/80 z-30 transition-transform duration-200 flex flex-col w-56 ${
-          mobileOpen ? 'translate-x-0 !z-50 !bg-white shadow-xl' : '-translate-x-full'
-        } lg:translate-x-0`}
+        className={`fixed top-0 left-0 h-full bg-neutral-100/80 transition-transform duration-200 flex flex-col w-56 ${
+          mobileOpen ? 'translate-x-0 z-50 !bg-white shadow-xl' : '-translate-x-full z-[5]'
+        } lg:translate-x-0 lg:z-[5]`}
       >
         {/* Logo area */}
         <div className="h-14 flex items-center justify-between px-4 shrink-0">
