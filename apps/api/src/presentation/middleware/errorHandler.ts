@@ -2,11 +2,18 @@ import { Request, Response, NextFunction } from 'express';
 
 export function errorHandler(
   err: Error,
-  _req: Request,
+  req: Request,
   res: Response,
   _next: NextFunction,
 ): void {
-  console.error('[Error]', err.message);
+  console.error('[Error]', err.stack || err.message);
+  // If the raw body was captured by the JSON parser, log it for debugging
+  try {
+    const raw = (req as any).rawBody;
+    if (raw) console.error('[RawBody]', raw);
+  } catch {
+    // ignore
+  }
 
   // Domain/validation errors
   if (

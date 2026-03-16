@@ -33,7 +33,17 @@ export function createApp(container: Container): express.Application {
     credentials: true,
   }));
   app.use(morgan('short'));
-  app.use(express.json({ limit: '1mb' }));
+  app.use(express.json({
+    limit: '1mb',
+    // Capture raw body for debugging JSON parse issues (verify runs before parsing)
+    verify: (req: any, _res, buf: Buffer, encoding: string) => {
+      try {
+        req.rawBody = buf.toString(encoding || 'utf8');
+      } catch {
+        // ignore
+      }
+    },
+  }));
   app.use(cookieParser());
 
   // ─── Static Files (Uploads) ─────────────────────────────────
