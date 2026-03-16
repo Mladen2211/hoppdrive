@@ -19,8 +19,17 @@ export function createApp(container: Container): express.Application {
 
   // ─── Global Middleware ──────────────────────────────────────
   app.use(helmet());
+  // Support comma-separated allowed origins via CORS_ORIGIN env var
+  const rawCors = process.env.CORS_ORIGIN || process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:99';
+  const allowedOrigins = rawCors.split(',').map((s) => s.trim()).filter(Boolean);
+
   app.use(cors({
-    origin: process.env.CORS_ORIGIN || process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:99',
+    origin: (origin, callback) => {
+      // Allow server-to-server requests (no origin) and same-origin requests
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+      return callback(new Error('Not allowed by CORS'));
+    },
     credentials: true,
   }));
   app.use(morgan('short'));

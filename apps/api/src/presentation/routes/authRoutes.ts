@@ -15,11 +15,14 @@ export function authRoutes(container: Container): Router {
       try {
         const result = await container.login.execute(req.body);
 
-        // Set refresh token as HTTP-only cookie
+        // Set refresh token as HTTP-only cookie (allow cross-subdomain use)
+        const cookieDomain = process.env.COOKIE_DOMAIN || undefined;
+        const cookieSameSite = (process.env.COOKIE_SAMESITE as any) || 'none';
         res.cookie('refreshToken', result.refreshToken, {
           httpOnly: true,
           secure: process.env.NODE_ENV === 'production',
-          sameSite: 'strict',
+          sameSite: cookieSameSite as any,
+          domain: cookieDomain,
           maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
           path: '/api/auth',
         });
@@ -48,10 +51,13 @@ export function authRoutes(container: Container): Router {
 
       const result = await container.refreshToken.execute(refreshToken);
 
+      const cookieDomain = process.env.COOKIE_DOMAIN || undefined;
+      const cookieSameSite = (process.env.COOKIE_SAMESITE as any) || 'none';
       res.cookie('refreshToken', result.refreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
+        sameSite: cookieSameSite as any,
+        domain: cookieDomain,
         maxAge: 7 * 24 * 60 * 60 * 1000,
         path: '/api/auth',
       });
@@ -89,7 +95,8 @@ export function authRoutes(container: Container): Router {
 
   /** POST /api/auth/logout */
   router.post('/logout', (_req: Request, res: Response) => {
-    res.clearCookie('refreshToken', { path: '/api/auth' });
+    const cookieDomain = process.env.COOKIE_DOMAIN || undefined;
+    res.clearCookie('refreshToken', { path: '/api/auth', domain: cookieDomain });
     res.json({ success: true, data: null, message: 'Logged out' });
   });
 
