@@ -56,7 +56,7 @@ export default function AvailabilityPage() {
           api.getBookings(),
         ]);
         setVehicles(vehicleData);
-        setBookings(bookingData);
+        setBookings(bookingData.items || bookingData || []);
       } catch (err) {
         console.error('Failed to load availability data', err);
       } finally {

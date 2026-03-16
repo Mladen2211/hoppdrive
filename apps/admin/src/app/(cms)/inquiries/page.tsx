@@ -44,7 +44,7 @@ export default function InquiriesPage() {
     setLoading(true);
     try {
       const data = await api.getContactRequests({ page: pageNum, limit: 15 });
-      setInquiries(data.data || []);
+      setInquiries(data.items || []);
       setTotalPages(Math.ceil((data.total || 0) / 15));
     } catch (err) {
       console.error('Failed to fetch inquiries', err);

@@ -111,13 +111,13 @@ export const api = {
 
   // ─── Inquiries / Contact ──────────────────────────────────
   getContactRequests: (params?: { page?: number; limit?: number }) =>
-    client.get('/contact', { params }).then(unwrap) as Promise<{ data: any[]; total: number }>,
+    client.get('/contact', { params }).then(unwrap) as Promise<{ items: any[]; total: number; page: number; totalPages: number }>,
   updateContactStatus: (id: string, status: string) =>
     client.patch(`/contact/${id}/status`, { status }).then(unwrap) as Promise<any>,
 
   // ─── Bookings ──────────────────────────────────────────────
   getBookings: () =>
-    client.get('/bookings').then(unwrap) as Promise<any[]>,
+    client.get('/bookings').then(unwrap) as Promise<{ items: any[]; total: number }>,
   createBooking: (data: any) =>
     client.post('/bookings', data).then(unwrap) as Promise<any>,
 };

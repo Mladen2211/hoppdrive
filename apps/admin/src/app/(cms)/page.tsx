@@ -42,7 +42,7 @@ export default function AdminDashboardPage() {
           api.getContactRequests({ page: 1, limit: 5 }),
         ]);
         setStats(statsData);
-        setRecentInquiries(inquiriesData.data || []);
+        setRecentInquiries(inquiriesData.items || []);
       } catch (err) {
         console.error('Failed to load dashboard data', err);
       } finally {
