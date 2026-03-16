@@ -27,10 +27,20 @@ const DEFAULT_FEATURES = {
   ],
 };
 
+const DEFAULT_LOCATION = {
+  visible: true,
+  title: 'Hier finden Sie uns',
+  address: 'Musterstrasse 1, 8000 Zürich',
+  lat: 47.3769,
+  lng: 8.5417,
+  zoom: 14,
+};
+
 export default function SettingsPage() {
   const { token } = useAdminAuth();
   const [pricing, setPricing] = useState(DEFAULT_PRICING);
   const [features, setFeatures] = useState(DEFAULT_FEATURES);
+  const [location, setLocation] = useState(DEFAULT_LOCATION);
   const [saving, setSaving] = useState<string | null>(null);
   const [saved, setSaved] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -42,6 +52,7 @@ export default function SettingsPage() {
       const all = await api.getSettings();
       if (all.pricing) setPricing(all.pricing);
       if (all.features) setFeatures(all.features);
+      if (all.location) setLocation(all.location);
     } catch {
       // Defaults are fine
     } finally {
@@ -325,6 +336,106 @@ export default function SettingsPage() {
             <Plus className="w-4 h-4" /> Feature hinzufügen
           </button>
         </div>
+      </section>
+
+      {/* ─── Location / Map Section ───────────────────────── */}
+      <section className="bg-white rounded-xl shadow-sm border border-neutral-200 p-6 mt-8">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-lg font-bold text-neutral-900">Standort / Karte</h2>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setLocation((l) => ({ ...l, visible: !l.visible }))}
+              className={`flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-lg border transition-colors ${
+                location.visible
+                  ? 'bg-green-50 text-green-700 border-green-200'
+                  : 'bg-neutral-50 text-neutral-500 border-neutral-200'
+              }`}
+            >
+              {location.visible ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+              {location.visible ? 'Sichtbar' : 'Ausgeblendet'}
+            </button>
+            <button
+              disabled={saving === 'location'}
+              onClick={() => saveSetting('location', location)}
+              className="flex items-center gap-2 bg-brand-600 hover:bg-brand-700 disabled:bg-brand-400 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+            >
+              {saving === 'location' ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Save className="w-4 h-4" />
+              )}
+              Speichern
+            </button>
+            {saved === 'location' && (
+              <span className="text-sm text-green-600 font-medium">✓ Gespeichert</span>
+            )}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 mb-1">Titel</label>
+            <input
+              type="text"
+              value={location.title}
+              onChange={(e) => setLocation((l) => ({ ...l, title: e.target.value }))}
+              className="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+              placeholder="Hier finden Sie uns"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 mb-1">Adresse</label>
+            <input
+              type="text"
+              value={location.address}
+              onChange={(e) => setLocation((l) => ({ ...l, address: e.target.value }))}
+              className="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+              placeholder="Musterstrasse 1, 8000 Zürich"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-3 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 mb-1">Breitengrad (Lat)</label>
+            <input
+              type="number"
+              step="any"
+              value={location.lat}
+              onChange={(e) => setLocation((l) => ({ ...l, lat: parseFloat(e.target.value) || 0 }))}
+              className="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 mb-1">Längengrad (Lng)</label>
+            <input
+              type="number"
+              step="any"
+              value={location.lng}
+              onChange={(e) => setLocation((l) => ({ ...l, lng: parseFloat(e.target.value) || 0 }))}
+              className="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 mb-1">Zoom (1–18)</label>
+            <input
+              type="number"
+              min={1}
+              max={18}
+              value={location.zoom}
+              onChange={(e) => setLocation((l) => ({ ...l, zoom: parseInt(e.target.value) || 14 }))}
+              className="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+            />
+          </div>
+        </div>
+
+        <p className="text-xs text-neutral-400 mt-3">
+          Tipp: Koordinaten können Sie z.B. auf{' '}
+          <a href="https://www.latlong.net/" target="_blank" rel="noopener noreferrer" className="underline hover:text-neutral-600">
+            latlong.net
+          </a>{' '}
+          nachschlagen.
+        </p>
       </section>
     </div>
   );

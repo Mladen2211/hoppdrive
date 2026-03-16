@@ -7,6 +7,7 @@ import { HeroSection } from '@/components/b2c/HeroSection';
 import { FleetSection } from '@/components/b2c/FleetSection';
 import { PricingSection } from '@/components/b2c/PricingSection';
 import { ContactForm } from '@/components/b2c/ContactForm';
+import { MapSection } from '@/components/b2c/MapSection';
 import { api } from '@/lib/api';
 import type { VehicleCardData } from '@/components/b2c/VehicleCard';
 
@@ -45,6 +46,7 @@ export default function HomePage() {
           preselectedVehicle={selectedVehicle}
           vehicleNames={vehicleNames}
         />
+        <MapSection />
       </main>
       <Footer />
     </>
