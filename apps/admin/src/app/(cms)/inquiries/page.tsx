@@ -48,9 +48,9 @@ export default function InquiriesPage() {
   const [converting, setConverting] = useState<string | null>(null);
   const [convertMsg, setConvertMsg] = useState<{ id: string; ok: boolean; text: string } | null>(null);
 
-  async function fetchInquiries(pageNum = 1) {
+  async function fetchInquiries(pageNum = 1, silent = false) {
     if (!token) return;
-    setLoading(true);
+    if (!silent) setLoading(true);
     try {
       const data = await api.getContactRequests({ page: pageNum, limit: 15 });
       setInquiries(data.items || []);
@@ -58,7 +58,7 @@ export default function InquiriesPage() {
     } catch (err) {
       console.error('Failed to fetch inquiries', err);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }
 
@@ -67,11 +67,38 @@ export default function InquiriesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, page]);
 
-  // Auto-refresh every 15 seconds so new contact requests appear automatically
+  // Real-time updates via Server-Sent Events
   useEffect(() => {
     if (!token) return;
-    const interval = setInterval(() => fetchInquiries(page), 15_000);
-    return () => clearInterval(interval);
+
+    const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:97/api';
+    const url = `${apiBase}/events`;
+
+    let es: EventSource | null = null;
+    let retryTimeout: ReturnType<typeof setTimeout>;
+
+    function connect() {
+      // EventSource doesn't support Authorization header, so we use a query param
+      es = new EventSource(`${url}?token=${encodeURIComponent(token)}`, { withCredentials: true });
+
+      es.addEventListener('new-inquiry', () => {
+        // Silent refresh — no loading spinner
+        fetchInquiries(page, true);
+      });
+
+      es.onerror = () => {
+        es?.close();
+        // Reconnect after 5s on error
+        retryTimeout = setTimeout(connect, 5_000);
+      };
+    }
+
+    connect();
+
+    return () => {
+      es?.close();
+      clearTimeout(retryTimeout);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, page]);
 

@@ -3,6 +3,7 @@ import type { Container } from '../../infrastructure/config/container';
 import { validate, createContactRequestSchema } from '../validators';
 import { createAuthMiddleware } from '../middleware/authMiddleware';
 import { createAuditMiddleware } from '../middleware/auditMiddleware';
+import { eventBus } from '../../infrastructure/services/EventBus';
 
 export function contactRoutes(container: Container): Router {
   const router = Router();
@@ -16,6 +17,10 @@ export function contactRoutes(container: Container): Router {
     async (req: Request, res: Response, next: NextFunction) => {
       try {
         const request = await container.createContactRequest.execute(req.body);
+
+        // Notify connected admin clients in real-time
+        eventBus.broadcast('new-inquiry', { id: request.id });
+
         res.status(201).json({
           success: true,
           data: { id: request.id },
