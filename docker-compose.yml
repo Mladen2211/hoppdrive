@@ -152,7 +152,13 @@ services:
       - web
       - admin
     # Use local config to route to Docker service names (stable within compose)
-    command: tunnel run --config /etc/cloudflared/config.yml --token ${TUNNEL_TOKEN}
+    command:
+      - tunnel
+      - run
+      - --config
+      - /etc/cloudflared/config.yml
+      - --token
+      - ${TUNNEL_TOKEN}
     volumes:
       - ./cloudflared/config.yml:/etc/cloudflared/config.yml:ro
     deploy:
