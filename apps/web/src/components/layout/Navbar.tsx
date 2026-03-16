@@ -21,7 +21,7 @@ export function Navbar() {
           {/* Logo */}
           <Link href="/" className="flex items-center gap-3">
             <Image
-              src="/logo-header.png"
+              src="/logo-main.png"
               alt="HoppDrive Logo"
               width={140}
               height={44}
