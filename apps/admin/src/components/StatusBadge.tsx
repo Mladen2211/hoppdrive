@@ -3,11 +3,13 @@ interface StatusBadgeProps {
 }
 
 const statusStyles: Record<string, string> = {
-  new: 'bg-blue-100 text-blue-700',
-  contacted: 'bg-yellow-100 text-yellow-700',
-  qualified: 'bg-purple-100 text-purple-700',
-  closed: 'bg-green-100 text-green-700',
-  spam: 'bg-red-100 text-red-700',
+  // Contact request statuses
+  pending: 'bg-blue-100 text-blue-700',
+  reviewed: 'bg-yellow-100 text-yellow-700',
+  responded: 'bg-purple-100 text-purple-700',
+  converted: 'bg-green-100 text-green-700',
+  archived: 'bg-neutral-100 text-neutral-600',
+  // Booking statuses
   reserved: 'bg-blue-100 text-blue-700',
   active: 'bg-green-100 text-green-700',
   completed: 'bg-neutral-100 text-neutral-700',
@@ -15,11 +17,13 @@ const statusStyles: Record<string, string> = {
 };
 
 const statusLabels: Record<string, string> = {
-  new: 'Neu',
-  contacted: 'Kontaktiert',
-  qualified: 'Qualifiziert',
-  closed: 'Abgeschlossen',
-  spam: 'Spam',
+  // Contact request statuses
+  pending: 'Neu',
+  reviewed: 'Geprüft',
+  responded: 'Beantwortet',
+  converted: 'Buchung erstellt',
+  archived: 'Archiviert',
+  // Booking statuses
   reserved: 'Reserviert',
   active: 'Aktiv',
   completed: 'Erledigt',

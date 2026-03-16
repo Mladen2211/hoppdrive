@@ -14,6 +14,8 @@ interface CreateContactRequestInput {
   phone: string;
   vehicleOfInterest?: string;
   message: string;
+  desiredStartDate?: string;
+  desiredEndDate?: string;
   privacyConsent: boolean;
   marketingConsent: boolean;
 }
@@ -31,7 +33,11 @@ export class CreateContactRequestUseCase {
       email: Email.create(input.email),
       phone: Phone.create(input.phone),
       vehicleOfInterest: input.vehicleOfInterest ?? null,
+      desiredStartDate: input.desiredStartDate ? new Date(input.desiredStartDate) : null,
+      desiredEndDate: input.desiredEndDate ? new Date(input.desiredEndDate) : null,
       message: input.message,
+      desiredStartDate: input.desiredStartDate ? new Date(input.desiredStartDate) : null,
+      desiredEndDate: input.desiredEndDate ? new Date(input.desiredEndDate) : null,
       privacyConsent: input.privacyConsent,
       marketingConsent: input.marketingConsent,
       status: 'pending',

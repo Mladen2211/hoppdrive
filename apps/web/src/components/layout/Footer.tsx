@@ -36,7 +36,7 @@ export function Footer() {
 
         {/* Copyright */}
         <p className="text-gray-mid text-sm flex items-center gap-1">
-          &copy; {new Date().getFullYear()} HoppDrive. Alle Rechte vorbehalten.
+          &copy; {new Date().getFullYear()} Euro-Abschleppservice. Alle Rechte vorbehalten.
           {/* Hidden Admin Login Trigger */}
           <a
             href={`${ADMIN_URL}/login`}

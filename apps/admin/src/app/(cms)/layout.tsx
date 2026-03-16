@@ -9,6 +9,7 @@ import {
   CalendarDays,
   MessageSquare,
   BarChart3,
+  Settings,
   LogOut,
   ChevronLeft,
   Menu,
@@ -22,6 +23,7 @@ const navItems = [
   { href: '/availability', label: 'Verfügbarkeit', icon: CalendarDays },
   { href: '/inquiries', label: 'Anfragen', icon: MessageSquare },
   { href: '/reports', label: 'Berichte', icon: BarChart3 },
+  { href: '/settings', label: 'Website', icon: Settings },
 ];
 
 function AdminSidebar() {

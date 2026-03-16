@@ -12,6 +12,7 @@ import { authRoutes } from './routes/authRoutes';
 import { bookingRoutes } from './routes/bookingRoutes';
 import { pricingRoutes } from './routes/pricingRoutes';
 import { dashboardRoutes } from './routes/dashboardRoutes';
+import { settingsRoutes } from './routes/settingsRoutes';
 import { errorHandler } from './middleware/errorHandler';
 
 export function createApp(container: Container): express.Application {
@@ -65,6 +66,7 @@ export function createApp(container: Container): express.Application {
   app.use('/api/bookings', bookingRoutes(container));
   app.use('/api/pricing', pricingRoutes(container));
   app.use('/api/dashboard', dashboardRoutes(container));
+  app.use('/api/settings', settingsRoutes(container));
 
   // ─── Global Error Handler ───────────────────────────────────
   app.use(errorHandler);

@@ -16,6 +16,8 @@ export interface ContactRequestProps {
   phone: Phone;
   vehicleOfInterest: string | null;
   message: string;
+  desiredStartDate: Date | null;
+  desiredEndDate: Date | null;
   privacyConsent: boolean;
   marketingConsent: boolean;
   status: ContactRequestStatus;
@@ -29,6 +31,8 @@ export class ContactRequest extends Entity {
   public phone: Phone;
   public vehicleOfInterest: string | null;
   public message: string;
+  public desiredStartDate: Date | null;
+  public desiredEndDate: Date | null;
   public readonly privacyConsent: boolean;
   public readonly marketingConsent: boolean;
   public status: ContactRequestStatus;
@@ -39,7 +43,11 @@ export class ContactRequest extends Entity {
     this.email = props.email;
     this.phone = props.phone;
     this.vehicleOfInterest = props.vehicleOfInterest;
+    this.desiredStartDate = props.desiredStartDate;
+    this.desiredEndDate = props.desiredEndDate;
     this.message = props.message;
+    this.desiredStartDate = props.desiredStartDate;
+    this.desiredEndDate = props.desiredEndDate;
     this.privacyConsent = props.privacyConsent;
     this.marketingConsent = props.marketingConsent;
     this.status = props.status;

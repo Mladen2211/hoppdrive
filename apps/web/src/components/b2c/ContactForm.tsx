@@ -26,6 +26,12 @@ export function ContactForm({ preselectedVehicle, vehicleNames }: ContactFormPro
       phone: form.get('phone') as string,
       email: form.get('email') as string,
       vehicleOfInterest: form.get('vehicleOfInterest') as string || undefined,
+      desiredStartDate: form.get('desiredStartDate')
+        ? new Date(form.get('desiredStartDate') as string).toISOString()
+        : undefined,
+      desiredEndDate: form.get('desiredEndDate')
+        ? new Date(form.get('desiredEndDate') as string).toISOString()
+        : undefined,
       message: form.get('message') as string,
       privacyConsent: form.get('privacyConsent') === 'on',
       marketingConsent: form.get('marketingConsent') === 'on',
@@ -61,7 +67,7 @@ export function ContactForm({ preselectedVehicle, vehicleNames }: ContactFormPro
     <section id="contact-form" className="py-24 bg-white relative">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="bg-neutral-900 text-white rounded-3xl p-8 md:p-12 shadow-2xl">
-          <h2 className="text-3xl font-bold mb-2">Offerte anfragen</h2>
+          <h2 className="text-3xl font-bold mb-2">Angebot anfragen</h2>
           <p className="text-neutral-400 mb-8">
             Füllen Sie das Formular aus. Unser Team wird sich innerhalb von 24 Stunden mit einem individuellen Angebot bei Ihnen melden.
           </p>
@@ -134,9 +140,33 @@ export function ContactForm({ preselectedVehicle, vehicleNames }: ContactFormPro
               </select>
             </div>
 
+            {/* Desired rental dates */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-neutral-300 mb-2">
+                  Gewünschtes Startdatum
+                </label>
+                <input
+                  name="desiredStartDate"
+                  type="date"
+                  className="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-brand-500 [color-scheme:dark]"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-neutral-300 mb-2">
+                  Gewünschtes Enddatum
+                </label>
+                <input
+                  name="desiredEndDate"
+                  type="date"
+                  className="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-brand-500 [color-scheme:dark]"
+                />
+              </div>
+            </div>
+
             <div>
               <label className="block text-sm font-medium text-neutral-300 mb-2">
-                Nachricht / Gewünschte Daten
+                Nachricht
               </label>
               <textarea
                 required

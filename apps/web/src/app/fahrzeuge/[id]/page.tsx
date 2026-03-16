@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Car, Fuel, Gauge, Users, Zap, Calendar, Shield, Clock } from 'lucide-react';
-import { getVehicle, getAllVehicles, type VehicleDetail } from '@/lib/server-api';
+import { ArrowLeft, Car, Fuel, Gauge, Users, Zap, Calendar, Shield, Clock, Heart, Star, CheckCircle, Truck } from 'lucide-react';
+import { getVehicle, getAllVehicles, getSetting, type VehicleDetail } from '@/lib/server-api';
 import { VehicleImageGallery } from '@/components/b2c/VehicleImageGallery';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
@@ -116,6 +116,8 @@ export default async function VehicleDetailPage({
   const vehicle = await getVehicle(params.id);
   if (!vehicle) notFound();
 
+  const featuresConfig = await getSetting('features');
+
   const displayName = `${vehicle.brand} ${vehicle.model}`;
   const specs = buildSpecsList(vehicle);
   const jsonLd = buildJsonLd(vehicle);
@@ -210,7 +212,7 @@ export default async function VehicleDetailPage({
                     href={`/#contact-form`}
                     className="block w-full text-center py-4 text-sm font-semibold text-white bg-brand-600 rounded-xl hover:bg-brand-700 transition-colors"
                   >
-                    Unverbindliche Offerte anfragen
+                    Unverbindlich anfragen
                   </a>
                   <Link
                     href="/#fleet"
@@ -226,33 +228,7 @@ export default async function VehicleDetailPage({
         </section>
 
         {/* Features / Trust Signals */}
-        <section className="bg-neutral-50 border-y border-neutral-200 py-12">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 text-center">
-              <div className="flex flex-col items-center">
-                <div className="bg-brand-50 p-3 rounded-xl mb-3">
-                  <Shield className="w-6 h-6 text-brand-600" />
-                </div>
-                <h3 className="font-semibold text-sm mb-1">Vollkasko inklusive</h3>
-                <p className="text-xs text-neutral-500">Premium-Versicherungsschutz ohne Zusatzkosten</p>
-              </div>
-              <div className="flex flex-col items-center">
-                <div className="bg-brand-50 p-3 rounded-xl mb-3">
-                  <Clock className="w-6 h-6 text-brand-600" />
-                </div>
-                <h3 className="font-semibold text-sm mb-1">Flexible Laufzeiten</h3>
-                <p className="text-xs text-neutral-500">Ab 1 Tag – bis zu 40% Rabatt bei Langzeitmiete</p>
-              </div>
-              <div className="flex flex-col items-center">
-                <div className="bg-brand-50 p-3 rounded-xl mb-3">
-                  <Car className="w-6 h-6 text-brand-600" />
-                </div>
-                <h3 className="font-semibold text-sm mb-1">Bestens gewartet</h3>
-                <p className="text-xs text-neutral-500">Jedes Fahrzeug wird vor der Übergabe geprüft</p>
-              </div>
-            </div>
-          </div>
-        </section>
+        <FeaturesBar config={featuresConfig} />
       </main>
 
       <Footer />
@@ -261,6 +237,49 @@ export default async function VehicleDetailPage({
 }
 
 // ─── Helpers ────────────────────────────────────────────────
+
+const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
+  shield: Shield,
+  clock: Clock,
+  car: Car,
+  zap: Zap,
+  heart: Heart,
+  star: Star,
+  'check-circle': CheckCircle,
+  truck: Truck,
+};
+
+const DEFAULT_FEATURES = [
+  { icon: 'shield', title: 'Vollkasko inklusive', description: 'Premium-Versicherungsschutz ohne Zusatzkosten' },
+  { icon: 'clock', title: 'Flexible Laufzeiten', description: 'Ab 1 Tag – bis zu 40% Rabatt bei Langzeitmiete' },
+  { icon: 'car', title: 'Bestens gewartet', description: 'Jedes Fahrzeug wird vor der Übergabe geprüft' },
+];
+
+function FeaturesBar({ config }: { config?: { visible?: boolean; items?: { icon: string; title: string; description: string }[] } | null }) {
+  if (config && config.visible === false) return null;
+  const items = config?.items?.length ? config.items : DEFAULT_FEATURES;
+
+  return (
+    <section className="bg-neutral-50 border-y border-neutral-200 py-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className={`grid grid-cols-1 sm:grid-cols-${Math.min(items.length, 4)} gap-8 text-center`}>
+          {items.map((item, idx) => {
+            const Icon = ICON_MAP[item.icon] || Shield;
+            return (
+              <div key={idx} className="flex flex-col items-center">
+                <div className="bg-brand-50 p-3 rounded-xl mb-3">
+                  <Icon className="w-6 h-6 text-brand-600" />
+                </div>
+                <h3 className="font-semibold text-sm mb-1">{item.title}</h3>
+                <p className="text-xs text-neutral-500">{item.description}</p>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
+}
 
 function buildSpecsList(vehicle: VehicleDetail) {
   const specs = vehicle.specs;

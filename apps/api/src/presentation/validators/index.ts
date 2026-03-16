@@ -53,6 +53,8 @@ export const createContactRequestSchema = z.object({
   email: z.string().email('Valid email is required'),
   phone: z.string().min(7, 'Valid phone number is required'),
   vehicleOfInterest: z.string().optional(),
+  desiredStartDate: z.string().datetime().optional(),
+  desiredEndDate: z.string().datetime().optional(),
   message: z.string().min(1, 'Message is required'),
   privacyConsent: z.literal(true, {
     errorMap: () => ({ message: 'Privacy consent is required' }),

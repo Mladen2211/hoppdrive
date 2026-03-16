@@ -6,8 +6,8 @@ import Image from 'next/image';
 import { Menu, X } from 'lucide-react';
 
 const NAV_LINKS = [
-  { href: '#fleet', label: 'Unsere Flotte' },
-  { href: '#pricing', label: 'Preismodell' },
+  { href: '/#fleet', label: 'Unsere Flotte' },
+  { href: '/#pricing', label: 'Preismodell' },
 ];
 
 export function Navbar() {
@@ -40,12 +40,12 @@ export function Navbar() {
                 {link.label}
               </a>
             ))}
-            <a
-              href="#contact-form"
+            <Link
+              href="/#contact-form"
               className="bg-brand-600 text-white px-5 py-2.5 rounded-full text-sm font-medium hover:bg-brand-700 transition-colors"
             >
-              Offerte anfragen
-            </a>
+              Jetzt anfragen
+            </Link>
           </div>
 
           {/* Mobile Toggle */}
@@ -62,22 +62,22 @@ export function Navbar() {
         {mobileOpen && (
           <div className="md:hidden pb-6 space-y-4">
             {NAV_LINKS.map((link) => (
-              <a
+              <Link
                 key={link.href}
                 href={link.href}
                 className="block text-sm font-medium text-charcoal hover:text-brand-600 transition-colors"
                 onClick={() => setMobileOpen(false)}
               >
                 {link.label}
-              </a>
+              </Link>
             ))}
-            <a
-              href="#contact-form"
+            <Link
+              href="/#contact-form"
               className="block bg-brand-600 text-white px-5 py-2.5 rounded-full text-sm font-medium text-center hover:bg-brand-700"
               onClick={() => setMobileOpen(false)}
             >
-              Offerte anfragen
-            </a>
+              Jetzt anfragen
+            </Link>
           </div>
         )}
       </div>

@@ -78,7 +78,7 @@ export function VehicleCard({ vehicle, onInquire }: VehicleCardProps) {
             onClick={() => onInquire(vehicle)}
             className="flex-1 py-3 text-sm font-semibold text-white bg-brand-600 rounded-lg hover:bg-brand-700 transition-colors"
           >
-            Offerte anfragen
+            Jetzt anfragen
           </button>
         </div>
       </div>

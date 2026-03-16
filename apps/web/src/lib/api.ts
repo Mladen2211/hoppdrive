@@ -27,4 +27,5 @@ export const api = {
     request<any>(`/pricing?vehicleId=${vehicleId}&days=${days}`),
   submitContact: (data: any) =>
     request<any>('/contact', { method: 'POST', body: JSON.stringify(data) }),
+  getSetting: (key: string) => request<any>(`/settings/${key}`),
 };

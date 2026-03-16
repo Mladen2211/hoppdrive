@@ -69,9 +69,11 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     try {
       const result = await api.refreshToken();
       sessionStorage.setItem('accessToken', result.accessToken);
-      sessionStorage.setItem('admin', JSON.stringify(result.admin));
+      if (result.admin) {
+        sessionStorage.setItem('admin', JSON.stringify(result.admin));
+        setAdmin(result.admin);
+      }
       setToken(result.accessToken);
-      setAdmin(result.admin);
     } catch {
       logout();
     }
@@ -83,7 +85,13 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
 
     if (storedToken && storedAdmin) {
       setToken(storedToken);
-      setAdmin(JSON.parse(storedAdmin));
+      try {
+        setAdmin(JSON.parse(storedAdmin));
+      } catch {
+        // Corrupted value – clear it and force re-login
+        sessionStorage.removeItem('accessToken');
+        sessionStorage.removeItem('admin');
+      }
     }
     setLoading(false);
   }, []);

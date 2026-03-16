@@ -122,4 +122,12 @@ export const api = {
     client.post('/bookings', data).then(unwrap) as Promise<any>,
   getBookingReport: (from: string, to: string) =>
     client.get('/bookings/report', { params: { from, to } }).then(unwrap) as Promise<any>,
+
+  // ─── Settings (CMS) ───────────────────────────────────────
+  getSettings: () =>
+    client.get('/settings').then(unwrap) as Promise<Record<string, any>>,
+  getSetting: (key: string) =>
+    client.get(`/settings/${key}`).then(unwrap) as Promise<any>,
+  updateSetting: (key: string, value: any) =>
+    client.put(`/settings/${key}`, { value }).then(unwrap) as Promise<any>,
 };

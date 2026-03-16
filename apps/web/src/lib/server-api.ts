@@ -71,3 +71,7 @@ export async function getAllVehicles(): Promise<VehicleListItem[]> {
   const data = await serverFetch<VehicleListItem[]>('/vehicles', 60);
   return data ?? [];
 }
+
+export async function getSetting(key: string): Promise<any | null> {
+  return serverFetch<any>(`/settings/${key}`, 120);
+}

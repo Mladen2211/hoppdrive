@@ -14,12 +14,17 @@ export default function HomePage() {
   const [vehicles, setVehicles] = useState<VehicleCardData[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedVehicle, setSelectedVehicle] = useState<string | null>(null);
+  const [pricingConfig, setPricingConfig] = useState<any>(null);
 
   useEffect(() => {
     api.getVehicles()
       .then((data) => setVehicles(data))
       .catch(() => setVehicles([]))
       .finally(() => setLoading(false));
+
+    api.getSetting('pricing')
+      .then((data) => setPricingConfig(data))
+      .catch(() => {});
   }, []);
 
   const handleInquire = (vehicle: VehicleCardData) => {
@@ -35,7 +40,7 @@ export default function HomePage() {
       <main className="flex-1">
         <HeroSection />
         <FleetSection vehicles={vehicles} loading={loading} onInquire={handleInquire} />
-        <PricingSection />
+        <PricingSection config={pricingConfig} />
         <ContactForm
           preselectedVehicle={selectedVehicle}
           vehicleNames={vehicleNames}

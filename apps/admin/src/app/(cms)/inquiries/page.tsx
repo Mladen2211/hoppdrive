@@ -1,43 +1,52 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useEffect, useState, useMemo } from 'react';
+import { Search, ChevronLeft, ChevronRight, CalendarPlus, Loader2 } from 'lucide-react';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { StatusBadge } from '@/components/StatusBadge';
 import { api } from '@/lib/api';
 
 interface Inquiry {
   id: string;
-  name: string;
+  fullName: string;
   email: string;
   phone?: string;
-  vehicleBrand?: string;
-  vehicleModel?: string;
+  vehicleOfInterest?: string;
   message: string;
+  desiredStartDate?: string;
+  desiredEndDate?: string;
   status: string;
   privacyConsent: boolean;
   marketingConsent: boolean;
   createdAt: string;
 }
 
-const STATUS_OPTIONS = ['new', 'contacted', 'qualified', 'closed', 'spam'];
+const STATUS_OPTIONS = ['pending', 'reviewed', 'responded', 'converted', 'archived'];
 const STATUS_LABELS: Record<string, string> = {
-  new: 'Neu',
-  contacted: 'Kontaktiert',
-  qualified: 'Qualifiziert',
-  closed: 'Abgeschlossen',
-  spam: 'Spam',
+  pending: 'Neu',
+  reviewed: 'Geprüft',
+  responded: 'Beantwortet',
+  converted: 'Buchung erstellt',
+  archived: 'Archiviert',
 };
+
+function fmtDate(d?: string) {
+  if (!d) return '—';
+  return new Date(d).toLocaleDateString('de-CH');
+}
 
 export default function InquiriesPage() {
   const { token } = useAdminAuth();
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
+  const [vehicles, setVehicles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [search, setSearch] = useState('');
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [updating, setUpdating] = useState<string | null>(null);
+  const [converting, setConverting] = useState<string | null>(null);
+  const [convertMsg, setConvertMsg] = useState<{ id: string; ok: boolean; text: string } | null>(null);
 
   async function fetchInquiries(pageNum = 1) {
     if (!token) return;
@@ -58,6 +67,11 @@ export default function InquiriesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, page]);
 
+  useEffect(() => {
+    if (!token) return;
+    api.getAllVehicles().then(setVehicles).catch(() => {});
+  }, [token]);
+
   async function handleStatusChange(id: string, newStatus: string) {
     if (!token) return;
     setUpdating(id);
@@ -73,14 +87,62 @@ export default function InquiriesPage() {
     }
   }
 
-  const filteredInquiries = search
-    ? inquiries.filter(
-        (inq) =>
-          inq.name.toLowerCase().includes(search.toLowerCase()) ||
-          inq.email.toLowerCase().includes(search.toLowerCase()) ||
-          (inq.vehicleBrand?.toLowerCase().includes(search.toLowerCase()) ?? false)
-      )
-    : inquiries;
+  /** Convert inquiry to a booking → auto-sets status to "converted" */
+  async function handleConvertToBooking(inq: Inquiry) {
+    if (!inq.desiredStartDate || !inq.desiredEndDate) {
+      setConvertMsg({ id: inq.id, ok: false, text: 'Kein Start-/Enddatum in der Anfrage vorhanden.' });
+      return;
+    }
+
+    // Match vehicle by name substring
+    const match = vehicles.find(
+      (v: any) =>
+        inq.vehicleOfInterest &&
+        `${v.brand} ${v.model}`.toLowerCase().includes(inq.vehicleOfInterest.toLowerCase()),
+    );
+    if (!match) {
+      setConvertMsg({
+        id: inq.id,
+        ok: false,
+        text: inq.vehicleOfInterest
+          ? `Fahrzeug „${inq.vehicleOfInterest}" nicht gefunden.`
+          : 'Kein Fahrzeug in der Anfrage angegeben.',
+      });
+      return;
+    }
+
+    setConverting(inq.id);
+    setConvertMsg(null);
+    try {
+      await api.createBooking({
+        vehicleId: match.id,
+        customerName: inq.fullName,
+        startDate: new Date(inq.desiredStartDate).toISOString(),
+        endDate: new Date(inq.desiredEndDate).toISOString(),
+        notes: `Aus Anfrage übernommen (${inq.email})`,
+      });
+      await api.updateContactStatus(inq.id, 'converted');
+      setInquiries((prev) =>
+        prev.map((i) => (i.id === inq.id ? { ...i, status: 'converted' } : i))
+      );
+      setConvertMsg({ id: inq.id, ok: true, text: 'Buchung erfolgreich erstellt!' });
+    } catch (err: any) {
+      setConvertMsg({ id: inq.id, ok: false, text: err.message || 'Fehler beim Erstellen der Buchung.' });
+    } finally {
+      setConverting(null);
+    }
+  }
+
+  const filteredInquiries = useMemo(() => {
+    if (!search) return inquiries;
+    const q = search.toLowerCase();
+    return inquiries.filter(
+      (inq) =>
+        inq.fullName.toLowerCase().includes(q) ||
+        inq.email.toLowerCase().includes(q) ||
+        (inq.vehicleOfInterest?.toLowerCase().includes(q) ?? false),
+    );
+  }, [inquiries, search]);
 
   return (
     <div>
@@ -111,14 +173,15 @@ export default function InquiriesPage() {
                   <th className="text-left px-6 py-3 text-neutral-500 font-medium">Name</th>
                   <th className="text-left px-6 py-3 text-neutral-500 font-medium">Kontakt</th>
                   <th className="text-left px-6 py-3 text-neutral-500 font-medium">Fahrzeug</th>
+                  <th className="text-left px-6 py-3 text-neutral-500 font-medium">Zeitraum</th>
                   <th className="text-left px-6 py-3 text-neutral-500 font-medium">Status</th>
-                  <th className="text-left px-6 py-3 text-neutral-500 font-medium">Datum</th>
+                  <th className="text-left px-6 py-3 text-neutral-500 font-medium">Eingang</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredInquiries.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="text-center py-12 text-neutral-400">
+                    <td colSpan={6} className="text-center py-12 text-neutral-400">
                       Keine Anfragen gefunden.
                     </td>
                   </tr>
@@ -132,7 +195,7 @@ export default function InquiriesPage() {
                           setExpandedId(expandedId === inq.id ? null : inq.id)
                         }
                       >
-                        <td className="px-6 py-3 font-medium">{inq.name}</td>
+                        <td className="px-6 py-3 font-medium">{inq.fullName}</td>
                         <td className="px-6 py-3 text-neutral-600">
                           <div>{inq.email}</div>
                           {inq.phone && (
@@ -140,22 +203,25 @@ export default function InquiriesPage() {
                           )}
                         </td>
                         <td className="px-6 py-3 text-neutral-600">
-                          {inq.vehicleBrand && inq.vehicleModel
-                            ? `${inq.vehicleBrand} ${inq.vehicleModel}`
+                          {inq.vehicleOfInterest || '—'}
+                        </td>
+                        <td className="px-6 py-3 text-neutral-600 whitespace-nowrap">
+                          {inq.desiredStartDate
+                            ? `${fmtDate(inq.desiredStartDate)} – ${fmtDate(inq.desiredEndDate)}`
                             : '—'}
                         </td>
                         <td className="px-6 py-3">
                           <StatusBadge status={inq.status} />
                         </td>
                         <td className="px-6 py-3 text-neutral-500">
-                          {new Date(inq.createdAt).toLocaleDateString('de-CH')}
+                          {fmtDate(inq.createdAt)}
                         </td>
                       </tr>
 
                       {/* Expanded detail row */}
                       {expandedId === inq.id && (
                         <tr key={`${inq.id}-detail`} className="border-b border-neutral-100">
-                          <td colSpan={5} className="px-6 py-4 bg-neutral-50/50">
+                          <td colSpan={6} className="px-6 py-4 bg-neutral-50/50">
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                               <div className="md:col-span-2">
                                 <p className="text-xs font-semibold text-neutral-500 uppercase mb-1">
@@ -196,6 +262,36 @@ export default function InquiriesPage() {
                                     ))}
                                   </select>
                                 </div>
+
+                                {/* Convert to Booking button */}
+                                {inq.status !== 'converted' && (
+                                  <div>
+                                    <button
+                                      disabled={converting === inq.id}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleConvertToBooking(inq);
+                                      }}
+                                      className="w-full flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-700 disabled:bg-brand-400 text-white text-sm font-medium py-2 px-3 rounded-lg transition-colors"
+                                    >
+                                      {converting === inq.id ? (
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                      ) : (
+                                        <CalendarPlus className="w-4 h-4" />
+                                      )}
+                                      Buchung erstellen
+                                    </button>
+                                    {convertMsg && convertMsg.id === inq.id && (
+                                      <p
+                                        className={`text-xs mt-1 ${
+                                          convertMsg.ok ? 'text-green-600' : 'text-red-600'
+                                        }`}
+                                      >
+                                        {convertMsg.text}
+                                      </p>
+                                    )}
+                                  </div>
+                                )}
                               </div>
                             </div>
                           </td>
