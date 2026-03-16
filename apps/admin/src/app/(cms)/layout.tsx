@@ -85,8 +85,8 @@ function AdminSidebar() {
 
       {/* Sidebar — sits behind main content for depth effect */}
       <aside
-        className={`fixed top-0 left-0 h-full bg-neutral-100 z-30 transition-transform duration-200 flex flex-col w-52 ${
-          mobileOpen ? 'translate-x-0 z-50 bg-white shadow-xl' : '-translate-x-full'
+        className={`fixed top-0 left-0 h-full bg-neutral-100/80 z-30 transition-transform duration-200 flex flex-col w-56 ${
+          mobileOpen ? 'translate-x-0 !z-50 !bg-white shadow-xl' : '-translate-x-full'
         } lg:translate-x-0`}
       >
         {/* Logo area */}
@@ -94,7 +94,8 @@ function AdminSidebar() {
           <Image src="/logo-header.png" alt="HoppDrive" width={100} height={28} className="h-6 w-auto" />
           <button
             onClick={() => setMobileOpen(false)}
-            className="lg:hidden text-neutral-400 hover:text-neutral-600"
+            className="lg:hidden p-1 rounded-lg text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 transition-colors"
+            aria-label="Menü schliessen"
           >
             <X className="w-5 h-5" />
           </button>
@@ -213,11 +214,13 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-neutral-100">
+    <div className="min-h-screen bg-neutral-200/60">
       <AdminSidebar />
       {/* Main content floats above sidebar for depth */}
       <main className="lg:pl-48 pt-14 lg:pt-0 min-h-screen relative z-10">
-        <div className="min-h-screen bg-white lg:rounded-tl-2xl lg:shadow-[-8px_0_24px_rgba(0,0,0,0.06)] flex flex-col">
+        <div className="min-h-screen bg-white lg:rounded-l-[20px] lg:shadow-[−12px_0_40px_rgba(0,0,0,0.08),−2px_0_8px_rgba(0,0,0,0.04)] flex flex-col"
+          style={{ boxShadow: '-12px 0 40px rgba(0,0,0,0.08), -2px 0 8px rgba(0,0,0,0.04)' }}
+        >
           <AdminTopbar />
           <div className="flex-1 p-6 lg:p-8">{children}</div>
         </div>
