@@ -36,7 +36,7 @@ export function createApp(container: Container): express.Application {
   app.use(express.json({
     limit: '1mb',
     // Capture raw body for debugging JSON parse issues (verify runs before parsing)
-    verify: (req: any, _res, buf: Buffer, encoding: string) => {
+    verify: (req: any, _res: any, buf: Buffer, encoding?: BufferEncoding) => {
       try {
         req.rawBody = buf.toString(encoding || 'utf8');
       } catch {
