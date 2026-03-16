@@ -145,22 +145,11 @@ services:
     image: cloudflare/cloudflared:latest
     container_name: cloudflared
     restart: unless-stopped
-    environment:
-      TUNNEL_TOKEN: ${TUNNEL_TOKEN}
     depends_on:
       - api
       - web
       - admin
-    # Use local config to route to Docker service names (stable within compose)
-    command:
-      - tunnel
-      - run
-      - --config
-      - /etc/cloudflared/config.yml
-      - --token
-      - ${TUNNEL_TOKEN}
-    volumes:
-      - ./cloudflared/config.yml:/etc/cloudflared/config.yml:ro
+    command: ["tunnel", "run", "--token", "${TUNNEL_TOKEN}"]
     deploy:
       resources:
         limits:
