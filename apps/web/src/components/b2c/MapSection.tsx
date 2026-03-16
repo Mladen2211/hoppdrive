@@ -118,10 +118,17 @@ export function MapSection() {
             {config?.title || DEFAULTS.title}
           </h2>
           {config?.address && (
-            <p className="flex items-center justify-center gap-2 text-graphite text-lg">
+            <a
+              href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(config.address)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-2 text-graphite text-lg hover:text-brand-600 transition-colors group"
+            >
               <MapPin className="w-5 h-5 text-brand-600" />
-              {config.address}
-            </p>
+              <span className="underline decoration-neutral-300 underline-offset-4 group-hover:decoration-brand-600 transition-colors">
+                {config.address}
+              </span>
+            </a>
           )}
         </div>
 
