@@ -22,6 +22,7 @@ interface AdminAuthContextValue {
   admin: AdminUser | null;
   token: string | null;
   loading: boolean;
+  login: (accessToken: string, adminUser: AdminUser) => void;
   logout: () => void;
   refreshAuth: () => Promise<void>;
 }
@@ -30,6 +31,7 @@ const AdminAuthContext = createContext<AdminAuthContextValue>({
   admin: null,
   token: null,
   loading: true,
+  login: () => {},
   logout: () => {},
   refreshAuth: async () => {},
 });
@@ -46,6 +48,13 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
   const [admin, setAdmin] = useState<AdminUser | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const login = useCallback((accessToken: string, adminUser: AdminUser) => {
+    sessionStorage.setItem('accessToken', accessToken);
+    sessionStorage.setItem('admin', JSON.stringify(adminUser));
+    setToken(accessToken);
+    setAdmin(adminUser);
+  }, []);
 
   const logout = useCallback(() => {
     sessionStorage.removeItem('accessToken');
@@ -102,7 +111,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
   }, [token, refreshAuth]);
 
   return (
-    <AdminAuthContext.Provider value={{ admin, token, loading, logout, refreshAuth }}>
+    <AdminAuthContext.Provider value={{ admin, token, loading, login, logout, refreshAuth }}>
       {children}
     </AdminAuthContext.Provider>
   );

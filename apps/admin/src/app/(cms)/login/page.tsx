@@ -5,9 +5,11 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Lock } from 'lucide-react';
 import { api } from '@/lib/api';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
 
 export default function AdminLoginPage() {
   const router = useRouter();
+  const { login } = useAdminAuth();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -22,8 +24,7 @@ export default function AdminLoginPage() {
 
     try {
       const result = await api.login({ email, password });
-      sessionStorage.setItem('accessToken', result.accessToken);
-      sessionStorage.setItem('admin', JSON.stringify(result.admin));
+      login(result.accessToken, result.admin);
 
       if (result.admin.mustResetPassword) {
         router.push('/reset-password');
