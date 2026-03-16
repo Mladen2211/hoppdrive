@@ -1,0 +1,12 @@
+ingress:
+  - hostname: hoppdrive.mraguz.me
+    service: http://web:99
+  - hostname: hoppdrive-admin.mraguz.me
+    service: http://admin:98
+  - hostname: api-hoppdrive.mraguz.me
+    service: http://api:97
+  - service: http_status:404
+
+# Disable warp routing for this tunnel
+warp-routing:
+  enabled: false
