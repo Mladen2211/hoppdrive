@@ -140,28 +140,6 @@ services:
         max-size: "10m"
         max-file: "3"
 
-  # ─── Cloudflare Tunnel ────────────────────────────────────────
-  cloudflared:
-    image: cloudflare/cloudflared:latest
-    container_name: cloudflared
-    restart: unless-stopped
-    environment:
-      TUNNEL_TRANSPORT_PROTOCOL: http2
-    depends_on:
-      - api
-      - web
-      - admin
-    command: ["tunnel", "run", "--token", "${TUNNEL_TOKEN}"]
-    deploy:
-      resources:
-        limits:
-          memory: 128M
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "3"
-
 volumes:
   pgdata:
   redisdata:
