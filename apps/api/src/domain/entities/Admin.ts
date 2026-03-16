@@ -5,6 +5,9 @@ export interface AdminProps {
   id: string;
   email: Email;
   name: string;
+  firstName?: string | null;
+  lastName?: string | null;
+  phone?: string | null;
   passwordHash: string;
   mustResetPassword: boolean;
   createdAt?: Date;
@@ -14,6 +17,9 @@ export interface AdminProps {
 export class Admin extends Entity {
   public email: Email;
   public name: string;
+  public firstName: string | null;
+  public lastName: string | null;
+  public phone: string | null;
   public passwordHash: string;
   public mustResetPassword: boolean;
 
@@ -21,6 +27,9 @@ export class Admin extends Entity {
     super(props.id, props.createdAt, props.updatedAt);
     this.email = props.email;
     this.name = props.name;
+    this.firstName = props.firstName ?? null;
+    this.lastName = props.lastName ?? null;
+    this.phone = props.phone ?? null;
     this.passwordHash = props.passwordHash;
     this.mustResetPassword = props.mustResetPassword;
   }
@@ -43,8 +52,16 @@ export class Admin extends Entity {
     this.updatedAt = new Date();
   }
 
-  updateProfile(name: string): void {
-    this.name = name;
+  updateProfile(data: { firstName?: string; lastName?: string; name?: string; phone?: string; email?: Email }): void {
+    if (data.firstName !== undefined) this.firstName = data.firstName;
+    if (data.lastName !== undefined) this.lastName = data.lastName;
+    if (data.name !== undefined) this.name = data.name;
+    if (data.phone !== undefined) this.phone = data.phone;
+    if (data.email !== undefined) this.email = data.email;
+    // Keep name in sync
+    if (data.firstName !== undefined || data.lastName !== undefined) {
+      this.name = [this.firstName, this.lastName].filter(Boolean).join(' ') || this.name;
+    }
     this.updatedAt = new Date();
   }
 }

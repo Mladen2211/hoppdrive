@@ -92,6 +92,10 @@ export const api = {
     client.post('/auth/logout').then(unwrap) as Promise<any>,
   resetPassword: (data: { newPassword: string }) =>
     client.post('/auth/reset-password', data).then(unwrap) as Promise<any>,
+  getProfile: () =>
+    client.get('/auth/profile').then(unwrap) as Promise<any>,
+  updateProfile: (data: { firstName?: string; lastName?: string; email?: string; phone?: string; currentPassword?: string; newPassword?: string }) =>
+    client.put('/auth/profile', data).then(unwrap) as Promise<any>,
 
   // ─── Dashboard ─────────────────────────────────────────────
   getDashboardStats: () =>

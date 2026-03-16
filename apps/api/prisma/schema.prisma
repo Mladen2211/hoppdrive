@@ -14,6 +14,9 @@ model Admin {
   id                String     @id @default(uuid())
   email             String     @unique
   name              String
+  firstName         String?    @map("first_name")
+  lastName          String?    @map("last_name")
+  phone             String?
   passwordHash      String     @map("password_hash")
   mustResetPassword Boolean    @default(true) @map("must_reset_password")
   createdAt         DateTime   @default(now()) @map("created_at")

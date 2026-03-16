@@ -13,6 +13,9 @@ interface LoginResult {
     id: string;
     email: string;
     name: string;
+    firstName: string | null;
+    lastName: string | null;
+    phone: string | null;
     mustResetPassword: boolean;
   };
 }
@@ -45,6 +48,9 @@ export class LoginUseCase {
         id: admin.id,
         email: admin.email.value,
         name: admin.name,
+        firstName: admin.firstName,
+        lastName: admin.lastName,
+        phone: admin.phone,
         mustResetPassword: admin.mustResetPassword,
       },
     };

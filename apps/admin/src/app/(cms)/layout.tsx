@@ -11,37 +11,59 @@ import {
   BarChart3,
   Settings,
   LogOut,
-  ChevronLeft,
+  User,
   Menu,
+  X,
 } from 'lucide-react';
 import { useState } from 'react';
 import { AdminAuthProvider, useAdminAuth } from '@/hooks/useAdminAuth';
 
 const navItems = [
   { href: '/', label: 'Übersicht', icon: LayoutDashboard },
-  { href: '/fleet', label: 'Flottenmanager', icon: Car },
-  { href: '/availability', label: 'Verfügbarkeit', icon: CalendarDays },
+  { href: '/fleet', label: 'Flotte', icon: Car },
+  { href: '/availability', label: 'Kalender', icon: CalendarDays },
   { href: '/inquiries', label: 'Anfragen', icon: MessageSquare },
   { href: '/reports', label: 'Berichte', icon: BarChart3 },
+];
+
+const bottomItems = [
   { href: '/settings', label: 'Website', icon: Settings },
+  { href: '/profile', label: 'Profil', icon: User },
 ];
 
 function AdminSidebar() {
   const pathname = usePathname();
   const { admin, logout } = useAdminAuth();
-  const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  const NavLink = ({ href, label, icon: Icon }: { href: string; label: string; icon: any }) => {
+    const active = pathname === href;
+    return (
+      <Link
+        href={href}
+        onClick={() => setMobileOpen(false)}
+        className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all ${
+          active
+            ? 'bg-brand-600 text-white shadow-sm'
+            : 'text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100'
+        }`}
+      >
+        <Icon className="w-[18px] h-[18px] shrink-0" />
+        <span>{label}</span>
+      </Link>
+    );
+  };
 
   return (
     <>
       {/* Mobile header bar */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-neutral-900 z-40 flex items-center px-4">
+      <div className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-white border-b border-neutral-200 z-40 flex items-center px-4">
         <button
           onClick={() => setMobileOpen(true)}
-          className="text-white"
+          className="text-neutral-700"
           aria-label="Menü öffnen"
         >
-          <Menu className="w-6 h-6" />
+          <Menu className="w-5 h-5" />
         </button>
         <Image src="/logo-header.png" alt="HoppDrive" width={100} height={28} className="h-7 w-auto ml-3" />
       </div>
@@ -49,77 +71,67 @@ function AdminSidebar() {
       {/* Overlay for mobile */}
       {mobileOpen && (
         <div
-          className="lg:hidden fixed inset-0 bg-black/50 z-40"
+          className="lg:hidden fixed inset-0 bg-black/30 z-40"
           onClick={() => setMobileOpen(false)}
         />
       )}
 
       {/* Sidebar */}
       <aside
-        className={`fixed top-0 left-0 h-full bg-neutral-900 text-white z-50 transition-all duration-200 flex flex-col ${
-          collapsed ? 'w-16' : 'w-60'
-        } ${mobileOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}
+        className={`fixed top-0 left-0 h-full bg-white border-r border-neutral-200 z-50 transition-transform duration-200 flex flex-col w-52 ${
+          mobileOpen ? 'translate-x-0' : '-translate-x-full'
+        } lg:translate-x-0`}
       >
         {/* Logo area */}
-        <div className="h-14 flex items-center px-4 border-b border-neutral-800 shrink-0">
-          {!collapsed && (
-            <Image src="/logo-header.png" alt="HoppDrive" width={100} height={28} className="h-7 w-auto" />
-          )}
+        <div className="h-14 flex items-center justify-between px-4 shrink-0">
+          <Image src="/logo-header.png" alt="HoppDrive" width={100} height={28} className="h-6 w-auto" />
           <button
-            onClick={() => {
-              setCollapsed(!collapsed);
-              setMobileOpen(false);
-            }}
-            className={`ml-auto text-neutral-400 hover:text-white hidden lg:block ${
-              collapsed ? 'mx-auto' : ''
-            }`}
-            aria-label={collapsed ? 'Seitenleiste erweitern' : 'Seitenleiste einklappen'}
+            onClick={() => setMobileOpen(false)}
+            className="lg:hidden text-neutral-400 hover:text-neutral-600"
           >
-            <ChevronLeft
-              className={`w-5 h-5 transition-transform ${collapsed ? 'rotate-180' : ''}`}
-            />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Navigation */}
-        <nav className="flex-1 py-4 space-y-1 px-2 overflow-y-auto">
-          {navItems.map(({ href, label, icon: Icon }) => {
-            const active = pathname === href;
-            return (
-              <Link
-                key={href}
-                href={href}
-                onClick={() => setMobileOpen(false)}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                  active
-                    ? 'bg-brand-600 text-white'
-                    : 'text-neutral-400 hover:text-white hover:bg-neutral-800'
-                } ${collapsed ? 'justify-center' : ''}`}
-                title={collapsed ? label : undefined}
-              >
-                <Icon className="w-5 h-5 shrink-0" />
-                {!collapsed && <span>{label}</span>}
-              </Link>
-            );
-          })}
+        {/* Main navigation */}
+        <nav className="flex-1 py-2 px-3 space-y-0.5 overflow-y-auto">
+          {navItems.map((item) => (
+            <NavLink key={item.href} {...item} />
+          ))}
         </nav>
 
-        {/* User area */}
-        <div className="border-t border-neutral-800 p-3 shrink-0">
-          {!collapsed && admin && (
-            <p className="text-xs text-neutral-500 mb-2 truncate">{admin.email}</p>
-          )}
+        {/* Bottom section */}
+        <div className="border-t border-neutral-100 px-3 py-2 space-y-0.5">
+          {bottomItems.map((item) => (
+            <NavLink key={item.href} {...item} />
+          ))}
           <button
             onClick={logout}
-            className={`flex items-center gap-2 text-neutral-400 hover:text-red-400 text-sm transition-colors w-full ${
-              collapsed ? 'justify-center' : ''
-            }`}
-            title={collapsed ? 'Abmelden' : undefined}
+            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium text-neutral-500 hover:text-red-600 hover:bg-red-50 transition-all w-full"
           >
-            <LogOut className="w-4 h-4 shrink-0" />
-            {!collapsed && <span>Abmelden</span>}
+            <LogOut className="w-[18px] h-[18px] shrink-0" />
+            <span>Abmelden</span>
           </button>
         </div>
+
+        {/* User info */}
+        {admin && (
+          <div className="border-t border-neutral-100 px-4 py-3 shrink-0">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center text-xs font-semibold shrink-0">
+                {(admin.firstName?.[0] || admin.name?.[0] || 'A').toUpperCase()}
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-neutral-900 truncate">
+                  {admin.firstName && admin.lastName
+                    ? `${admin.firstName} ${admin.lastName}`
+                    : admin.name || 'Admin'}
+                </p>
+                <p className="text-[11px] text-neutral-400 truncate">{admin.email}</p>
+              </div>
+            </div>
+          </div>
+        )}
       </aside>
     </>
   );
@@ -152,9 +164,9 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-neutral-100">
+    <div className="min-h-screen bg-neutral-50">
       <AdminSidebar />
-      <main className="lg:pl-60 pt-14 lg:pt-0">
+      <main className="lg:pl-52 pt-14 lg:pt-0">
         <div className="p-6 lg:p-8">{children}</div>
       </main>
     </div>

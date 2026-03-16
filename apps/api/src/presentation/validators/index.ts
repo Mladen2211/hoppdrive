@@ -71,6 +71,15 @@ export const resetPasswordSchema = z.object({
   newPassword: z.string().min(12, 'Password must be at least 12 characters'),
 });
 
+export const updateProfileSchema = z.object({
+  firstName: z.string().min(1).optional(),
+  lastName: z.string().min(1).optional(),
+  email: z.string().email().optional(),
+  phone: z.string().optional(),
+  currentPassword: z.string().optional(),
+  newPassword: z.string().min(12, 'Password must be at least 12 characters').optional(),
+});
+
 export const createBookingSchema = z.object({
   vehicleId: z.string().uuid(),
   customerName: z.string().min(1, 'Customer name is required'),

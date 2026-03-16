@@ -67,6 +67,14 @@ export default function InquiriesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, page]);
 
+  // Auto-refresh every 15 seconds so new contact requests appear automatically
+  useEffect(() => {
+    if (!token) return;
+    const interval = setInterval(() => fetchInquiries(page), 15_000);
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, page]);
+
   useEffect(() => {
     if (!token) return;
     api.getAllVehicles().then(setVehicles).catch(() => {});

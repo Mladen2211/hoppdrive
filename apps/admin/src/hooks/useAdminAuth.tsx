@@ -15,6 +15,9 @@ interface AdminUser {
   id: string;
   email: string;
   name: string;
+  firstName?: string | null;
+  lastName?: string | null;
+  phone?: string | null;
   mustResetPassword: boolean;
 }
 
