@@ -14,6 +14,7 @@ interface CreateBookingInput {
   customerName: string;
   startDate: string;
   endDate: string;
+  totalPrice?: number;
   notes?: string;
 }
 
@@ -46,20 +47,26 @@ export class CreateBookingUseCase {
       throw new Error('Vehicle is already booked for the selected dates');
     }
 
-    // Calculate pricing
-    const rules = await this.pricingRuleRepo.findAll();
-    const pricing = PricingService.calculate(
-      vehicle.basePricePerDay,
-      dateRange.totalDays,
-      rules,
-    );
+    // Use admin-supplied price or calculate from pricing rules
+    let totalPrice: Money;
+    if (input.totalPrice !== undefined && input.totalPrice !== null) {
+      totalPrice = Money.create(input.totalPrice, 'CHF');
+    } else {
+      const rules = await this.pricingRuleRepo.findAll();
+      const pricing = PricingService.calculate(
+        vehicle.basePricePerDay,
+        dateRange.totalDays,
+        rules,
+      );
+      totalPrice = pricing.totalPrice;
+    }
 
     const booking = Booking.create({
       id: uuid(),
       vehicleId: input.vehicleId,
       customerName: input.customerName,
       dateRange,
-      totalPrice: pricing.totalPrice,
+      totalPrice,
       status: 'reserved',
       notes: input.notes ?? null,
     });

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
-import { ChevronLeft, ChevronRight, Plus, X, Calendar, User, Car, FileText } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, X, Calendar, User, Car, FileText, DollarSign } from 'lucide-react';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { api } from '@/lib/api';
 
@@ -29,6 +29,8 @@ const EMPTY_FORM = {
   customerName: '',
   startDate: '',
   endDate: '',
+  priceMode: 'total' as 'total' | 'perDay',
+  priceValue: '',
   notes: '',
 };
 
@@ -120,6 +122,34 @@ export default function AvailabilityPage() {
     setShowModal(true);
   }
 
+  // Compute days from form dates
+  const formDays = useMemo(() => {
+    if (!form.startDate || !form.endDate) return 0;
+    const s = new Date(form.startDate);
+    const e = new Date(form.endDate);
+    if (e < s) return 0;
+    return Math.ceil((e.getTime() - s.getTime()) / (1000 * 60 * 60 * 24)) || 1;
+  }, [form.startDate, form.endDate]);
+
+  // Compute the derived price (the field not being edited)
+  const derivedPrice = useMemo(() => {
+    const val = parseFloat(form.priceValue);
+    if (!val || val <= 0 || formDays <= 0) return '';
+    if (form.priceMode === 'total') {
+      return (val / formDays).toFixed(2);
+    } else {
+      return (val * formDays).toFixed(2);
+    }
+  }, [form.priceValue, form.priceMode, formDays]);
+
+  // Get the totalPrice to send to API
+  function getFormTotalPrice(): number | undefined {
+    const val = parseFloat(form.priceValue);
+    if (!val || val <= 0) return undefined;
+    if (form.priceMode === 'total') return Math.round(val * 100) / 100;
+    return Math.round(val * formDays * 100) / 100;
+  }
+
   async function handleCreateBooking(e: React.FormEvent) {
     e.preventDefault();
     if (!form.vehicleId || !form.customerName.trim() || !form.startDate || !form.endDate) {
@@ -139,6 +169,7 @@ export default function AvailabilityPage() {
         customerName: form.customerName.trim(),
         startDate: new Date(form.startDate).toISOString(),
         endDate: new Date(form.endDate).toISOString(),
+        totalPrice: getFormTotalPrice(),
         notes: form.notes.trim() || undefined,
       });
       setShowModal(false);
@@ -360,6 +391,12 @@ export default function AvailabilityPage() {
                           <Calendar className="w-3 h-3" />
                           {fmtDate(booking.startDate)} – {fmtDate(booking.endDate)}
                         </div>
+                        {(booking.totalPrice != null && booking.totalPrice > 0) && (
+                          <div className="flex items-center gap-1 text-green-700 font-medium">
+                            <DollarSign className="w-3 h-3" />
+                            {Number(booking.totalPrice).toFixed(2)} {booking.currency || 'CHF'}
+                          </div>
+                        )}
                         {booking.notes && (
                           <div className="flex items-start gap-1 mt-1">
                             <FileText className="w-3 h-3 mt-0.5 shrink-0" />
@@ -495,6 +532,49 @@ export default function AvailabilityPage() {
                     required
                   />
                 </div>
+              </div>
+
+              {formDays > 0 && (
+                <p className="text-xs text-neutral-500">
+                  Mietdauer: <span className="font-semibold">{formDays} {formDays === 1 ? 'Tag' : 'Tage'}</span>
+                </p>
+              )}
+
+              {/* Price */}
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 mb-1">
+                  <DollarSign className="w-4 h-4 inline mr-1" />
+                  Preis (CHF)
+                </label>
+                <div className="flex items-center gap-2">
+                  <select
+                    value={form.priceMode}
+                    onChange={(e) => setForm({ ...form, priceMode: e.target.value as 'total' | 'perDay', priceValue: '' })}
+                    className="border border-neutral-300 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 shrink-0"
+                  >
+                    <option value="total">Gesamtpreis</option>
+                    <option value="perDay">Pro Tag</option>
+                  </select>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={form.priceValue}
+                    onChange={(e) => setForm({ ...form, priceValue: e.target.value })}
+                    placeholder={form.priceMode === 'total' ? 'z.B. 1500.00' : 'z.B. 150.00'}
+                    className="flex-1 border border-neutral-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  />
+                </div>
+                {derivedPrice && formDays > 0 && (
+                  <p className="text-xs text-neutral-500 mt-1">
+                    {form.priceMode === 'total'
+                      ? `= CHF ${derivedPrice} pro Tag`
+                      : `= CHF ${derivedPrice} gesamt`}
+                  </p>
+                )}
+                <p className="text-[11px] text-neutral-400 mt-0.5">
+                  Leer lassen für automatische Preisberechnung
+                </p>
               </div>
 
               {/* Notes */}

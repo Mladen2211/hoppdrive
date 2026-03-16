@@ -46,6 +46,93 @@ export function bookingRoutes(container: Container): Router {
     },
   );
 
+  /** GET /api/bookings/report – Earnings report by vehicle for a date range */
+  router.get('/report', auth, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { from, to } = req.query;
+      if (!from || !to) {
+        res.status(400).json({ success: false, error: 'from and to query params are required' });
+        return;
+      }
+      const fromDate = new Date(from as string);
+      const toDate = new Date(to as string);
+      toDate.setHours(23, 59, 59, 999);
+
+      // Fetch all non-cancelled bookings that overlap the range
+      const allBookings = await container.prisma.booking.findMany({
+        where: {
+          status: { not: 'cancelled' },
+          startDate: { lte: toDate },
+          endDate: { gte: fromDate },
+        },
+        include: { vehicle: true },
+        orderBy: { startDate: 'asc' },
+      });
+
+      // Group by vehicle
+      const vehicleMap = new Map<string, {
+        vehicleId: string;
+        brand: string;
+        model: string;
+        bookings: any[];
+        totalEarnings: number;
+        totalDays: number;
+      }>();
+
+      for (const b of allBookings) {
+        const key = b.vehicleId;
+        if (!vehicleMap.has(key)) {
+          vehicleMap.set(key, {
+            vehicleId: key,
+            brand: b.vehicle.brand,
+            model: b.vehicle.model,
+            bookings: [],
+            totalEarnings: 0,
+            totalDays: 0,
+          });
+        }
+        const entry = vehicleMap.get(key)!;
+        const price = Number(b.totalPrice);
+        const days = Math.ceil(
+          (b.endDate.getTime() - b.startDate.getTime()) / (1000 * 60 * 60 * 24),
+        );
+        entry.bookings.push({
+          id: b.id,
+          customerName: b.customerName,
+          startDate: b.startDate,
+          endDate: b.endDate,
+          totalPrice: price,
+          currency: b.currency,
+          status: b.status,
+          days,
+        });
+        entry.totalEarnings += price;
+        entry.totalDays += days;
+      }
+
+      const vehicles = Array.from(vehicleMap.values()).sort(
+        (a, b) => b.totalEarnings - a.totalEarnings,
+      );
+
+      const grandTotal = vehicles.reduce((sum, v) => sum + v.totalEarnings, 0);
+      const grandDays = vehicles.reduce((sum, v) => sum + v.totalDays, 0);
+
+      res.json({
+        success: true,
+        data: {
+          from: fromDate.toISOString(),
+          to: toDate.toISOString(),
+          vehicles,
+          grandTotal,
+          grandDays,
+          totalBookings: allBookings.length,
+        },
+      });
+    } catch (err) {
+      next(err);
+    }
+  });
+
   return router;
 }
 

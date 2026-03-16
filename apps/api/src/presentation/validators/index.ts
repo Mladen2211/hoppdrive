@@ -74,6 +74,7 @@ export const createBookingSchema = z.object({
   customerName: z.string().min(1, 'Customer name is required'),
   startDate: z.string().datetime(),
   endDate: z.string().datetime(),
+  totalPrice: z.number().nonnegative().optional(),
   notes: z.string().optional(),
 });
 

@@ -8,6 +8,7 @@ import {
   Car,
   CalendarDays,
   MessageSquare,
+  BarChart3,
   LogOut,
   ChevronLeft,
   Menu,
@@ -20,6 +21,7 @@ const navItems = [
   { href: '/fleet', label: 'Flottenmanager', icon: Car },
   { href: '/availability', label: 'Verfügbarkeit', icon: CalendarDays },
   { href: '/inquiries', label: 'Anfragen', icon: MessageSquare },
+  { href: '/reports', label: 'Berichte', icon: BarChart3 },
 ];
 
 function AdminSidebar() {
