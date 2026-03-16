@@ -115,18 +115,23 @@ enum ContactRequestStatus {
 // ─── Booking ───────────────────────────────────────────────────
 
 model Booking {
-  id           String        @id @default(uuid())
-  vehicleId    String        @map("vehicle_id")
-  customerName String        @map("customer_name")
-  startDate    DateTime      @map("start_date")
-  endDate      DateTime      @map("end_date")
-  totalPrice   Decimal       @map("total_price") @db.Decimal(10, 2)
-  currency     String        @default("CHF")
-  status       BookingStatus @default(reserved)
-  notes        String?
-  createdAt    DateTime      @default(now()) @map("created_at")
-  updatedAt    DateTime      @updatedAt @map("updated_at")
-  vehicle      Vehicle       @relation(fields: [vehicleId], references: [id])
+  id             String         @id @default(uuid())
+  vehicleId      String         @map("vehicle_id")
+  customerName   String         @map("customer_name")
+  customerEmail  String?        @map("customer_email")
+  startDate      DateTime       @map("start_date")
+  endDate        DateTime       @map("end_date")
+  totalPrice     Decimal        @map("total_price") @db.Decimal(10, 2)
+  currency       String         @default("CHF")
+  status         BookingStatus  @default(reserved)
+  notes          String?
+  contractStatus ContractStatus @default(PENDING) @map("contract_status")
+  signatureData  String?        @map("signature_data") @db.Text
+  signedAt       DateTime?      @map("signed_at")
+  signeeIp       String?        @map("signee_ip")
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+  vehicle        Vehicle        @relation(fields: [vehicleId], references: [id])
 
   @@map("bookings")
 }
@@ -136,6 +141,12 @@ enum BookingStatus {
   active
   completed
   cancelled
+}
+
+enum ContractStatus {
+  PENDING
+  SIGNED
+  VOIDED
 }
 
 // ─── Pricing Rules ─────────────────────────────────────────────

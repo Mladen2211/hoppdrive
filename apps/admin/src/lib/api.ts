@@ -126,6 +126,10 @@ export const api = {
     client.post('/bookings', data).then(unwrap) as Promise<any>,
   getBookingReport: (from: string, to: string) =>
     client.get('/bookings/report', { params: { from, to } }).then(unwrap) as Promise<any>,
+  finalizeContract: (id: string, data: { signature: string; customerEmail?: string }) =>
+    client.post(`/bookings/${id}/finalize-contract`, data).then(unwrap) as Promise<any>,
+  downloadContract: (id: string) =>
+    client.get(`/bookings/${id}/download-contract`, { responseType: 'blob' }).then((res) => res.data) as Promise<Blob>,
 
   // ─── Settings (CMS) ───────────────────────────────────────
   getSettings: () =>

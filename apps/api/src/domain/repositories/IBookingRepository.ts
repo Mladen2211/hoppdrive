@@ -8,7 +8,7 @@ export interface IBookingRepository {
     page?: number;
     pageSize?: number;
   }): Promise<{ items: Booking[]; total: number }>;
-  save(booking: Booking): Promise<Booking>;
+  save(booking: Booking, customerEmail?: string): Promise<Booking>;
   update(booking: Booking): Promise<Booking>;
   delete(id: string): Promise<void>;
   countActive(): Promise<number>;

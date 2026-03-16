@@ -16,6 +16,7 @@ import { BcryptPasswordHasher, JwtTokenService } from '../services/AuthServices'
 import { InMemoryCacheService, RedisCacheService } from '../services/CacheService';
 import { BrevoEmailService } from '../services/BrevoEmailService';
 import { SharpImageService } from '../services/SharpImageService';
+import { PdfGeneratorService } from '../services/PdfGeneratorService';
 
 // ─── Use Cases ────────────────────────────────────────────────
 import {
@@ -72,6 +73,8 @@ export function createContainer() {
     process.env.UPLOAD_DIR || './uploads',
   );
 
+  const pdfGenerator = new PdfGeneratorService();
+
   // ─── Repositories ──────────────────────────────────────────
   const vehicleRepo = new PrismaVehicleRepository(prisma);
   const contactRepo = new PrismaContactRequestRepository(prisma);
@@ -108,6 +111,8 @@ export function createContainer() {
     cacheService,
     tokenService,
     imageService,
+    emailService,
+    pdfGenerator,
     auditLogRepo,
 
     // Vehicles

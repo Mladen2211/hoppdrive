@@ -1,0 +1,39 @@
+# ─────────────────────────────────────────────────────────────
+# HoppDrive – Production Compose Overlay
+# Usage: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+# ─────────────────────────────────────────────────────────────
+services:
+  postgres:
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+
+  redis:
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  api:
+    environment:
+      NODE_ENV: production
+      COOKIE_DOMAIN: ${COOKIE_DOMAIN:-.hoppdrive.ch}
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+
+  web:
+    deploy:
+      resources:
+        limits:
+          memory: 1536M
+
+  admin:
+    deploy:
+      resources:
+        limits:
+          memory: 768M

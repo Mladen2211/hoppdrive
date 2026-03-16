@@ -1,6 +1,6 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import type { Container } from '../../infrastructure/config/container';
-import { validate, createBookingSchema } from '../validators';
+import { validate, createBookingSchema, finalizeContractSchema } from '../validators';
 import { createAuthMiddleware } from '../middleware/authMiddleware';
 import { createAuditMiddleware } from '../middleware/auditMiddleware';
 
@@ -133,6 +133,134 @@ export function bookingRoutes(container: Container): Router {
     }
   });
 
+  /** POST /api/bookings/:id/finalize-contract – Sign and generate contract */
+  router.post(
+    '/:id/finalize-contract',
+    auth,
+    validate(finalizeContractSchema),
+    audit('booking', 'sign_contract'),
+    async (req: Request, res: Response, next: NextFunction) => {
+      try {
+        const { id } = req.params;
+        const { signature, customerEmail } = req.body;
+
+        // Fetch booking with vehicle
+        const booking = await container.prisma.booking.findUnique({
+          where: { id },
+          include: { vehicle: true },
+        });
+        if (!booking) {
+          res.status(404).json({ success: false, error: 'Booking not found' });
+          return;
+        }
+
+        // Update booking with signature data
+        const signedAt = new Date();
+        const signeeIp = req.ip || req.socket.remoteAddress || 'unknown';
+        const emailToUse = customerEmail || booking.customerEmail;
+
+        const updated = await container.prisma.booking.update({
+          where: { id },
+          data: {
+            signatureData: signature,
+            signedAt,
+            signeeIp,
+            contractStatus: 'SIGNED',
+            ...(emailToUse && { customerEmail: emailToUse }),
+          },
+          include: { vehicle: true },
+        });
+
+        // Generate PDF
+        const pdfBytes = await container.pdfGenerator.generateContract({
+          id: updated.id,
+          customerName: updated.customerName,
+          customerEmail: updated.customerEmail,
+          vehicleBrand: updated.vehicle.brand,
+          vehicleModel: updated.vehicle.model,
+          startDate: updated.startDate,
+          endDate: updated.endDate,
+          totalPrice: Number(updated.totalPrice),
+          currency: updated.currency,
+          signatureData: updated.signatureData,
+          signedAt: updated.signedAt,
+          notes: updated.notes,
+        });
+
+        // Send email if customer email is available
+        if (updated.customerEmail) {
+          try {
+            await container.emailService.sendContractEmail({
+              to: updated.customerEmail,
+              customerName: updated.customerName,
+              bookingId: updated.id,
+              pdfBytes: new Uint8Array(pdfBytes),
+            });
+          } catch (emailErr) {
+            console.error('[Booking] Failed to send contract email:', emailErr);
+            // Don't fail the request if email fails
+          }
+        }
+
+        res.json({
+          success: true,
+          data: {
+            ...mapBooking(updated),
+            contractStatus: updated.contractStatus,
+            signedAt: updated.signedAt,
+          },
+        });
+      } catch (err) {
+        next(err);
+      }
+    },
+  );
+
+  /** GET /api/bookings/:id/download-contract – Download contract PDF */
+  router.get('/:id/download-contract', auth, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { id } = req.params;
+
+      const booking = await container.prisma.booking.findUnique({
+        where: { id },
+        include: { vehicle: true },
+      });
+      if (!booking) {
+        res.status(404).json({ success: false, error: 'Booking not found' });
+        return;
+      }
+
+      if (booking.contractStatus !== 'SIGNED') {
+        res.status(400).json({ success: false, error: 'Contract has not been signed yet' });
+        return;
+      }
+
+      // Re-generate PDF from stored data
+      const pdfBytes = await container.pdfGenerator.generateContract({
+        id: booking.id,
+        customerName: booking.customerName,
+        customerEmail: booking.customerEmail,
+        vehicleBrand: booking.vehicle.brand,
+        vehicleModel: booking.vehicle.model,
+        startDate: booking.startDate,
+        endDate: booking.endDate,
+        totalPrice: Number(booking.totalPrice),
+        currency: booking.currency,
+        signatureData: booking.signatureData,
+        signedAt: booking.signedAt,
+        notes: booking.notes,
+      });
+
+      const filename = `HoppDrive-Vertrag-${booking.id.substring(0, 8).toUpperCase()}.pdf`;
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.setHeader('Content-Length', pdfBytes.length);
+      res.send(Buffer.from(pdfBytes));
+    } catch (err) {
+      next(err);
+    }
+  });
+
   return router;
 }
 
@@ -141,12 +269,15 @@ function mapBooking(b: any) {
     id: b.id,
     vehicleId: b.vehicleId,
     customerName: b.customerName,
+    customerEmail: b.customerEmail ?? null,
     startDate: b.dateRange?.startDate ?? b.startDate,
     endDate: b.dateRange?.endDate ?? b.endDate,
     totalPrice: b.totalPrice?.amount ?? b.totalPrice,
     currency: b.totalPrice?.currency ?? 'CHF',
     status: b.status,
     notes: b.notes,
+    contractStatus: b.contractStatus ?? 'PENDING',
+    signedAt: b.signedAt ?? null,
     createdAt: b.createdAt,
   };
 }

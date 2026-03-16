@@ -83,10 +83,16 @@ export const updateProfileSchema = z.object({
 export const createBookingSchema = z.object({
   vehicleId: z.string().uuid(),
   customerName: z.string().min(1, 'Customer name is required'),
+  customerEmail: z.string().email('Valid email is required').optional(),
   startDate: z.string().datetime(),
   endDate: z.string().datetime(),
   totalPrice: z.number().nonnegative().optional(),
   notes: z.string().optional(),
+});
+
+export const finalizeContractSchema = z.object({
+  signature: z.string().min(1, 'Signature data is required'),
+  customerEmail: z.string().email('Valid email is required').optional(),
 });
 
 export const pricingQuerySchema = z.object({

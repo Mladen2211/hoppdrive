@@ -12,6 +12,7 @@ import {
 interface CreateBookingInput {
   vehicleId: string;
   customerName: string;
+  customerEmail?: string;
   startDate: string;
   endDate: string;
   totalPrice?: number;
@@ -71,6 +72,6 @@ export class CreateBookingUseCase {
       notes: input.notes ?? null,
     });
 
-    return this.bookingRepo.save(booking);
+    return this.bookingRepo.save(booking, input.customerEmail);
   }
 }

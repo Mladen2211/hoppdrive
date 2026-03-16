@@ -75,6 +75,7 @@ services:
       ADMIN_NOTIFICATION_EMAIL: ${ADMIN_NOTIFICATION_EMAIL:-info@hoppdrive.ch}
       UPLOAD_DIR: /app/uploads
       MAX_IMAGE_SIZE: ${MAX_IMAGE_SIZE:-5242880}
+      COOKIE_DOMAIN: ${COOKIE_DOMAIN:-}
     volumes:
       - uploads:/app/uploads
     deploy:

@@ -45,12 +45,13 @@ export class PrismaBookingRepository implements IBookingRepository {
     return { items: rows.map((r) => this.toDomain(r)), total };
   }
 
-  async save(booking: Booking): Promise<Booking> {
+  async save(booking: Booking, customerEmail?: string): Promise<Booking> {
     const row = await this.prisma.booking.create({
       data: {
         id: booking.id,
         vehicleId: booking.vehicleId,
         customerName: booking.customerName,
+        customerEmail: customerEmail || null,
         startDate: booking.dateRange.startDate,
         endDate: booking.dateRange.endDate,
         totalPrice: booking.totalPrice.amount,

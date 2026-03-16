@@ -1,9 +1,12 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
-import { ChevronLeft, ChevronRight, Plus, X, Calendar, User, Car, FileText, DollarSign } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, X, Calendar, User, Car, FileText, DollarSign, PenTool, Download, Mail, CheckCircle } from 'lucide-react';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { api } from '@/lib/api';
+import dynamic from 'next/dynamic';
+
+const SignaturePad = dynamic(() => import('@/components/SignaturePad'), { ssr: false });
 
 interface Vehicle {
   id: string;
@@ -16,17 +19,21 @@ interface Booking {
   id: string;
   vehicleId: string;
   customerName: string;
+  customerEmail?: string | null;
   startDate: string;
   endDate: string;
   status: string;
   notes?: string | null;
   totalPrice?: number;
   currency?: string;
+  contractStatus?: string;
+  signedAt?: string | null;
 }
 
 const EMPTY_FORM = {
   vehicleId: '',
   customerName: '',
+  customerEmail: '',
   startDate: '',
   endDate: '',
   priceMode: 'total' as 'total' | 'perDay',
@@ -80,6 +87,13 @@ export default function AvailabilityPage() {
 
   // Day detail state
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+
+  // Signature state
+  const [showSignature, setShowSignature] = useState(false);
+  const [signingBookingId, setSigningBookingId] = useState<string | null>(null);
+  const [signingCustomerName, setSigningCustomerName] = useState('');
+  const [signingCustomerEmail, setSigningCustomerEmail] = useState('');
+  const [signingLoading, setSigningLoading] = useState(false);
 
   async function fetchData() {
     try {
@@ -164,23 +178,71 @@ export default function AvailabilityPage() {
     setSaving(true);
     setFormError('');
     try {
-      await api.createBooking({
+      const newBooking = await api.createBooking({
         vehicleId: form.vehicleId,
         customerName: form.customerName.trim(),
+        customerEmail: form.customerEmail.trim() || undefined,
         startDate: new Date(form.startDate).toISOString(),
         endDate: new Date(form.endDate).toISOString(),
         totalPrice: getFormTotalPrice(),
         notes: form.notes.trim() || undefined,
       });
       setShowModal(false);
-      setForm(EMPTY_FORM);
+
       // Refresh bookings
       const bookingData = await api.getBookings();
       setBookings(bookingData.items || bookingData || []);
+
+      // Offer to sign contract immediately
+      openSignaturePad(newBooking.id, form.customerName.trim(), form.customerEmail.trim());
+      setForm(EMPTY_FORM);
     } catch (err: any) {
       setFormError(err.message || 'Buchung konnte nicht erstellt werden.');
     } finally {
       setSaving(false);
+    }
+  }
+
+  function openSignaturePad(bookingId: string, customerName: string, customerEmail?: string) {
+    setSigningBookingId(bookingId);
+    setSigningCustomerName(customerName);
+    setSigningCustomerEmail(customerEmail || '');
+    setShowSignature(true);
+  }
+
+  async function handleSignContract(signatureDataUrl: string) {
+    if (!signingBookingId) return;
+    setSigningLoading(true);
+    try {
+      await api.finalizeContract(signingBookingId, {
+        signature: signatureDataUrl,
+        customerEmail: signingCustomerEmail || undefined,
+      });
+      setShowSignature(false);
+      setSigningBookingId(null);
+      // Refresh bookings
+      const bookingData = await api.getBookings();
+      setBookings(bookingData.items || bookingData || []);
+    } catch (err: any) {
+      alert(err.message || 'Vertrag konnte nicht signiert werden.');
+    } finally {
+      setSigningLoading(false);
+    }
+  }
+
+  async function handleDownloadContract(bookingId: string) {
+    try {
+      const blob = await api.downloadContract(bookingId);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `HoppDrive-Vertrag-${bookingId.substring(0, 8).toUpperCase()}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (err: any) {
+      alert(err.message || 'Vertrag konnte nicht heruntergeladen werden.');
     }
   }
 
@@ -397,6 +459,12 @@ export default function AvailabilityPage() {
                             {Number(booking.totalPrice).toFixed(2)} {booking.currency || 'CHF'}
                           </div>
                         )}
+                        {booking.customerEmail && (
+                          <div className="flex items-center gap-1">
+                            <Mail className="w-3 h-3" />
+                            {booking.customerEmail}
+                          </div>
+                        )}
                         {booking.notes && (
                           <div className="flex items-start gap-1 mt-1">
                             <FileText className="w-3 h-3 mt-0.5 shrink-0" />
@@ -404,6 +472,34 @@ export default function AvailabilityPage() {
                           </div>
                         )}
                       </div>
+                      {/* Contract actions */}
+                      {booking.status !== 'cancelled' && (
+                        <div className="mt-2 pt-2 border-t border-neutral-100 flex items-center gap-2">
+                          {booking.contractStatus === 'SIGNED' ? (
+                            <>
+                              <span className="flex items-center gap-1 text-[10px] text-green-700 font-medium">
+                                <CheckCircle className="w-3 h-3" />
+                                Signiert
+                              </span>
+                              <button
+                                onClick={() => handleDownloadContract(booking.id)}
+                                className="flex items-center gap-1 text-[10px] font-medium text-brand-600 hover:text-brand-700 ml-auto"
+                              >
+                                <Download className="w-3 h-3" />
+                                PDF
+                              </button>
+                            </>
+                          ) : (
+                            <button
+                              onClick={() => openSignaturePad(booking.id, booking.customerName, booking.customerEmail || '')}
+                              className="flex items-center gap-1 text-[10px] font-medium text-brand-600 hover:text-brand-700"
+                            >
+                              <PenTool className="w-3 h-3" />
+                              Vertrag unterschreiben
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -502,6 +598,24 @@ export default function AvailabilityPage() {
                   className="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
                   required
                 />
+              </div>
+
+              {/* Customer Email */}
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 mb-1">
+                  <Mail className="w-4 h-4 inline mr-1" />
+                  E-Mail
+                </label>
+                <input
+                  type="email"
+                  value={form.customerEmail}
+                  onChange={(e) => setForm({ ...form, customerEmail: e.target.value })}
+                  placeholder="kunde@beispiel.ch"
+                  className="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                />
+                <p className="text-[11px] text-neutral-400 mt-0.5">
+                  Für Vertragsversand per E-Mail (optional)
+                </p>
               </div>
 
               {/* Date Range */}
@@ -612,6 +726,19 @@ export default function AvailabilityPage() {
             </form>
           </div>
         </div>
+      )}
+
+      {/* ── Signature Modal ──────────────────── */}
+      {showSignature && signingBookingId && (
+        <SignaturePad
+          customerName={signingCustomerName}
+          loading={signingLoading}
+          onConfirm={handleSignContract}
+          onCancel={() => {
+            setShowSignature(false);
+            setSigningBookingId(null);
+          }}
+        />
       )}
     </div>
   );
