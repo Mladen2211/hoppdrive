@@ -76,7 +76,8 @@ client.interceptors.response.use(
 );
 
 // ─── Helper: unwrap { success, data } envelope ──────────────
-function unwrap<T>(res: { data: { data: T } }): T {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function unwrap(res: { data: { data: any } }) {
   return res.data.data;
 }
 
@@ -84,39 +85,39 @@ function unwrap<T>(res: { data: { data: T } }): T {
 export const api = {
   // ─── Auth (interceptor attaches token automatically) ───────
   login: (data: { email: string; password: string }) =>
-    client.post('/auth/login', data).then(unwrap),
+    client.post('/auth/login', data).then(unwrap) as Promise<any>,
   refreshToken: () =>
-    client.post('/auth/refresh').then(unwrap),
+    client.post('/auth/refresh').then(unwrap) as Promise<any>,
   logout: () =>
-    client.post('/auth/logout').then(unwrap),
+    client.post('/auth/logout').then(unwrap) as Promise<any>,
   resetPassword: (data: { newPassword: string }) =>
-    client.post('/auth/reset-password', data).then(unwrap),
+    client.post('/auth/reset-password', data).then(unwrap) as Promise<any>,
 
   // ─── Dashboard ─────────────────────────────────────────────
   getDashboardStats: () =>
-    client.get('/dashboard').then(unwrap),
+    client.get('/dashboard').then(unwrap) as Promise<any>,
 
   // ─── Vehicles ──────────────────────────────────────────────
   getVehicles: () =>
-    client.get<{ data: any[] }>('/vehicles').then(unwrap),
+    client.get('/vehicles').then(unwrap) as Promise<any[]>,
   getAllVehicles: () =>
-    client.get<{ data: any[] }>('/vehicles/admin/all').then(unwrap),
+    client.get('/vehicles/admin/all').then(unwrap) as Promise<any[]>,
   createVehicle: (data: any) =>
-    client.post('/vehicles', data).then(unwrap),
+    client.post('/vehicles', data).then(unwrap) as Promise<any>,
   updateVehicle: (id: string, data: any) =>
-    client.patch(`/vehicles/${id}`, data).then(unwrap),
+    client.patch(`/vehicles/${id}`, data).then(unwrap) as Promise<any>,
   deleteVehicle: (id: string) =>
-    client.delete(`/vehicles/${id}`).then(unwrap),
+    client.delete(`/vehicles/${id}`).then(unwrap) as Promise<any>,
 
   // ─── Inquiries / Contact ──────────────────────────────────
   getContactRequests: (params?: { page?: number; limit?: number }) =>
-    client.get('/contact', { params }).then(unwrap),
+    client.get('/contact', { params }).then(unwrap) as Promise<{ data: any[]; total: number }>,
   updateContactStatus: (id: string, status: string) =>
-    client.patch(`/contact/${id}/status`, { status }).then(unwrap),
+    client.patch(`/contact/${id}/status`, { status }).then(unwrap) as Promise<any>,
 
   // ─── Bookings ──────────────────────────────────────────────
   getBookings: () =>
-    client.get<{ data: any[] }>('/bookings').then(unwrap),
+    client.get('/bookings').then(unwrap) as Promise<any[]>,
   createBooking: (data: any) =>
-    client.post('/bookings', data).then(unwrap),
+    client.post('/bookings', data).then(unwrap) as Promise<any>,
 };
