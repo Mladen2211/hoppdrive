@@ -124,6 +124,8 @@ export const api = {
     client.get('/bookings').then(unwrap) as Promise<{ items: any[]; total: number }>,
   createBooking: (data: any) =>
     client.post('/bookings', data).then(unwrap) as Promise<any>,
+  updateBooking: (id: string, data: { customerEmail?: string; notes?: string }) =>
+    client.patch(`/bookings/${id}`, data).then(unwrap) as Promise<any>,
   getBookingReport: (from: string, to: string) =>
     client.get('/bookings/report', { params: { from, to } }).then(unwrap) as Promise<any>,
   finalizeContract: (id: string, data: { signature: string; customerEmail?: string }) =>

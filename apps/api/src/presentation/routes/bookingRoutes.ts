@@ -46,6 +46,37 @@ export function bookingRoutes(container: Container): Router {
     },
   );
 
+  /** PATCH /api/bookings/:id – Update booking fields (customerEmail, notes) */
+  router.patch(
+    '/:id',
+    auth,
+    audit('booking', 'update'),
+    async (req: Request, res: Response, next: NextFunction) => {
+      try {
+        const { id } = req.params;
+        const { customerEmail, notes } = req.body;
+
+        const booking = await container.prisma.booking.findUnique({ where: { id } });
+        if (!booking) {
+          res.status(404).json({ success: false, error: 'Booking not found' });
+          return;
+        }
+
+        const updated = await container.prisma.booking.update({
+          where: { id },
+          data: {
+            ...(customerEmail !== undefined && { customerEmail }),
+            ...(notes !== undefined && { notes }),
+          },
+        });
+
+        res.json({ success: true, data: mapBooking(updated) });
+      } catch (err) {
+        next(err);
+      }
+    },
+  );
+
   /** GET /api/bookings/report – Earnings report by vehicle for a date range */
   router.get('/report', auth, async (req: Request, res: Response, next: NextFunction) => {
     try {

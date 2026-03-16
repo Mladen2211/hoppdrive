@@ -15,6 +15,7 @@ import {
   Menu,
   X,
   Globe,
+  FileSignature,
 } from 'lucide-react';
 import { useState } from 'react';
 import { AdminAuthProvider, useAdminAuth } from '@/hooks/useAdminAuth';
@@ -23,6 +24,7 @@ const navItems = [
   { href: '/', label: 'Übersicht', icon: LayoutDashboard },
   { href: '/fleet', label: 'Flotte', icon: Car },
   { href: '/availability', label: 'Kalender', icon: CalendarDays },
+  { href: '/contracts', label: 'Verträge', icon: FileSignature },
   { href: '/inquiries', label: 'Anfragen', icon: MessageSquare },
   { href: '/reports', label: 'Berichte', icon: BarChart3 },
   { href: '/settings', label: 'Website', icon: Globe },
@@ -32,6 +34,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/': 'Übersicht',
   '/fleet': 'Flotte',
   '/availability': 'Kalender',
+  '/contracts': 'Verträge',
   '/inquiries': 'Anfragen',
   '/reports': 'Berichte',
   '/settings': 'Website-Einstellungen',
