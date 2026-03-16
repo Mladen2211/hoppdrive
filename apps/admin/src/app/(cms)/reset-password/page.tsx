@@ -32,8 +32,7 @@ export default function ResetPasswordPage() {
     }
 
     try {
-      const token = sessionStorage.getItem('accessToken') || '';
-      await api.resetPassword({ newPassword }, token);
+      await api.resetPassword({ newPassword });
       router.push('/');
     } catch (err: any) {
       setError(err.message || 'Passwort-Änderung fehlgeschlagen');

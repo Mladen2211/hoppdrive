@@ -65,7 +65,7 @@ export default function FleetManagerPage() {
   async function fetchVehicles() {
     if (!token) return;
     try {
-      const data = await api.getVehicles();
+      const data = await api.getAllVehicles();
       setVehicles(data);
     } catch (err) {
       console.error('Failed to fetch vehicles', err);
@@ -113,9 +113,9 @@ export default function FleetManagerPage() {
 
     try {
       if (editingId) {
-        await api.updateVehicle(editingId, form, token);
+        await api.updateVehicle(editingId, form);
       } else {
-        await api.createVehicle(form, token);
+        await api.createVehicle(form);
       }
       setShowForm(false);
       await fetchVehicles();
@@ -130,7 +130,7 @@ export default function FleetManagerPage() {
     if (!token) return;
     if (!confirm('Dieses Fahrzeug endgültig löschen?')) return;
     try {
-      await api.deleteVehicle(id, token);
+      await api.deleteVehicle(id);
       setVehicles((prev) => prev.filter((v) => v.id !== id));
     } catch (err) {
       console.error('Delete failed', err);

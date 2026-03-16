@@ -38,8 +38,8 @@ export default function AdminDashboardPage() {
     async function fetchData() {
       try {
         const [statsData, inquiriesData] = await Promise.all([
-          api.getDashboardStats(token!),
-          api.getContactRequests(token!, { page: 1, limit: 5 }),
+          api.getDashboardStats(),
+          api.getContactRequests({ page: 1, limit: 5 }),
         ]);
         setStats(statsData);
         setRecentInquiries(inquiriesData.data || []);

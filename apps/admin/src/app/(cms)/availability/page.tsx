@@ -53,7 +53,7 @@ export default function AvailabilityPage() {
       try {
         const [vehicleData, bookingData] = await Promise.all([
           api.getVehicles(),
-          api.getBookings(token!),
+          api.getBookings(),
         ]);
         setVehicles(vehicleData);
         setBookings(bookingData);

@@ -43,7 +43,7 @@ export default function InquiriesPage() {
     if (!token) return;
     setLoading(true);
     try {
-      const data = await api.getContactRequests(token, { page: pageNum, limit: 15 });
+      const data = await api.getContactRequests({ page: pageNum, limit: 15 });
       setInquiries(data.data || []);
       setTotalPages(Math.ceil((data.total || 0) / 15));
     } catch (err) {
@@ -62,7 +62,7 @@ export default function InquiriesPage() {
     if (!token) return;
     setUpdating(id);
     try {
-      await api.updateContactStatus(id, newStatus, token);
+      await api.updateContactStatus(id, newStatus);
       setInquiries((prev) =>
         prev.map((inq) => (inq.id === id ? { ...inq, status: newStatus } : inq))
       );

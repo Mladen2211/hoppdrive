@@ -1,87 +1,122 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:97/api';
+import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
 
-interface FetchOptions extends RequestInit {
-  token?: string;
+// ─── Axios Instance ──────────────────────────────────────────
+const client = axios.create({
+  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:97/api',
+  withCredentials: true, // always send HttpOnly refresh cookie
+  headers: { 'Content-Type': 'application/json' },
+});
+
+// ─── Request Interceptor: attach access token automatically ──
+client.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+  if (typeof window !== 'undefined') {
+    const token = sessionStorage.getItem('accessToken');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+  }
+  return config;
+});
+
+// ─── Response Interceptor: transparent 401 refresh ───────────
+let refreshPromise: Promise<string> | null = null;
+
+async function refreshAccessToken(): Promise<string> {
+  const { data } = await axios.post(
+    `${client.defaults.baseURL}/auth/refresh`,
+    {},
+    { withCredentials: true },
+  );
+  const newToken: string = data.data.accessToken;
+  sessionStorage.setItem('accessToken', newToken);
+  if (data.data.admin) {
+    sessionStorage.setItem('admin', JSON.stringify(data.data.admin));
+  }
+  return newToken;
 }
 
-async function request<T>(endpoint: string, options: FetchOptions = {}): Promise<T> {
-  const { token, headers: customHeaders, ...rest } = options;
+client.interceptors.response.use(
+  (res) => res,
+  async (error: AxiosError<{ error?: string }>) => {
+    const original = error.config;
+    if (!original) return Promise.reject(error);
 
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...customHeaders as Record<string, string>,
-  };
+    // Only attempt refresh on 401, never retry refresh / login endpoints
+    if (
+      error.response?.status === 401 &&
+      !original.url?.includes('/auth/refresh') &&
+      !original.url?.includes('/auth/login') &&
+      !(original as any)._retried
+    ) {
+      (original as any)._retried = true;
 
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
+      try {
+        // Deduplicate concurrent refreshes
+        if (!refreshPromise) {
+          refreshPromise = refreshAccessToken().finally(() => {
+            refreshPromise = null;
+          });
+        }
+        const newToken = await refreshPromise;
+        original.headers.Authorization = `Bearer ${newToken}`;
+        return client(original);
+      } catch {
+        // Refresh failed — clear session, auth guard will redirect to /login
+        sessionStorage.removeItem('accessToken');
+        sessionStorage.removeItem('admin');
+        return Promise.reject(error);
+      }
+    }
 
-  const res = await fetch(`${API_BASE}${endpoint}`, {
-    headers,
-    ...rest,
-  });
+    // Surface the server error message
+    const message =
+      error.response?.data?.error || error.message || 'Ein Fehler ist aufgetreten';
+    return Promise.reject(new Error(message));
+  },
+);
 
-  const json = await res.json();
-
-  if (!res.ok) {
-    throw new Error(json.error || 'Ein Fehler ist aufgetreten');
-  }
-
-  return json.data;
+// ─── Helper: unwrap { success, data } envelope ──────────────
+function unwrap<T>(res: { data: { data: T } }): T {
+  return res.data.data;
 }
 
+// ─── Public API Object ──────────────────────────────────────
 export const api = {
-  // ─── Auth ──────────────────────────────────────────────────
+  // ─── Auth (interceptor attaches token automatically) ───────
   login: (data: { email: string; password: string }) =>
-    request<any>('/auth/login', { method: 'POST', body: JSON.stringify(data), credentials: 'include' }),
+    client.post('/auth/login', data).then(unwrap),
   refreshToken: () =>
-    request<any>('/auth/refresh', { method: 'POST', credentials: 'include' }),
+    client.post('/auth/refresh').then(unwrap),
   logout: () =>
-    request<any>('/auth/logout', { method: 'POST', credentials: 'include' }),
-  resetPassword: (data: { newPassword: string }, token: string) =>
-    request<any>('/auth/reset-password', {
-      method: 'POST',
-      body: JSON.stringify(data),
-      token,
-    }),
+    client.post('/auth/logout').then(unwrap),
+  resetPassword: (data: { newPassword: string }) =>
+    client.post('/auth/reset-password', data).then(unwrap),
 
   // ─── Dashboard ─────────────────────────────────────────────
-  getDashboardStats: (token: string) =>
-    request<any>('/dashboard', { token }),
+  getDashboardStats: () =>
+    client.get('/dashboard').then(unwrap),
 
   // ─── Vehicles ──────────────────────────────────────────────
   getVehicles: () =>
-    request<any[]>('/vehicles'),
-  getAllVehicles: (token: string) =>
-    request<any[]>('/vehicles/admin/all', { token }),
-  createVehicle: (data: any, token: string) =>
-    request<any>('/vehicles', { method: 'POST', body: JSON.stringify(data), token }),
-  updateVehicle: (id: string, data: any, token: string) =>
-    request<any>(`/vehicles/${id}`, { method: 'PATCH', body: JSON.stringify(data), token }),
-  deleteVehicle: (id: string, token: string) =>
-    request<any>(`/vehicles/${id}`, { method: 'DELETE', token }),
+    client.get<{ data: any[] }>('/vehicles').then(unwrap),
+  getAllVehicles: () =>
+    client.get<{ data: any[] }>('/vehicles/admin/all').then(unwrap),
+  createVehicle: (data: any) =>
+    client.post('/vehicles', data).then(unwrap),
+  updateVehicle: (id: string, data: any) =>
+    client.patch(`/vehicles/${id}`, data).then(unwrap),
+  deleteVehicle: (id: string) =>
+    client.delete(`/vehicles/${id}`).then(unwrap),
 
   // ─── Inquiries / Contact ──────────────────────────────────
-  getContactRequests: (token: string, params?: { page?: number; limit?: number }) => {
-    const qs = params
-      ? `?${new URLSearchParams(
-          Object.entries(params)
-            .filter(([, v]) => v !== undefined)
-            .map(([k, v]) => [k, String(v)])
-        ).toString()}`
-      : '';
-    return request<any>(`/contact${qs}`, { token });
-  },
-  updateContactStatus: (id: string, status: string, token: string) =>
-    request<any>(`/contact/${id}/status`, {
-      method: 'PATCH',
-      body: JSON.stringify({ status }),
-      token,
-    }),
+  getContactRequests: (params?: { page?: number; limit?: number }) =>
+    client.get('/contact', { params }).then(unwrap),
+  updateContactStatus: (id: string, status: string) =>
+    client.patch(`/contact/${id}/status`, { status }).then(unwrap),
 
   // ─── Bookings ──────────────────────────────────────────────
-  getBookings: (token: string) =>
-    request<any[]>('/bookings', { token }),
-  createBooking: (data: any, token: string) =>
-    request<any>('/bookings', { method: 'POST', body: JSON.stringify(data), token }),
+  getBookings: () =>
+    client.get<{ data: any[] }>('/bookings').then(unwrap),
+  createBooking: (data: any) =>
+    client.post('/bookings', data).then(unwrap),
 };
