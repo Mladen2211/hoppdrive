@@ -79,7 +79,7 @@ export default function InquiriesPage() {
 
     function connect() {
       // EventSource doesn't support Authorization header, so we use a query param
-      es = new EventSource(`${url}?token=${encodeURIComponent(token)}`, { withCredentials: true });
+      es = new EventSource(`${url}?token=${encodeURIComponent(token!)}`, { withCredentials: true });
 
       es.addEventListener('new-inquiry', () => {
         // Silent refresh — no loading spinner
