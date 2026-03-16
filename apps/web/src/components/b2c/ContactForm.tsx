@@ -128,15 +128,12 @@ export function ContactForm({ preselectedVehicle, vehicleNames }: ContactFormPro
                 className="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-brand-500 appearance-none"
                 defaultValue={preselectedVehicle ?? ''}
               >
-                <option value="" disabled>
-                  Fahrzeug auswählen...
-                </option>
+                <option value="">Kein bestimmtes Fahrzeug</option>
                 {vehicleNames.map((name) => (
                   <option key={name} value={name}>
                     {name}
                   </option>
                 ))}
-                <option value="other">Noch unsicher / Anderes</option>
               </select>
             </div>
 

@@ -14,6 +14,7 @@ import {
   User,
   Menu,
   X,
+  Globe,
 } from 'lucide-react';
 import { useState } from 'react';
 import { AdminAuthProvider, useAdminAuth } from '@/hooks/useAdminAuth';
@@ -24,12 +25,18 @@ const navItems = [
   { href: '/availability', label: 'Kalender', icon: CalendarDays },
   { href: '/inquiries', label: 'Anfragen', icon: MessageSquare },
   { href: '/reports', label: 'Berichte', icon: BarChart3 },
+  { href: '/settings', label: 'Website', icon: Globe },
 ];
 
-const bottomItems = [
-  { href: '/settings', label: 'Website', icon: Settings },
-  { href: '/profile', label: 'Profil', icon: User },
-];
+const PAGE_TITLES: Record<string, string> = {
+  '/': 'Übersicht',
+  '/fleet': 'Flotte',
+  '/availability': 'Kalender',
+  '/inquiries': 'Anfragen',
+  '/reports': 'Berichte',
+  '/settings': 'Website-Einstellungen',
+  '/profile': 'Profil',
+};
 
 function AdminSidebar() {
   const pathname = usePathname();
@@ -45,7 +52,7 @@ function AdminSidebar() {
         className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all ${
           active
             ? 'bg-brand-600 text-white shadow-sm'
-            : 'text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100'
+            : 'text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100/60'
         }`}
       >
         <Icon className="w-[18px] h-[18px] shrink-0" />
@@ -76,10 +83,10 @@ function AdminSidebar() {
         />
       )}
 
-      {/* Sidebar */}
+      {/* Sidebar — sits behind main content for depth effect */}
       <aside
-        className={`fixed top-0 left-0 h-full bg-white border-r border-neutral-200 z-50 transition-transform duration-200 flex flex-col w-52 ${
-          mobileOpen ? 'translate-x-0' : '-translate-x-full'
+        className={`fixed top-0 left-0 h-full bg-neutral-100 z-30 transition-transform duration-200 flex flex-col w-52 ${
+          mobileOpen ? 'translate-x-0 z-50 bg-white shadow-xl' : '-translate-x-full'
         } lg:translate-x-0`}
       >
         {/* Logo area */}
@@ -101,10 +108,7 @@ function AdminSidebar() {
         </nav>
 
         {/* Bottom section */}
-        <div className="border-t border-neutral-100 px-3 py-2 space-y-0.5">
-          {bottomItems.map((item) => (
-            <NavLink key={item.href} {...item} />
-          ))}
+        <div className="border-t border-neutral-200/60 px-3 py-2 space-y-0.5">
           <button
             onClick={logout}
             className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium text-neutral-500 hover:text-red-600 hover:bg-red-50 transition-all w-full"
@@ -116,7 +120,7 @@ function AdminSidebar() {
 
         {/* User info */}
         {admin && (
-          <div className="border-t border-neutral-100 px-4 py-3 shrink-0">
+          <div className="border-t border-neutral-200/60 px-4 py-3 shrink-0">
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center text-xs font-semibold shrink-0">
                 {(admin.firstName?.[0] || admin.name?.[0] || 'A').toUpperCase()}
@@ -134,6 +138,51 @@ function AdminSidebar() {
         )}
       </aside>
     </>
+  );
+}
+
+/** Top navbar inside main content area */
+function AdminTopbar() {
+  const pathname = usePathname();
+  const { admin } = useAdminAuth();
+
+  const pageTitle = PAGE_TITLES[pathname] || '';
+
+  return (
+    <header className="h-14 border-b border-neutral-200 bg-white/80 backdrop-blur-sm flex items-center justify-between px-6 lg:px-8 shrink-0 sticky top-0 z-20">
+      <h1 className="text-base font-semibold text-neutral-800 hidden lg:block">{pageTitle}</h1>
+      <div className="lg:hidden" />
+
+      <div className="flex items-center gap-2">
+        <Link
+          href="/settings"
+          className={`p-2 rounded-lg transition-colors ${
+            pathname === '/settings'
+              ? 'bg-neutral-100 text-neutral-900'
+              : 'text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100'
+          }`}
+          title="Website-Einstellungen"
+        >
+          <Settings className="w-[18px] h-[18px]" />
+        </Link>
+
+        <Link
+          href="/profile"
+          className={`flex items-center gap-2 py-1.5 px-2 rounded-lg transition-colors ${
+            pathname === '/profile'
+              ? 'bg-neutral-100'
+              : 'hover:bg-neutral-100'
+          }`}
+        >
+          <div className="w-7 h-7 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center text-xs font-semibold shrink-0">
+            {(admin?.firstName?.[0] || admin?.name?.[0] || 'A').toUpperCase()}
+          </div>
+          <span className="text-sm font-medium text-neutral-700 hidden sm:block">
+            {admin?.firstName || admin?.name || 'Admin'}
+          </span>
+        </Link>
+      </div>
+    </header>
   );
 }
 
@@ -164,10 +213,14 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-neutral-50">
+    <div className="min-h-screen bg-neutral-100">
       <AdminSidebar />
-      <main className="lg:pl-52 pt-14 lg:pt-0">
-        <div className="p-6 lg:p-8">{children}</div>
+      {/* Main content floats above sidebar for depth */}
+      <main className="lg:pl-48 pt-14 lg:pt-0 min-h-screen relative z-10">
+        <div className="min-h-screen bg-white lg:rounded-tl-2xl lg:shadow-[-8px_0_24px_rgba(0,0,0,0.06)] flex flex-col">
+          <AdminTopbar />
+          <div className="flex-1 p-6 lg:p-8">{children}</div>
+        </div>
       </main>
     </div>
   );

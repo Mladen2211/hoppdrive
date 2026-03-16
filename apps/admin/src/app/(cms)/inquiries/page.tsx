@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
-import { Search, ChevronLeft, ChevronRight, CalendarPlus, Loader2 } from 'lucide-react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
+import { Search, ChevronLeft, ChevronRight, CalendarPlus, Loader2, Car } from 'lucide-react';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { StatusBadge } from '@/components/StatusBadge';
 import { api } from '@/lib/api';
@@ -47,6 +47,8 @@ export default function InquiriesPage() {
   const [updating, setUpdating] = useState<string | null>(null);
   const [converting, setConverting] = useState<string | null>(null);
   const [convertMsg, setConvertMsg] = useState<{ id: string; ok: boolean; text: string } | null>(null);
+  const [assignedVehicle, setAssignedVehicle] = useState<Record<string, string>>({});
+  const [bookings, setBookings] = useState<any[]>([]);
 
   async function fetchInquiries(pageNum = 1, silent = false) {
     if (!token) return;
@@ -105,7 +107,27 @@ export default function InquiriesPage() {
   useEffect(() => {
     if (!token) return;
     api.getAllVehicles().then(setVehicles).catch(() => {});
+    api.getBookings().then((data) => setBookings(data.items || [])).catch(() => {});
   }, [token]);
+
+  /** Get vehicles available for a date range (no overlapping bookings) */
+  const getAvailableVehicles = useCallback(
+    (startDate?: string, endDate?: string) => {
+      if (!startDate || !endDate) return vehicles;
+      const start = new Date(startDate).getTime();
+      const end = new Date(endDate).getTime();
+      return vehicles.filter((v: any) => {
+        const overlapping = bookings.some(
+          (b: any) =>
+            b.vehicleId === v.id &&
+            new Date(b.startDate).getTime() < end &&
+            new Date(b.endDate).getTime() > start,
+        );
+        return !overlapping;
+      });
+    },
+    [vehicles, bookings],
+  );
 
   async function handleStatusChange(id: string, newStatus: string) {
     if (!token) return;
@@ -129,19 +151,25 @@ export default function InquiriesPage() {
       return;
     }
 
-    // Match vehicle by name substring
-    const match = vehicles.find(
-      (v: any) =>
-        inq.vehicleOfInterest &&
-        `${v.brand} ${v.model}`.toLowerCase().includes(inq.vehicleOfInterest.toLowerCase()),
-    );
-    if (!match) {
+    // First check if admin manually assigned a vehicle
+    let vehicleId = assignedVehicle[inq.id];
+
+    // Otherwise try to auto-match by name from the inquiry
+    if (!vehicleId && inq.vehicleOfInterest) {
+      const match = vehicles.find(
+        (v: any) =>
+          `${v.brand} ${v.model}`.toLowerCase().includes(inq.vehicleOfInterest!.toLowerCase()),
+      );
+      if (match) vehicleId = match.id;
+    }
+
+    if (!vehicleId) {
       setConvertMsg({
         id: inq.id,
         ok: false,
         text: inq.vehicleOfInterest
-          ? `Fahrzeug „${inq.vehicleOfInterest}" nicht gefunden.`
-          : 'Kein Fahrzeug in der Anfrage angegeben.',
+          ? `Fahrzeug „${inq.vehicleOfInterest}" nicht gefunden. Bitte manuell zuweisen.`
+          : 'Bitte ein Fahrzeug zuweisen bevor die Buchung erstellt wird.',
       });
       return;
     }
@@ -150,7 +178,7 @@ export default function InquiriesPage() {
     setConvertMsg(null);
     try {
       await api.createBooking({
-        vehicleId: match.id,
+        vehicleId,
         customerName: inq.fullName,
         startDate: new Date(inq.desiredStartDate).toISOString(),
         endDate: new Date(inq.desiredEndDate).toISOString(),
@@ -238,7 +266,11 @@ export default function InquiriesPage() {
                           )}
                         </td>
                         <td className="px-6 py-3 text-neutral-600">
-                          {inq.vehicleOfInterest || '—'}
+                          {inq.vehicleOfInterest || (
+                            <span className="text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full font-medium">
+                              Offen
+                            </span>
+                          )}
                         </td>
                         <td className="px-6 py-3 text-neutral-600 whitespace-nowrap">
                           {inq.desiredStartDate
@@ -300,7 +332,48 @@ export default function InquiriesPage() {
 
                                 {/* Convert to Booking button */}
                                 {inq.status !== 'converted' && (
-                                  <div>
+                                  <div className="space-y-2">
+                                    {/* Vehicle assignment */}
+                                    <div>
+                                      <p className="text-xs font-semibold text-neutral-500 uppercase mb-1 flex items-center gap-1">
+                                        <Car className="w-3 h-3" />
+                                        Fahrzeug zuweisen
+                                      </p>
+                                      {(() => {
+                                        const available = getAvailableVehicles(inq.desiredStartDate, inq.desiredEndDate);
+                                        return (
+                                          <select
+                                            value={assignedVehicle[inq.id] || ''}
+                                            onChange={(e) => {
+                                              setAssignedVehicle((prev) => ({ ...prev, [inq.id]: e.target.value }));
+                                              setConvertMsg(null);
+                                            }}
+                                            onClick={(e) => e.stopPropagation()}
+                                            className="border border-neutral-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 w-full"
+                                          >
+                                            <option value="">
+                                              {inq.vehicleOfInterest
+                                                ? `Auto-Erkennung: ${inq.vehicleOfInterest}`
+                                                : '— Fahrzeug wählen —'}
+                                            </option>
+                                            {available.map((v: any) => (
+                                              <option key={v.id} value={v.id}>
+                                                {v.brand} {v.model} {v.licensePlate ? `(${v.licensePlate})` : ''}
+                                              </option>
+                                            ))}
+                                            {available.length === 0 && (
+                                              <option disabled>Keine verfügbaren Fahrzeuge</option>
+                                            )}
+                                          </select>
+                                        );
+                                      })()}
+                                      {inq.desiredStartDate && inq.desiredEndDate && (
+                                        <p className="text-[11px] text-neutral-400 mt-0.5">
+                                          Verfügbar für {fmtDate(inq.desiredStartDate)} – {fmtDate(inq.desiredEndDate)}
+                                        </p>
+                                      )}
+                                    </div>
+
                                     <button
                                       disabled={converting === inq.id}
                                       onClick={(e) => {
