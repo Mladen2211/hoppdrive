@@ -286,6 +286,7 @@ export default function ProfilePage() {
                 style: { width: '100%', height: '160px' },
               }}
               onBegin={() => setSigIsEmpty(false)}
+              onEnd={() => setSigIsEmpty(false)}
             />
             {sigIsEmpty && (
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -305,9 +306,16 @@ export default function ProfilePage() {
             </button>
             <button
               type="button"
-              disabled={sigIsEmpty || signatureSaving}
+              disabled={signatureSaving}
               onClick={async () => {
                 if (!sigRef.current) return;
+                // Check if canvas actually has content
+                try {
+                  if (sigRef.current.isEmpty && sigRef.current.isEmpty()) {
+                    setError('Bitte zuerst eine Unterschrift zeichnen.');
+                    return;
+                  }
+                } catch { /* isEmpty() may not exist, proceed anyway */ }
                 setSignatureSaving(true);
                 setSignatureSaved(false);
                 setError('');
