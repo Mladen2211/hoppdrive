@@ -307,52 +307,24 @@ export default function ProfilePage() {
               type="button"
               disabled={sigIsEmpty || signatureSaving}
               onClick={async () => {
-                if (!sigRef.current || sigRef.current.isEmpty()) return;
-                // Manual trim — getTrimmedCanvas() is broken in react-signature-canvas alpha
-                const canvas = sigRef.current.getCanvas() as HTMLCanvasElement;
-                const ctx = canvas.getContext('2d');
-                if (!ctx) return;
-                const { width, height } = canvas;
-                const imageData = ctx.getImageData(0, 0, width, height);
-                const { data } = imageData;
-                let top = height, bottom = 0, left = width, right = 0;
-                for (let y = 0; y < height; y++) {
-                  for (let x = 0; x < width; x++) {
-                    const alpha = data[(y * width + x) * 4 + 3];
-                    if (alpha > 0) {
-                      if (y < top) top = y;
-                      if (y > bottom) bottom = y;
-                      if (x < left) left = x;
-                      if (x > right) right = x;
-                    }
-                  }
-                }
-                let dataUrl: string;
-                if (bottom >= top && right >= left) {
-                  const pad = 10;
-                  const tX = Math.max(0, left - pad);
-                  const tY = Math.max(0, top - pad);
-                  const tW = Math.min(width, right - left + 1 + pad * 2);
-                  const tH = Math.min(height, bottom - top + 1 + pad * 2);
-                  const trimmed = document.createElement('canvas');
-                  trimmed.width = tW;
-                  trimmed.height = tH;
-                  trimmed.getContext('2d')!.putImageData(ctx.getImageData(tX, tY, tW, tH), 0, 0);
-                  dataUrl = trimmed.toDataURL('image/png');
-                } else {
-                  dataUrl = canvas.toDataURL('image/png');
-                }
+                if (!sigRef.current) return;
                 setSignatureSaving(true);
                 setSignatureSaved(false);
+                setError('');
                 try {
+                  // Get data URL from canvas — simple approach, skip manual trim
+                  const canvas = sigRef.current.getCanvas() as HTMLCanvasElement;
+                  const dataUrl = canvas.toDataURL('image/png');
+
                   await api.updateSignature(dataUrl);
                   setExistingSignature(dataUrl);
                   sigRef.current?.clear();
                   setSigIsEmpty(true);
                   setSignatureSaved(true);
                   setTimeout(() => setSignatureSaved(false), 3000);
-                } catch {
-                  setError('Unterschrift konnte nicht gespeichert werden.');
+                } catch (err: any) {
+                  console.error('Signature save error:', err);
+                  setError(err?.message || 'Unterschrift konnte nicht gespeichert werden.');
                 } finally {
                   setSignatureSaving(false);
                 }
