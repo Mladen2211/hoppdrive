@@ -4,9 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import { Save, Loader2, Eye, EyeOff, Check, PenTool, RotateCcw, Trash2 } from 'lucide-react';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { api } from '@/lib/api';
-import dynamic from 'next/dynamic';
-
-const SignatureCanvas = dynamic(() => import('react-signature-canvas'), { ssr: false }) as any;
+import SignatureCanvas from 'react-signature-canvas';
 
 export default function ProfilePage() {
   const { token, login } = useAdminAuth();
@@ -24,7 +22,7 @@ export default function ProfilePage() {
   const [existingSignature, setExistingSignature] = useState<string | null>(null);
   const [signatureSaving, setSignatureSaving] = useState(false);
   const [signatureSaved, setSignatureSaved] = useState(false);
-  const sigRef = useRef<any>(null);
+  const sigRef = useRef<SignatureCanvas | null>(null);
   const [sigIsEmpty, setSigIsEmpty] = useState(true);
 
   // Password section
@@ -70,6 +68,16 @@ export default function ProfilePage() {
 
     setSaving(true);
     try {
+      // Also save signature if one was drawn
+      if (sigRef.current && !sigRef.current.isEmpty()) {
+        const canvas = sigRef.current.getCanvas();
+        const dataUrl = canvas.toDataURL('image/png');
+        await api.updateSignature(dataUrl);
+        setExistingSignature(dataUrl);
+        sigRef.current.clear();
+        setSigIsEmpty(true);
+      }
+
       const payload: any = { firstName, lastName, email, phone };
       if (newPassword) {
         payload.currentPassword = currentPassword;
@@ -306,27 +314,22 @@ export default function ProfilePage() {
             </button>
             <button
               type="button"
-              disabled={signatureSaving}
+              disabled={sigIsEmpty || signatureSaving}
               onClick={async () => {
-                if (!sigRef.current) return;
-                // Check if canvas actually has content
-                try {
-                  if (sigRef.current.isEmpty && sigRef.current.isEmpty()) {
-                    setError('Bitte zuerst eine Unterschrift zeichnen.');
-                    return;
-                  }
-                } catch { /* isEmpty() may not exist, proceed anyway */ }
+                if (!sigRef.current || sigRef.current.isEmpty()) {
+                  setError('Bitte zuerst eine Unterschrift zeichnen.');
+                  return;
+                }
                 setSignatureSaving(true);
                 setSignatureSaved(false);
                 setError('');
                 try {
-                  // Get data URL from canvas — simple approach, skip manual trim
-                  const canvas = sigRef.current.getCanvas() as HTMLCanvasElement;
+                  const canvas = sigRef.current.getCanvas();
                   const dataUrl = canvas.toDataURL('image/png');
 
                   await api.updateSignature(dataUrl);
                   setExistingSignature(dataUrl);
-                  sigRef.current?.clear();
+                  sigRef.current.clear();
                   setSigIsEmpty(true);
                   setSignatureSaved(true);
                   setTimeout(() => setSignatureSaved(false), 3000);
