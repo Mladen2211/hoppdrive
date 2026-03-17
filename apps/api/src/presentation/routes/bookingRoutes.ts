@@ -3,6 +3,7 @@ import type { Container } from '../../infrastructure/config/container';
 import { validate, createBookingSchema, finalizeContractSchema } from '../validators';
 import { createAuthMiddleware } from '../middleware/authMiddleware';
 import { createAuditMiddleware } from '../middleware/auditMiddleware';
+import { BookingStatus } from '@prisma/client';
 
 export function bookingRoutes(container: Container): Router {
   const router = Router();
@@ -15,7 +16,7 @@ export function bookingRoutes(container: Container): Router {
       const { status, page, pageSize } = req.query;
       const p = page ? Number(page) : 1;
       const ps = pageSize ? Number(pageSize) : 20;
-      const where = status ? { status: status as string } : {};
+      const where = status ? { status: status as BookingStatus } : {};
 
       const [rows, total] = await Promise.all([
         container.prisma.booking.findMany({
