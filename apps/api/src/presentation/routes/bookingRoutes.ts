@@ -13,16 +13,26 @@ export function bookingRoutes(container: Container): Router {
   router.get('/', auth, async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { status, page, pageSize } = req.query;
-      const result = await container.getBookings.execute({
-        status: status as any,
-        page: page ? Number(page) : undefined,
-        pageSize: pageSize ? Number(pageSize) : undefined,
-      });
+      const p = page ? Number(page) : 1;
+      const ps = pageSize ? Number(pageSize) : 20;
+      const where = status ? { status: status as string } : {};
+
+      const [rows, total] = await Promise.all([
+        container.prisma.booking.findMany({
+          where,
+          skip: (p - 1) * ps,
+          take: ps,
+          orderBy: { createdAt: 'desc' },
+          include: { vehicle: true },
+        }),
+        container.prisma.booking.count({ where }),
+      ]);
+
       res.json({
         success: true,
         data: {
-          items: result.items.map(mapBooking),
-          total: result.total,
+          items: rows.map(mapBooking),
+          total,
         },
       });
     } catch (err) {
@@ -310,5 +320,8 @@ function mapBooking(b: any) {
     contractStatus: b.contractStatus ?? 'PENDING',
     signedAt: b.signedAt ?? null,
     createdAt: b.createdAt,
+    vehicle: b.vehicle
+      ? { brand: b.vehicle.brand, model: b.vehicle.model, licensePlate: b.vehicle.licensePlate }
+      : null,
   };
 }
