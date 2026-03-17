@@ -190,14 +190,19 @@ export class PdfGeneratorService {
     page.drawRectangle({ x: 50, y, width: 180, height: 1, color: rgb(0.7, 0.7, 0.7) });
     page.drawRectangle({ x: 340, y, width: 180, height: 1, color: rgb(0.7, 0.7, 0.7) });
     y -= 14;
-    page.drawText('Datum / Unterschrift', { x: 50, y, size: 8, font: helvetica, color: gray });
-
     if (booking.signedAt) {
+      const signedDate = booking.signedAt.toLocaleDateString('de-CH');
+      const signedTime = booking.signedAt.toLocaleTimeString('de-CH');
       page.drawText(
-        `Signiert am: ${booking.signedAt.toLocaleDateString('de-CH')} um ${booking.signedAt.toLocaleTimeString('de-CH')}`,
+        `Signiert am: ${signedDate} um ${signedTime}`,
+        { x: 50, y, size: 8, font: helvetica, color: gray },
+      );
+      page.drawText(
+        `Signiert am: ${signedDate} um ${signedTime}`,
         { x: 340, y, size: 8, font: helvetica, color: gray },
       );
     } else {
+      page.drawText('Datum / Unterschrift', { x: 50, y, size: 8, font: helvetica, color: gray });
       page.drawText('Datum / Unterschrift', { x: 340, y, size: 8, font: helvetica, color: gray });
     }
 
