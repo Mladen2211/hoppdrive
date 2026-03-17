@@ -96,6 +96,8 @@ export const api = {
     client.get('/auth/profile').then(unwrap) as Promise<any>,
   updateProfile: (data: { firstName?: string; lastName?: string; email?: string; phone?: string; currentPassword?: string; newPassword?: string }) =>
     client.put('/auth/profile', data).then(unwrap) as Promise<any>,
+  updateSignature: (signatureData: string) =>
+    client.put('/auth/profile/signature', { signatureData }).then(unwrap) as Promise<any>,
 
   // ─── Dashboard ─────────────────────────────────────────────
   getDashboardStats: () =>
@@ -140,4 +142,38 @@ export const api = {
     client.get(`/settings/${key}`).then(unwrap) as Promise<any>,
   updateSetting: (key: string, value: any) =>
     client.put(`/settings/${key}`, { value }).then(unwrap) as Promise<any>,
+
+  // ─── Locations (Standorte) ────────────────────────────────
+  getLocations: () =>
+    client.get('/locations').then(unwrap) as Promise<any[]>,
+  createLocation: (data: { name: string; address: string; zip: string; city: string; country?: string; phone?: string; email?: string }) =>
+    client.post('/locations', data).then(unwrap) as Promise<any>,
+  updateLocation: (id: string, data: any) =>
+    client.patch(`/locations/${id}`, data).then(unwrap) as Promise<any>,
+  deleteLocation: (id: string) =>
+    client.delete(`/locations/${id}`).then(unwrap) as Promise<any>,
+
+  // ─── Notifications ────────────────────────────────────────
+  getNotifications: (unreadOnly?: boolean) =>
+    client.get('/notifications', { params: unreadOnly ? { unreadOnly: 'true' } : {} }).then(unwrap) as Promise<{ items: any[]; unreadCount: number }>,
+  markNotificationRead: (id: string) =>
+    client.patch(`/notifications/${id}/read`).then(unwrap) as Promise<any>,
+  markAllNotificationsRead: () =>
+    client.patch('/notifications/read-all').then(unwrap) as Promise<any>,
+
+  // ─── Invoices ─────────────────────────────────────────────
+  getInvoices: (params?: { status?: string; bookingId?: string }) =>
+    client.get('/invoices', { params }).then(unwrap) as Promise<any[]>,
+  createInvoice: (data: { bookingId: string; notes?: string; vatRate?: number; dueDays?: number }) =>
+    client.post('/invoices', data).then(unwrap) as Promise<any>,
+  updateInvoice: (id: string, data: { status?: string; notes?: string; customerAddress?: string }) =>
+    client.patch(`/invoices/${id}`, data).then(unwrap) as Promise<any>,
+  downloadInvoice: (id: string) =>
+    client.get(`/invoices/${id}/download`, { responseType: 'blob' }).then((res) => res.data) as Promise<Blob>,
+  sendInvoice: (id: string) =>
+    client.post(`/invoices/${id}/send`).then(unwrap) as Promise<any>,
+
+  // ─── Search ───────────────────────────────────────────────
+  globalSearch: (q: string) =>
+    client.get('/search', { params: { q } }).then(unwrap) as Promise<any>,
 };

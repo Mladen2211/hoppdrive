@@ -1,9 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Save, Loader2, Eye, EyeOff, Check } from 'lucide-react';
+import { useEffect, useState, useRef } from 'react';
+import { Save, Loader2, Eye, EyeOff, Check, PenTool, RotateCcw, Trash2 } from 'lucide-react';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { api } from '@/lib/api';
+import dynamic from 'next/dynamic';
+
+const SignatureCanvas = dynamic(() => import('react-signature-canvas'), { ssr: false }) as any;
 
 export default function ProfilePage() {
   const { token, login } = useAdminAuth();
@@ -16,6 +19,13 @@ export default function ProfilePage() {
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
+
+  // Signature
+  const [existingSignature, setExistingSignature] = useState<string | null>(null);
+  const [signatureSaving, setSignatureSaving] = useState(false);
+  const [signatureSaved, setSignatureSaved] = useState(false);
+  const sigRef = useRef<any>(null);
+  const [sigIsEmpty, setSigIsEmpty] = useState(true);
 
   // Password section
   const [currentPassword, setCurrentPassword] = useState('');
@@ -33,6 +43,7 @@ export default function ProfilePage() {
         setLastName(data.lastName || '');
         setEmail(data.email || '');
         setPhone(data.phone || '');
+        if (data.signatureData) setExistingSignature(data.signatureData);
       })
       .catch(() => setError('Profil konnte nicht geladen werden.'))
       .finally(() => setLoading(false));
@@ -228,6 +239,105 @@ export default function ProfilePage() {
                 className="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
               />
             </div>
+          </div>
+        </div>
+
+        {/* Company Signature */}
+        <div className="bg-white rounded-xl shadow-sm border border-neutral-200 p-6">
+          <h2 className="text-lg font-semibold text-neutral-900 mb-1 flex items-center gap-2">
+            <PenTool className="w-5 h-5 text-red-600" />
+            Firmenunterschrift
+          </h2>
+          <p className="text-sm text-neutral-500 mb-4">
+            Diese Unterschrift wird automatisch auf allen Mietverträgen im Namen der Firma verwendet.
+          </p>
+
+          {existingSignature && (
+            <div className="mb-4 p-4 bg-neutral-50 rounded-xl border border-neutral-200">
+              <p className="text-xs text-neutral-500 mb-2 font-medium">Aktuelle Unterschrift</p>
+              <img src={existingSignature} alt="Aktuelle Unterschrift" className="max-h-20 bg-white rounded border border-neutral-200 p-2" />
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    setSignatureSaving(true);
+                    await api.updateSignature('');
+                    setExistingSignature(null);
+                  } catch {
+                    setError('Unterschrift konnte nicht gelöscht werden.');
+                  } finally {
+                    setSignatureSaving(false);
+                  }
+                }}
+                disabled={signatureSaving}
+                className="mt-2 flex items-center gap-1 text-xs text-red-600 hover:text-red-700 font-medium"
+              >
+                <Trash2 className="w-3.5 h-3.5" /> Unterschrift entfernen
+              </button>
+            </div>
+          )}
+
+          <div className="relative border-2 border-dashed border-neutral-300 rounded-xl bg-neutral-50 overflow-hidden">
+            <SignatureCanvas
+              ref={sigRef}
+              penColor="#1a1a1a"
+              canvasProps={{
+                className: 'w-full',
+                style: { width: '100%', height: '160px' },
+              }}
+              onBegin={() => setSigIsEmpty(false)}
+            />
+            {sigIsEmpty && (
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <p className="text-neutral-400 text-sm">Neue Unterschrift zeichnen…</p>
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center gap-3 mt-3">
+            <button
+              type="button"
+              onClick={() => { sigRef.current?.clear(); setSigIsEmpty(true); }}
+              disabled={sigIsEmpty}
+              className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-neutral-600 hover:bg-neutral-100 rounded-lg transition-colors disabled:opacity-40"
+            >
+              <RotateCcw className="w-4 h-4" /> Löschen
+            </button>
+            <button
+              type="button"
+              disabled={sigIsEmpty || signatureSaving}
+              onClick={async () => {
+                if (!sigRef.current || sigRef.current.isEmpty()) return;
+                const dataUrl = sigRef.current.getTrimmedCanvas().toDataURL('image/png');
+                setSignatureSaving(true);
+                setSignatureSaved(false);
+                try {
+                  await api.updateSignature(dataUrl);
+                  setExistingSignature(dataUrl);
+                  sigRef.current?.clear();
+                  setSigIsEmpty(true);
+                  setSignatureSaved(true);
+                  setTimeout(() => setSignatureSaved(false), 3000);
+                } catch {
+                  setError('Unterschrift konnte nicht gespeichert werden.');
+                } finally {
+                  setSignatureSaving(false);
+                }
+              }}
+              className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors disabled:opacity-50"
+            >
+              {signatureSaving ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Check className="w-4 h-4" />
+              )}
+              Unterschrift speichern
+            </button>
+            {signatureSaved && (
+              <span className="text-sm text-green-600 flex items-center gap-1">
+                <Check className="w-4 h-4" /> Gespeichert
+              </span>
+            )}
           </div>
         </div>
 

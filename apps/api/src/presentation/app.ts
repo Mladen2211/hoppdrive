@@ -14,6 +14,10 @@ import { pricingRoutes } from './routes/pricingRoutes';
 import { dashboardRoutes } from './routes/dashboardRoutes';
 import { settingsRoutes } from './routes/settingsRoutes';
 import { eventRoutes } from './routes/eventRoutes';
+import { locationRoutes } from './routes/locationRoutes';
+import { notificationRoutes } from './routes/notificationRoutes';
+import { invoiceRoutes } from './routes/invoiceRoutes';
+import { searchRoutes } from './routes/searchRoutes';
 import { errorHandler } from './middleware/errorHandler';
 
 export function createApp(container: Container): express.Application {
@@ -36,7 +40,7 @@ export function createApp(container: Container): express.Application {
   }));
   app.use(morgan('short'));
   app.use(express.json({
-    limit: '1mb',
+    limit: '5mb',
     // Capture raw body for debugging JSON parse issues (verify runs before parsing)
     verify: (req: any, _res: any, buf: Buffer, encoding: any) => {
       try {
@@ -69,6 +73,10 @@ export function createApp(container: Container): express.Application {
   app.use('/api/dashboard', dashboardRoutes(container));
   app.use('/api/settings', settingsRoutes(container));
   app.use('/api/events', eventRoutes(container));
+  app.use('/api/locations', locationRoutes(container));
+  app.use('/api/notifications', notificationRoutes(container));
+  app.use('/api/invoices', invoiceRoutes(container));
+  app.use('/api/search', searchRoutes(container));
 
   // ─── Global Error Handler ───────────────────────────────────
   app.use(errorHandler);

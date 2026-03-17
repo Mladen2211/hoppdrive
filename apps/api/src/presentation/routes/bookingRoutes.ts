@@ -210,16 +210,23 @@ export function bookingRoutes(container: Container): Router {
             contractStatus: 'SIGNED',
             ...(emailToUse && { customerEmail: emailToUse }),
           },
-          include: { vehicle: true },
+          include: { vehicle: true, location: true },
         });
 
-        // Generate PDF
-        const pdfBytes = await container.pdfGenerator.generateContract({
+        // Fetch admin signature for company side of contract
+        const admin = await container.prisma.admin.findFirst({ select: { signatureData: true } });
+        if (admin?.signatureData) {
+          container.pdfService.updateCompany({ signatureData: admin.signatureData });
+        }
+
+        // Generate PDF using new PdfService
+        const pdfBytes = await container.pdfService.generateContract({
           id: updated.id,
           customerName: updated.customerName,
           customerEmail: updated.customerEmail,
           vehicleBrand: updated.vehicle.brand,
           vehicleModel: updated.vehicle.model,
+          licensePlate: updated.vehicle.licensePlate,
           startDate: updated.startDate,
           endDate: updated.endDate,
           totalPrice: Number(updated.totalPrice),
@@ -227,6 +234,7 @@ export function bookingRoutes(container: Container): Router {
           signatureData: updated.signatureData,
           signedAt: updated.signedAt,
           notes: updated.notes,
+          locationName: updated.location?.name ?? null,
         });
 
         // Send email if customer email is available
@@ -265,7 +273,7 @@ export function bookingRoutes(container: Container): Router {
 
       const booking = await container.prisma.booking.findUnique({
         where: { id },
-        include: { vehicle: true },
+        include: { vehicle: true, location: true },
       });
       if (!booking) {
         res.status(404).json({ success: false, error: 'Booking not found' });
@@ -277,13 +285,20 @@ export function bookingRoutes(container: Container): Router {
         return;
       }
 
+      // Fetch admin signature for company side of contract
+      const admin = await container.prisma.admin.findFirst({ select: { signatureData: true } });
+      if (admin?.signatureData) {
+        container.pdfService.updateCompany({ signatureData: admin.signatureData });
+      }
+
       // Re-generate PDF from stored data
-      const pdfBytes = await container.pdfGenerator.generateContract({
+      const pdfBytes = await container.pdfService.generateContract({
         id: booking.id,
         customerName: booking.customerName,
         customerEmail: booking.customerEmail,
         vehicleBrand: booking.vehicle.brand,
         vehicleModel: booking.vehicle.model,
+        licensePlate: booking.vehicle.licensePlate,
         startDate: booking.startDate,
         endDate: booking.endDate,
         totalPrice: Number(booking.totalPrice),
@@ -291,6 +306,7 @@ export function bookingRoutes(container: Container): Router {
         signatureData: booking.signatureData,
         signedAt: booking.signedAt,
         notes: booking.notes,
+        locationName: booking.location?.name ?? null,
       });
 
       const filename = `HoppDrive-Vertrag-${booking.id.substring(0, 8).toUpperCase()}.pdf`;

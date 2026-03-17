@@ -17,6 +17,7 @@ import { InMemoryCacheService, RedisCacheService } from '../services/CacheServic
 import { BrevoEmailService } from '../services/BrevoEmailService';
 import { SharpImageService } from '../services/SharpImageService';
 import { PdfGeneratorService } from '../services/PdfGeneratorService';
+import { PdfService } from '../services/PdfService';
 
 // ─── Use Cases ────────────────────────────────────────────────
 import {
@@ -74,6 +75,7 @@ export function createContainer() {
   );
 
   const pdfGenerator = new PdfGeneratorService();
+  const pdfService = new PdfService();
 
   // ─── Repositories ──────────────────────────────────────────
   const vehicleRepo = new PrismaVehicleRepository(prisma);
@@ -113,6 +115,7 @@ export function createContainer() {
     imageService,
     emailService,
     pdfGenerator,
+    pdfService,
     auditLogRepo,
 
     // Vehicles

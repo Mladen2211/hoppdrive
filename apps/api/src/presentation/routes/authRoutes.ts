@@ -115,9 +115,32 @@ export function authRoutes(container: Container): Router {
             firstName: admin.firstName,
             lastName: admin.lastName,
             phone: admin.phone,
+            signatureData: admin.signatureData ?? null,
             mustResetPassword: admin.mustResetPassword,
           },
         });
+      } catch (err) {
+        next(err);
+      }
+    },
+  );
+
+  /** PUT /api/auth/profile/signature – update admin company signature */
+  router.put(
+    '/profile/signature',
+    auth,
+    async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+      try {
+        const { signatureData } = req.body;
+        if (typeof signatureData !== 'string') {
+          res.status(400).json({ success: false, error: 'signatureData (base64) is required' });
+          return;
+        }
+        await container.prisma.admin.update({
+          where: { id: req.adminId! },
+          data: { signatureData },
+        });
+        res.json({ success: true, data: null, message: 'Signature saved' });
       } catch (err) {
         next(err);
       }
@@ -182,6 +205,7 @@ export function authRoutes(container: Container): Router {
             firstName: updated.firstName,
             lastName: updated.lastName,
             phone: updated.phone,
+            signatureData: updated.signatureData ?? null,
             mustResetPassword: updated.mustResetPassword,
           },
         });

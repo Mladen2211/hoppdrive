@@ -19,9 +19,11 @@ import {
   ChevronLeft,
   Bell,
   Search,
+  MapPin,
 } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { AdminAuthProvider, useAdminAuth } from '@/hooks/useAdminAuth';
+import { api } from '@/lib/api';
 
 const navItems = [
   { href: '/', label: 'Übersicht', icon: LayoutGrid },
@@ -29,6 +31,7 @@ const navItems = [
   { href: '/availability', label: 'Kalender', icon: CalendarDays },
   { href: '/contracts', label: 'Verträge', icon: FileText },
   { href: '/inquiries', label: 'Anfragen', icon: MessageSquare },
+  { href: '/locations', label: 'Standorte', icon: MapPin },
   { href: '/reports', label: 'Berichte', icon: BarChart2 },
   { href: '/settings', label: 'Website', icon: Globe },
 ];
@@ -39,10 +42,224 @@ const PAGE_TITLES: Record<string, string> = {
   '/availability': 'Kalender',
   '/contracts': 'Verträge',
   '/inquiries': 'Anfragen',
+  '/locations': 'Standorte',
   '/reports': 'Berichte',
   '/settings': 'Website-Einstellungen',
   '/profile': 'Profil',
 };
+
+/* ------------------------------------------------------------------ */
+/*  Search Dropdown                                                   */
+/* ------------------------------------------------------------------ */
+const CATEGORY_LABELS: Record<string, string> = {
+  vehicles: 'Fahrzeuge',
+  bookings: 'Buchungen',
+  inquiries: 'Anfragen',
+  locations: 'Standorte',
+  invoices: 'Rechnungen',
+};
+
+const CATEGORY_ROUTES: Record<string, string> = {
+  vehicles: '/fleet',
+  bookings: '/contracts',
+  inquiries: '/inquiries',
+  locations: '/locations',
+  invoices: '/contracts',
+};
+
+function SearchDropdown() {
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState<Record<string, any[]>>({});
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const search = useCallback(async (q: string) => {
+    if (q.length < 2) { setResults({}); setOpen(false); return; }
+    setLoading(true);
+    try {
+      const data = await api.globalSearch(q);
+      setResults(data);
+      setOpen(true);
+    } catch { /* ignore */ }
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => search(query), 300);
+    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+  }, [query, search]);
+
+  // Close on click outside
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
+  const hasResults = Object.values(results).some((arr) => arr?.length > 0);
+
+  return (
+    <div ref={containerRef} className="relative hidden lg:block">
+      <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none z-10" />
+      <input
+        type="text"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        onFocus={() => { if (hasResults) setOpen(true); }}
+        placeholder="Suche..."
+        className="pl-9 pr-4 py-2 bg-slate-100/50 border border-transparent rounded-lg text-sm focus:outline-none focus:bg-white focus:ring-2 focus:ring-red-500/20 focus:border-red-400 w-64 transition-all placeholder:text-slate-400 shadow-sm"
+      />
+      {open && (
+        <div className="absolute top-full left-0 mt-2 w-96 bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden z-50 max-h-96 overflow-y-auto">
+          {loading && (
+            <div className="px-4 py-3 text-sm text-slate-400">Suche…</div>
+          )}
+          {!loading && !hasResults && query.length >= 2 && (
+            <div className="px-4 py-3 text-sm text-slate-400">Keine Ergebnisse für &quot;{query}&quot;</div>
+          )}
+          {!loading && Object.entries(results).map(([category, items]) => {
+            if (!items?.length) return null;
+            return (
+              <div key={category}>
+                <div className="px-4 py-2 text-[11px] font-bold tracking-wider text-slate-400 uppercase bg-slate-50">
+                  {CATEGORY_LABELS[category] || category}
+                </div>
+                {items.map((item: any) => (
+                  <Link
+                    key={item.id}
+                    href={CATEGORY_ROUTES[category] || '/'}
+                    onClick={() => { setOpen(false); setQuery(''); }}
+                    className="flex items-center justify-between px-4 py-2.5 hover:bg-red-50/50 transition-colors border-b border-slate-100 last:border-0"
+                  >
+                    <span className="text-sm text-slate-900 truncate">{item.label}</span>
+                    {item.status && (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 font-medium">
+                        {item.status}
+                      </span>
+                    )}
+                  </Link>
+                ))}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Notification Bell                                                 */
+/* ------------------------------------------------------------------ */
+function NotificationBell() {
+  const [open, setOpen] = useState(false);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const fetchNotifications = useCallback(async () => {
+    try {
+      const data = await api.getNotifications();
+      setNotifications(data.items ?? []);
+      setUnreadCount(data.unreadCount ?? 0);
+    } catch { /* ignore */ }
+  }, []);
+
+  // Fetch on mount + every 30s
+  useEffect(() => {
+    fetchNotifications();
+    const iv = setInterval(fetchNotifications, 30000);
+    return () => clearInterval(iv);
+  }, [fetchNotifications]);
+
+  // Close on click outside
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
+  async function handleMarkAllRead() {
+    await api.markAllNotificationsRead();
+    setUnreadCount(0);
+    setNotifications((prev) => prev.map((n) => ({ ...n, readAt: new Date().toISOString() })));
+  }
+
+  async function handleMarkRead(id: string) {
+    await api.markNotificationRead(id);
+    setNotifications((prev) => prev.map((n) => n.id === id ? { ...n, readAt: new Date().toISOString() } : n));
+    setUnreadCount((c) => Math.max(0, c - 1));
+  }
+
+  return (
+    <div ref={containerRef} className="relative">
+      <button
+        onClick={() => setOpen(!open)}
+        className="relative p-2 text-slate-400 hover:text-slate-800 hover:bg-slate-100/50 rounded-lg transition-all"
+      >
+        <Bell className="w-5 h-5" />
+        {unreadCount > 0 && (
+          <span className="absolute top-1 right-1 min-w-[18px] h-[18px] flex items-center justify-center text-[10px] font-bold text-white bg-red-500 rounded-full ring-2 ring-white shadow-sm px-1">
+            {unreadCount > 99 ? '99+' : unreadCount}
+          </span>
+        )}
+      </button>
+
+      {open && (
+        <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden z-50">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
+            <span className="text-sm font-semibold text-slate-900">Benachrichtigungen</span>
+            {unreadCount > 0 && (
+              <button
+                onClick={handleMarkAllRead}
+                className="text-xs text-red-600 hover:text-red-700 font-medium"
+              >
+                Alle gelesen
+              </button>
+            )}
+          </div>
+          <div className="max-h-80 overflow-y-auto">
+            {notifications.length === 0 ? (
+              <div className="px-4 py-6 text-center text-sm text-slate-400">
+                Keine Benachrichtigungen
+              </div>
+            ) : (
+              notifications.map((n) => (
+                <button
+                  key={n.id}
+                  onClick={() => { if (!n.readAt) handleMarkRead(n.id); }}
+                  className={`w-full text-left px-4 py-3 border-b border-slate-50 hover:bg-slate-50 transition-colors ${!n.readAt ? 'bg-red-50/30' : ''}`}
+                >
+                  <div className="flex items-start gap-2">
+                    {!n.readAt && <div className="w-2 h-2 rounded-full bg-red-500 mt-1.5 shrink-0" />}
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-slate-900 truncate">{n.title}</p>
+                      <p className="text-xs text-slate-500 line-clamp-2">{n.body}</p>
+                      <p className="text-[10px] text-slate-400 mt-1">
+                        {new Date(n.createdAt).toLocaleDateString('de-CH')} – {new Date(n.createdAt).toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </div>
+                  </div>
+                </button>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 /* ------------------------------------------------------------------ */
 /*  Sidebar                                                           */
@@ -281,25 +498,11 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
           </div>
 
           <div className="flex items-center gap-1 sm:gap-3">
-            <div className="relative hidden lg:block group">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-red-500 transition-colors" />
-              <input
-                type="text"
-                placeholder="Schnellsuche..."
-                className="pl-9 pr-4 py-2 bg-slate-100/50 border border-transparent rounded-lg text-sm focus:outline-none focus:bg-white focus:ring-2 focus:ring-red-500/20 focus:border-red-400 w-64 transition-all placeholder:text-slate-400 shadow-sm"
-              />
-              <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                <kbd className="px-1.5 py-0.5 text-[10px] font-medium text-slate-400 bg-white border border-slate-200 rounded shrink-0">⌘</kbd>
-                <kbd className="px-1.5 py-0.5 text-[10px] font-medium text-slate-400 bg-white border border-slate-200 rounded shrink-0">K</kbd>
-              </div>
-            </div>
+            <SearchDropdown />
 
             <div className="h-5 w-px bg-slate-200 mx-2 hidden sm:block" />
 
-            <button className="relative p-2 text-slate-400 hover:text-slate-800 hover:bg-slate-100/50 rounded-lg transition-all">
-              <Bell className="w-5 h-5" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white shadow-sm" />
-            </button>
+            <NotificationBell />
 
             <Link href="/settings" className="p-2 text-slate-400 hover:text-slate-800 hover:bg-slate-100/50 rounded-lg transition-all" title="Website-Einstellungen">
               <Settings className="w-5 h-5" />

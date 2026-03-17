@@ -1,420 +1,363 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Car, Calendar, TrendingUp, Users, LogOut, Settings, 
-  Menu, X, Phone, Mail, MapPin, ChevronRight, CheckCircle2,
-  ShieldAlert, Lock
+  LayoutGrid, 
+  CarFront, 
+  CalendarDays, 
+  FileText, 
+  MessageSquare, 
+  BarChart2, 
+  Globe, 
+  LogOut, 
+  Settings, 
+  Bell,
+  TrendingUp,
+  Search,
+  Menu,
+  MoreHorizontal,
+  ChevronRight,
+  ChevronLeft,
+  ArrowUpRight,
+  X
 } from 'lucide-react';
 
-// --- DUMMY DATA ---
-const FLEET = [
-  {
-    id: 1,
-    name: "Audi RS6 Avant",
-    type: "Premium Estate",
-    basePrice: 250,
-    image: "https://images.unsplash.com/photo-1603584173870-7f23fdae1b7a?auto=format&fit=crop&q=80&w=1000",
-    specs: ["600 HP", "Automatic", "5 Seats", "Petrol"]
-  },
-  {
-    id: 2,
-    name: "Mercedes-Benz G 63 AMG",
-    type: "Luxury SUV",
-    basePrice: 350,
-    image: "https://images.unsplash.com/photo-1520031441872-265e4ff70366?auto=format&fit=crop&q=80&w=1000",
-    specs: ["585 HP", "Automatic", "5 Seats", "Petrol"]
-  },
-  {
-    id: 3,
-    name: "Porsche Taycan Cross Turismo",
-    type: "Electric Sport",
-    basePrice: 280,
-    image: "https://images.unsplash.com/photo-1614200187524-dc4b892acf16?auto=format&fit=crop&q=80&w=1000",
-    specs: ["Electric", "Automatic", "4 Seats", "450km Range"]
-  }
+// --- MOCK DATA ---
+const kpiData = [
+  { title: 'Fahrzeuge gesamt', value: '12', icon: CarFront, trend: null },
+  { title: 'Neue Anfragen', value: '3', icon: MessageSquare, trend: '+3 diese Woche', trendUp: true },
+  { title: 'Aktive Buchungen', value: '5', icon: CalendarDays, trend: '+1 seit gestern', trendUp: true },
+  { title: 'Monatlicher Umsatz', value: 'CHF 4.250', icon: BarChart2, trend: '+12% Vormonat', trendUp: true },
 ];
 
-const REQUESTS = [
-  { id: 101, name: "Lukas Weber", car: "Audi RS6 Avant", dates: "12.10 - 26.10", status: "Pending" },
-  { id: 102, name: "Sarah Müller", car: "Porsche Taycan", dates: "01.11 - 30.11", status: "Approved" },
+const tableData = [
+  { id: 1, name: 'Lukas Meier', email: 'lukas.m@example.com', vehicle: 'VW Crafter (ZH 12345)', status: 'Buchung erstellt', date: '17.03.2026' },
+  { id: 2, name: 'Mladen Raguz', email: 'mladenraguz0@gmail.com', vehicle: 'Mercedes Sprinter (ZH 98765)', status: 'Buchung erstellt', date: '16.03.2026' },
+  { id: 3, name: 'Sarah Schmidt', email: 's.schmidt@gmx.ch', vehicle: 'Ford Transit (AG 45678)', status: 'Geprüft', date: '16.03.2026' },
+  { id: 4, name: 'Elena Rossi', email: 'elena.rossi@bluewin.ch', vehicle: 'Renault Master (TI 34567)', status: 'Ausstehend', date: '15.03.2026' },
 ];
 
-export default function App() {
-  const [view, setView] = useState('b2c'); // 'b2c', 'login', 'admin'
-  const [showCookieBanner, setShowCookieBanner] = useState(true);
-
-  return (
-    <div className="min-h-screen bg-neutral-50 font-sans text-neutral-900 selection:bg-blue-600 selection:text-white">
-      {view === 'b2c' && <B2CView setView={setView} />}
-      {view === 'login' && <LoginView setView={setView} />}
-      {view === 'admin' && <AdminView setView={setView} />}
-      
-      {showCookieBanner && (
-        <CookieBanner onAccept={() => setShowCookieBanner(false)} onDecline={() => setShowCookieBanner(false)} />
-      )}
-    </div>
-  );
-}
+const navItems = [
+  { name: 'Übersicht', icon: LayoutGrid, active: true },
+  { name: 'Flotte', icon: CarFront, active: false },
+  { name: 'Kalender', icon: CalendarDays, active: false },
+  { name: 'Verträge', icon: FileText, active: false },
+  { name: 'Anfragen', icon: MessageSquare, active: false },
+  { name: 'Berichte', icon: BarChart2, active: false },
+  { name: 'Website', icon: Globe, active: false },
+];
 
 // --- COMPONENTS ---
 
-function CookieBanner({ onAccept, onDecline }) {
+const StatusBadge = ({ status }) => {
+  let styles = '';
+  let dotColor = '';
+  
+  switch (status) {
+    case 'Buchung erstellt':
+      styles = 'bg-emerald-50 text-emerald-700 ring-emerald-600/20';
+      dotColor = 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]';
+      break;
+    case 'Geprüft':
+      styles = 'bg-amber-50 text-amber-700 ring-amber-600/20';
+      dotColor = 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]';
+      break;
+    case 'Ausstehend':
+      styles = 'bg-slate-50 text-slate-700 ring-slate-600/20';
+      dotColor = 'bg-slate-500 shadow-[0_0_8px_rgba(100,116,139,0.5)]';
+      break;
+    default:
+      styles = 'bg-slate-50 text-slate-700 ring-slate-600/20';
+      dotColor = 'bg-slate-500';
+  }
+
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 p-4 sm:p-6 bg-white border-t border-neutral-200 shadow-2xl transform transition-transform duration-500">
-      <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div className="flex-1">
-          <div className="flex items-center gap-2 mb-2">
-            <ShieldAlert className="w-5 h-5 text-blue-600" />
-            <h3 className="font-semibold text-lg">Privacy & Cookies</h3>
-          </div>
-          <p className="text-sm text-neutral-600">
-            We use cookies to improve your experience and analyze our traffic. 
-            By clicking "Accept", you consent to our use of cookies in accordance with the Swiss FADP and GDPR.
-          </p>
-        </div>
-        <div className="flex flex-col sm:flex-row w-full md:w-auto gap-3 shrink-0">
-          <button 
-            onClick={onDecline}
-            className="px-6 py-2.5 rounded-md border border-neutral-300 text-neutral-700 hover:bg-neutral-100 transition-colors text-sm font-medium"
-          >
-            Decline Non-Essential
-          </button>
-          <button 
-            onClick={onAccept}
-            className="px-6 py-2.5 rounded-md bg-blue-600 text-white hover:bg-blue-700 transition-colors text-sm font-medium shadow-sm"
-          >
-            Accept All Cookies
-          </button>
-        </div>
-      </div>
-    </div>
+    <span className={`inline-flex items-center gap-2 px-2.5 py-1 rounded-md text-[13px] font-medium ring-1 ring-inset ${styles}`}>
+      <span className={`w-1.5 h-1.5 rounded-full ${dotColor}`}></span>
+      {status}
+    </span>
   );
-}
+};
 
-function B2CView({ setView }) {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [selectedCar, setSelectedCar] = useState(null);
+export default function App() {
+  const [isExpanded, setIsExpanded] = useState(true);
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
 
-  const scrollToContact = () => {
-    document.getElementById('contact-form')?.scrollIntoView({ behavior: 'smooth' });
-  };
+  // Close mobile sidebar if window resizes to desktop view
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 768) {
+        setIsMobileOpen(false);
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   return (
-    <div className="flex flex-col min-h-screen">
-      {/* Navigation */}
-      <nav className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-neutral-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-20 items-center">
-            <div className="flex items-center gap-2">
-              <div className="bg-blue-600 p-2 rounded-lg">
-                <Car className="w-6 h-6 text-white" />
-              </div>
-              <span className="font-bold text-xl tracking-tight">EuroAuto<span className="text-blue-600">Rent</span></span>
-            </div>
-            
-            <div className="hidden md:flex space-x-8 items-center">
-              <a href="#fleet" className="text-sm font-medium hover:text-blue-600 transition-colors">Our Fleet</a>
-              <a href="#pricing" className="text-sm font-medium hover:text-blue-600 transition-colors">Pricing Model</a>
-              <button onClick={scrollToContact} className="bg-neutral-900 text-white px-5 py-2.5 rounded-full text-sm font-medium hover:bg-neutral-800 transition-colors">
-                Request a Quote
-              </button>
-            </div>
+    <div className="flex h-screen bg-gradient-to-br from-[#F8FAFC] to-[#F1F5F9] font-sans text-slate-900 overflow-hidden selection:bg-red-100 selection:text-red-900">
+      
+      {/* MOBILE OVERLAY */}
+      {isMobileOpen && (
+        <div 
+          className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-40 md:hidden transition-opacity"
+          onClick={() => setIsMobileOpen(false)}
+        />
+      )}
 
-            <button className="md:hidden" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
-              {mobileMenuOpen ? <X /> : <Menu />}
-            </button>
-          </div>
-        </div>
-      </nav>
-
-      {/* Hero Section */}
-      <header className="relative bg-neutral-900 text-white overflow-hidden">
-        <div className="absolute inset-0">
-          <img 
-            src="https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?auto=format&fit=crop&q=80&w=2000" 
-            alt="Hero Car" 
-            className="w-full h-full object-cover opacity-40"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-neutral-900 via-neutral-900/60 to-transparent" />
-        </div>
-        
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 md:py-32 flex flex-col items-center text-center">
-          <span className="px-3 py-1 rounded-full bg-blue-500/20 border border-blue-500/30 text-blue-300 text-xs font-semibold tracking-wider uppercase mb-6">
-            Long-Term Rentals in Switzerland
-          </span>
-          <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight mb-6 max-w-3xl">
-            Premium Mobility, <br/><span className="text-blue-500">Without the Commitment.</span>
-          </h1>
-          <p className="text-lg md:text-xl text-neutral-300 max-w-2xl mb-10">
-            Exclusive long-term car rentals. Flexible pricing that drops the longer you drive. Fully insured, meticulously maintained.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
-            <a href="#fleet" className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-full font-semibold transition-colors flex items-center justify-center gap-2">
-              Explore Fleet <ChevronRight className="w-5 h-5" />
-            </a>
-          </div>
-        </div>
-      </header>
-
-      {/* Fleet Section */}
-      <section id="fleet" className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold mb-4">Available Vehicles</h2>
-            <p className="text-neutral-500 max-w-2xl mx-auto">Select a vehicle to see our dynamic long-term pricing and request a specific quote.</p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {FLEET.map(car => (
-              <div key={car.id} className="group rounded-2xl border border-neutral-200 overflow-hidden hover:shadow-xl transition-all duration-300 bg-white">
-                <div className="aspect-[4/3] overflow-hidden relative">
-                  <img src={car.image} alt={car.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                  <div className="absolute top-4 right-4 bg-white/90 backdrop-blur text-xs font-bold px-3 py-1.5 rounded-full shadow-sm">
-                    From CHF {car.basePrice} / day
-                  </div>
-                </div>
-                <div className="p-6">
-                  <div className="text-xs font-semibold text-blue-600 uppercase tracking-wider mb-1">{car.type}</div>
-                  <h3 className="text-xl font-bold mb-4">{car.name}</h3>
-                  <div className="flex flex-wrap gap-2 mb-6">
-                    {car.specs.map(spec => (
-                      <span key={spec} className="px-2.5 py-1 bg-neutral-100 text-neutral-600 text-xs font-medium rounded-md">
-                        {spec}
-                      </span>
-                    ))}
-                  </div>
-                  <button 
-                    onClick={() => { setSelectedCar(car); scrollToContact(); }}
-                    className="w-full py-3 text-sm font-semibold text-neutral-900 border-2 border-neutral-900 rounded-lg hover:bg-neutral-900 hover:text-white transition-colors"
-                  >
-                    Inquire About This Car
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Pricing Explainer */}
-      <section id="pricing" className="py-20 bg-neutral-50 border-y border-neutral-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl font-bold mb-12">How Our Pricing Works</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="bg-white p-8 rounded-2xl shadow-sm border border-neutral-100">
-              <div className="text-4xl font-black text-neutral-200 mb-4">01</div>
-              <h4 className="text-lg font-bold mb-2">Days 1 - 7</h4>
-              <p className="text-neutral-500 text-sm">Standard base daily rate applies for short-term needs.</p>
-            </div>
-            <div className="bg-white p-8 rounded-2xl shadow-sm border border-blue-100 relative overflow-hidden">
-              <div className="absolute top-0 right-0 bg-blue-100 text-blue-700 text-xs font-bold px-3 py-1 rounded-bl-lg">20% OFF</div>
-              <div className="text-4xl font-black text-blue-50 mb-4">02</div>
-              <h4 className="text-lg font-bold mb-2">Days 8 - 30</h4>
-              <p className="text-neutral-500 text-sm">Automatic 20% discount applied to the daily rate for extended rentals.</p>
-            </div>
-            <div className="bg-white p-8 rounded-2xl shadow-sm border border-blue-600 relative overflow-hidden">
-              <div className="absolute top-0 right-0 bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-bl-lg">40% OFF</div>
-              <div className="text-4xl font-black text-blue-50 mb-4">03</div>
-              <h4 className="text-lg font-bold mb-2">31+ Days</h4>
-              <p className="text-neutral-500 text-sm">Maximum 40% discount applied. Best value for true long-term mobility.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Contact Form (FADP Compliant) */}
-      <section id="contact-form" className="py-24 bg-white relative">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-neutral-900 text-white rounded-3xl p-8 md:p-12 shadow-2xl">
-            <h2 className="text-3xl font-bold mb-2">Request a Quote</h2>
-            <p className="text-neutral-400 mb-8">Fill out the form below. Our team will contact you with a customized offer within 24 hours.</p>
-            
-            <form className="space-y-6" onSubmit={(e) => { e.preventDefault(); alert("Form submitted successfully! (Dummy)"); }}>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-neutral-300 mb-2">Full Name *</label>
-                  <input required type="text" className="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-4 py-3 text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="John Doe" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-neutral-300 mb-2">Phone Number *</label>
-                  <input required type="tel" className="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-4 py-3 text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="+41 79 123 45 67" />
-                </div>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-neutral-300 mb-2">Email Address *</label>
-                <input required type="email" className="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-4 py-3 text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="john@example.com" />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-neutral-300 mb-2">Vehicle of Interest</label>
-                <select 
-                  className="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
-                  defaultValue={selectedCar ? selectedCar.name : ""}
-                >
-                  <option value="" disabled>Select a vehicle...</option>
-                  {FLEET.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
-                  <option value="other">Not sure yet / Other</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-neutral-300 mb-2">Message / Desired Dates</label>
-                <textarea rows="4" className="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-4 py-3 text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="I am looking to rent from..." />
-              </div>
-
-              {/* MANDATORY FADP/GDPR CONSENT */}
-              <div className="flex items-start gap-3 mt-6 p-4 bg-neutral-800/50 rounded-lg border border-neutral-700">
-                <div className="flex items-center h-5 mt-0.5">
-                  <input required id="privacy_consent" type="checkbox" className="w-4 h-4 rounded border-neutral-600 bg-neutral-700 text-blue-500 focus:ring-blue-500 focus:ring-offset-neutral-900" />
-                </div>
-                <div className="text-sm">
-                  <label htmlFor="privacy_consent" className="font-medium text-neutral-200">Data Privacy Consent *</label>
-                  <p className="text-neutral-400 mt-1 text-xs">
-                    I consent to the processing of my personal data (Name, Email, Phone) to handle this inquiry. Data is processed securely and may be transferred to our email processor (Brevo). See our <a href="#" className="text-blue-400 hover:underline">Privacy Policy</a> for details.
-                  </p>
-                </div>
-              </div>
-
-              <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-lg transition-colors shadow-lg shadow-blue-600/20">
-                Submit Request
-              </button>
-            </form>
-          </div>
-        </div>
-      </section>
-
-      {/* Footer & Hidden Login */}
-      <footer className="bg-neutral-50 py-12 border-t border-neutral-200 mt-auto">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center">
-          <div className="flex gap-6 mb-8 text-neutral-500">
-            <a href="#" className="hover:text-neutral-900 transition-colors text-sm">Impressum</a>
-            <a href="#" className="hover:text-neutral-900 transition-colors text-sm">Privacy Policy (AGB)</a>
-            <a href="#" className="hover:text-neutral-900 transition-colors text-sm">Cookie Settings</a>
-          </div>
-          <p className="text-neutral-400 text-sm flex items-center gap-1">
-            © {new Date().getFullYear()} Euro Abschlepdienst. All rights reserved. 
-            {/* HIDDEN LOGIN TRIGGER */}
-            <span 
-              onClick={() => setView('login')} 
-              className="w-1.5 h-1.5 rounded-full bg-neutral-300 hover:bg-blue-500 cursor-pointer transition-colors ml-2"
-              title="Admin Login"
-            />
-          </p>
-        </div>
-      </footer>
-    </div>
-  );
-}
-
-function LoginView({ setView }) {
-  return (
-    <div className="min-h-screen bg-neutral-900 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl p-8 w-full max-w-md shadow-2xl">
-        <div className="flex justify-center mb-6">
-          <div className="bg-blue-100 p-3 rounded-full">
-            <Lock className="w-8 h-8 text-blue-600" />
-          </div>
-        </div>
-        <h2 className="text-2xl font-bold text-center mb-2">CMS Portal</h2>
-        <p className="text-neutral-500 text-center text-sm mb-8">Authorized personnel only.</p>
-        
-        <form onSubmit={(e) => { e.preventDefault(); setView('admin'); }}>
-          <div className="space-y-4 mb-6">
-            <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1">Email</label>
-              <input required type="email" defaultValue="admin@euro.ch" className="w-full border border-neutral-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1">Password</label>
-              <input required type="password" defaultValue="password123" className="w-full border border-neutral-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-            </div>
-          </div>
-          <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-colors">
-            Secure Login
-          </button>
-        </form>
-        <button onClick={() => setView('b2c')} className="w-full mt-4 text-sm text-neutral-500 hover:text-neutral-900 text-center">
-          &larr; Return to public site
+      {/* SIDEBAR */}
+      <aside 
+        className={`
+          fixed md:relative inset-y-0 left-0 z-50 
+          bg-white/90 backdrop-blur-2xl border-r border-slate-200/60 shadow-[4px_0_24px_rgba(0,0,0,0.02)]
+          transition-all duration-400 ease-[cubic-bezier(0.25,1,0.5,1)] flex flex-col
+          ${isMobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+          ${isExpanded ? 'w-72' : 'w-[84px]'}
+        `}
+      >
+        {/* Toggle Button (Desktop only) */}
+        <button 
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="hidden md:flex absolute -right-3.5 top-8 w-7 h-7 bg-white border border-slate-200 shadow-sm rounded-full items-center justify-center text-slate-400 hover:text-red-600 hover:border-red-200 transition-all z-50 hover:scale-105"
+        >
+          {isExpanded ? <ChevronLeft size={16} strokeWidth={2.5} /> : <ChevronRight size={16} strokeWidth={2.5} />}
         </button>
-      </div>
-    </div>
-  );
-}
 
-function AdminView({ setView }) {
-  const [activeTab, setActiveTab] = useState('dashboard');
+        {/* Mobile Close Button */}
+        <button 
+          onClick={() => setIsMobileOpen(false)}
+          className="md:hidden absolute right-4 top-5 text-slate-400 hover:text-slate-700"
+        >
+          <X size={20} />
+        </button>
 
-  return (
-    <div className="min-h-screen bg-neutral-100 flex">
-      {/* Sidebar */}
-      <aside className="w-64 bg-white border-r border-neutral-200 flex flex-col">
-        <div className="h-20 flex items-center px-6 border-b border-neutral-200">
-          <span className="font-bold text-lg">Admin<span className="text-blue-600">CMS</span></span>
+        {/* Logo Area */}
+        <div className={`h-[72px] flex items-center shrink-0 transition-all duration-300 ${isExpanded ? 'px-6' : 'px-0 justify-center'}`}>
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 bg-gradient-to-br from-red-500 to-red-600 rounded-xl flex items-center justify-center text-white shadow-[0_4px_12px_rgba(220,38,38,0.25)] shrink-0">
+              <CarFront size={20} strokeWidth={2.5} />
+            </div>
+            <span className={`font-bold text-xl tracking-tight text-slate-900 transition-all duration-300 whitespace-nowrap overflow-hidden ${isExpanded ? 'w-[120px] opacity-100' : 'w-0 opacity-0'}`}>
+              HoppDrive
+            </span>
+          </div>
         </div>
-        <nav className="flex-1 p-4 space-y-1">
-          <SidebarItem icon={TrendingUp} label="Dashboard" active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} />
-          <SidebarItem icon={Car} label="Fleet Manager" active={activeTab === 'fleet'} onClick={() => setActiveTab('fleet')} />
-          <SidebarItem icon={Calendar} label="Availability" active={activeTab === 'calendar'} onClick={() => setActiveTab('calendar')} />
-          <SidebarItem icon={Users} label="Inquiries" active={activeTab === 'inquiries'} onClick={() => setActiveTab('inquiries')} badge="2" />
+
+        {/* Navigation */}
+        <nav className="flex-1 overflow-y-auto overflow-x-hidden py-6 px-4 space-y-1.5 custom-scrollbar">
+          <div className={`px-2 mb-4 text-[11px] font-bold tracking-widest text-slate-400 uppercase transition-all duration-300 ${isExpanded ? 'opacity-100' : 'opacity-0 h-0 mb-0 overflow-hidden'}`}>
+            Hauptmenü
+          </div>
+          
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <a
+                key={item.name}
+                href="#"
+                className={`relative flex items-center px-3 py-2.5 rounded-xl text-sm transition-all duration-200 group overflow-hidden ${
+                  item.active 
+                    ? 'text-red-700 font-medium' 
+                    : 'text-slate-500 hover:text-slate-900'
+                }`}
+                title={!isExpanded ? item.name : undefined}
+              >
+                {/* Active States Backgrounds */}
+                {item.active && (
+                  <>
+                    <div className="absolute inset-0 bg-red-50 opacity-80 rounded-xl"></div>
+                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-1/2 bg-red-600 rounded-r-full"></div>
+                  </>
+                )}
+                
+                {/* Hover Background */}
+                {!item.active && (
+                  <div className="absolute inset-0 bg-slate-50 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl -z-10"></div>
+                )}
+
+                <div className={`flex items-center z-10 ${isExpanded ? '' : 'mx-auto'}`}>
+                  <Icon 
+                    className={`w-5 h-5 shrink-0 transition-all duration-300 ${item.active ? 'text-red-600 drop-shadow-sm' : 'text-slate-400 group-hover:text-slate-600 group-hover:scale-110'}`} 
+                    strokeWidth={item.active ? 2.5 : 2} 
+                  />
+                  <span className={`transition-all duration-300 whitespace-nowrap ${isExpanded ? 'ml-3 w-auto opacity-100 translate-x-0' : 'ml-0 w-0 opacity-0 -translate-x-4 hidden'}`}>
+                    {item.name}
+                  </span>
+                </div>
+              </a>
+            );
+          })}
         </nav>
-        <div className="p-4 border-t border-neutral-200">
-          <button onClick={() => setView('b2c')} className="flex items-center gap-3 px-4 py-2 w-full text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors">
-            <LogOut className="w-4 h-4" /> Sign Out
-          </button>
+
+        {/* User Area */}
+        <div className="p-4 shrink-0">
+          <div className={`flex items-center border border-slate-200/60 shadow-sm transition-all duration-300 overflow-hidden ${isExpanded ? 'p-3 bg-white rounded-2xl justify-between' : 'p-2 bg-transparent border-transparent justify-center'}`}>
+            <div className="flex items-center gap-3 min-w-0">
+              <div className={`w-9 h-9 shrink-0 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center font-bold text-sm border border-slate-200 ring-2 ring-white transition-all ${!isExpanded && 'hover:ring-red-100 cursor-pointer'}`}>
+                A
+              </div>
+              <div className={`flex flex-col truncate transition-all duration-300 ${isExpanded ? 'w-[100px] opacity-100' : 'w-0 opacity-0 hidden'}`}>
+                <span className="text-sm font-semibold text-slate-900 truncate">Admin</span>
+                <span className="text-[11px] text-slate-500 truncate">HoppDrive</span>
+              </div>
+            </div>
+            
+            {isExpanded && (
+              <button className="text-slate-400 hover:text-red-600 hover:bg-red-50 p-1.5 rounded-lg transition-colors shrink-0">
+                <LogOut size={16} />
+              </button>
+            )}
+          </div>
         </div>
       </aside>
 
-      {/* Main Content */}
-      <main className="flex-1 overflow-auto">
-        <header className="h-20 bg-white border-b border-neutral-200 flex items-center justify-between px-8">
-          <h1 className="text-xl font-bold capitalize">{activeTab}</h1>
-          <div className="flex items-center gap-3 text-sm font-medium">
-            <div className="w-8 h-8 bg-blue-100 text-blue-700 rounded-full flex items-center justify-center">A</div>
-            Admin User
+      {/* MAIN CONTENT */}
+      <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
+        
+        {/* Header - Glassmorphism */}
+        <header className="h-[72px] bg-white/70 backdrop-blur-xl border-b border-slate-200/60 flex items-center justify-between px-4 sm:px-6 lg:px-8 z-30 sticky top-0 supports-[backdrop-filter]:bg-white/40">
+          <div className="flex items-center gap-4">
+            <button 
+              className="md:hidden text-slate-500 hover:text-slate-900 p-2 -ml-2 rounded-lg hover:bg-slate-100/50 transition-colors"
+              onClick={() => setIsMobileOpen(true)}
+            >
+              <Menu size={20} />
+            </button>
+            <div className="flex items-center text-sm text-slate-500 hidden sm:flex">
+              <span className="hover:text-slate-800 cursor-pointer transition-colors">HoppDrive</span>
+              <ChevronRight size={14} className="mx-1.5 text-slate-300" />
+              <span className="text-slate-900 font-medium bg-slate-100 px-2 py-1 rounded-md">Übersicht</span>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-1 sm:gap-3">
+            <div className="relative hidden lg:block group">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-red-500 transition-colors" />
+              <input 
+                type="text" 
+                placeholder="Schnellsuche..." 
+                className="pl-9 pr-4 py-2 bg-slate-100/50 border border-transparent rounded-lg text-sm focus:outline-none focus:bg-white focus:ring-2 focus:ring-red-500/20 focus:border-red-400 w-64 transition-all placeholder:text-slate-400 shadow-sm"
+              />
+              <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                <kbd className="px-1.5 py-0.5 text-[10px] font-medium text-slate-400 bg-white border border-slate-200 rounded shrink-0">⌘</kbd>
+                <kbd className="px-1.5 py-0.5 text-[10px] font-medium text-slate-400 bg-white border border-slate-200 rounded shrink-0">K</kbd>
+              </div>
+            </div>
+            
+            <div className="h-5 w-px bg-slate-200 mx-2 hidden sm:block"></div>
+            
+            <button className="relative p-2 text-slate-400 hover:text-slate-800 hover:bg-slate-100/50 rounded-lg transition-all">
+              <Bell className="w-5 h-5" />
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white shadow-sm"></span>
+            </button>
+            
+            <button className="p-2 text-slate-400 hover:text-slate-800 hover:bg-slate-100/50 rounded-lg transition-all">
+              <Settings className="w-5 h-5" />
+            </button>
           </div>
         </header>
 
-        <div className="p-8">
-          {activeTab === 'dashboard' && (
-            <div className="space-y-6">
-              {/* Stats Row */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <StatCard title="Active Rentals" value="12" subtitle="3 pending return" />
-                <StatCard title="Monthly Revenue (Est.)" value="CHF 45,200" subtitle="+12% from last month" />
-                <StatCard title="Fleet Utilization" value="85%" subtitle="17 of 20 cars booked" />
+        {/* Scrollable Content */}
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 custom-scrollbar">
+          <div className="max-w-[1400px] mx-auto space-y-8 pb-12">
+            
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+              <div>
+                <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">Übersicht</h1>
+                <p className="text-sm text-slate-500 mt-1.5 flex items-center gap-2">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                  </span>
+                  System läuft reibungslos • Zuletzt aktualisiert um 12:11
+                </p>
+              </div>
+              <button className="hidden sm:flex items-center justify-center gap-2 bg-white border border-slate-200 text-slate-700 px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-slate-50 hover:shadow-sm transition-all active:scale-95">
+                <FileText size={16} />
+                Bericht exportieren
+              </button>
+            </div>
+
+            {/* Premium KPI Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-6">
+              {kpiData.map((kpi, index) => {
+                const Icon = kpi.icon;
+                return (
+                  <div 
+                    key={index} 
+                    className="group bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/60 shadow-[0_2px_10px_-3px_rgba(6,81,237,0.05)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:-translate-y-0.5 transition-all duration-300 relative overflow-hidden cursor-default"
+                  >
+                    {/* Subtle top glow line */}
+                    <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-red-500 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                    
+                    <div className="flex justify-between items-start mb-4">
+                      <p className="text-sm font-semibold text-slate-500">{kpi.title}</p>
+                      <div className="p-2 bg-slate-50 ring-1 ring-slate-100 rounded-xl text-slate-400 group-hover:text-red-600 group-hover:bg-red-50/50 group-hover:ring-red-100 transition-all duration-300">
+                        <Icon size={18} strokeWidth={2.5} />
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-baseline gap-2">
+                      <h3 className="text-3xl font-bold text-slate-900 tracking-tight">{kpi.value}</h3>
+                    </div>
+
+                    <div className="mt-4 h-5 flex items-center">
+                      {kpi.trend ? (
+                        <div className={`flex items-center gap-1.5 text-xs font-semibold px-2 py-1 rounded-md ${kpi.trendUp ? 'text-emerald-700 bg-emerald-50 ring-1 ring-emerald-600/10' : 'text-slate-600 bg-slate-50 ring-1 ring-slate-600/10'}`}>
+                          {kpi.trendUp && <TrendingUp size={14} strokeWidth={2.5} />}
+                          {kpi.trend}
+                        </div>
+                      ) : (
+                        <div className="text-xs text-slate-400 font-medium">Keine Änderung</div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Sleek Table Section */}
+            <div className="bg-white rounded-2xl border border-slate-200/60 shadow-[0_2px_10px_-3px_rgba(6,81,237,0.05)] overflow-hidden">
+              <div className="px-5 sm:px-6 py-5 flex items-center justify-between border-b border-slate-100 bg-white">
+                <h2 className="text-base font-bold text-slate-900">Aktuelle Anfragen</h2>
+                <button className="text-sm font-semibold text-red-600 hover:text-red-700 flex items-center gap-1 transition-colors hover:underline underline-offset-4">
+                  Alle ansehen
+                  <ArrowUpRight size={16} />
+                </button>
               </div>
               
-              {/* Recent Requests Table */}
-              <div className="bg-white rounded-xl border border-neutral-200 shadow-sm overflow-hidden mt-8">
-                <div className="p-6 border-b border-neutral-200 flex justify-between items-center">
-                  <h3 className="font-bold text-lg">New Web Inquiries</h3>
-                  <button onClick={() => setActiveTab('inquiries')} className="text-sm text-blue-600 hover:underline">View All</button>
-                </div>
-                <table className="w-full text-left text-sm">
-                  <thead className="bg-neutral-50 text-neutral-500">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse whitespace-nowrap">
+                  <thead>
                     <tr>
-                      <th className="px-6 py-3 font-medium">Customer</th>
-                      <th className="px-6 py-3 font-medium">Requested Car</th>
-                      <th className="px-6 py-3 font-medium">Dates</th>
-                      <th className="px-6 py-3 font-medium">Status</th>
-                      <th className="px-6 py-3 font-medium">Action</th>
+                      <th className="px-6 py-3.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 bg-slate-50/50">Kunde</th>
+                      <th className="px-6 py-3.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 bg-slate-50/50">Kontakt</th>
+                      <th className="px-6 py-3.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 bg-slate-50/50">Fahrzeug</th>
+                      <th className="px-6 py-3.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 bg-slate-50/50">Status</th>
+                      <th className="px-6 py-3.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 bg-slate-50/50">Datum</th>
+                      <th className="px-6 py-3.5 border-b border-slate-100 bg-slate-50/50 w-10"></th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-neutral-200">
-                    {REQUESTS.map(req => (
-                      <tr key={req.id} className="hover:bg-neutral-50">
-                        <td className="px-6 py-4 font-medium">{req.name}</td>
-                        <td className="px-6 py-4 text-neutral-600">{req.car}</td>
-                        <td className="px-6 py-4 text-neutral-600">{req.dates}</td>
+                  <tbody className="divide-y divide-slate-50">
+                    {tableData.map((row) => (
+                      <tr key={row.id} className="hover:bg-slate-50/80 transition-colors group">
                         <td className="px-6 py-4">
-                          <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
-                            req.status === 'Pending' ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700'
-                          }`}>
-                            {req.status}
-                          </span>
+                          <span className="font-semibold text-sm text-slate-900">{row.name}</span>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-slate-500">
+                          {row.email}
+                        </td>
+                        <td className="px-6 py-4 text-sm font-medium text-slate-700">
+                          {row.vehicle}
                         </td>
                         <td className="px-6 py-4">
-                          <button className="text-blue-600 hover:text-blue-800 font-medium">Review</button>
+                          <StatusBadge status={row.status} />
+                        </td>
+                        <td className="px-6 py-4 text-sm text-slate-500">
+                          {row.date}
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <button className="text-slate-400 hover:text-slate-900 transition-colors p-1.5 rounded-lg hover:bg-white hover:shadow-sm border border-transparent hover:border-slate-200 opacity-0 group-hover:opacity-100 focus:opacity-100">
+                            <MoreHorizontal size={18} />
+                          </button>
                         </td>
                       </tr>
                     ))}
@@ -422,57 +365,28 @@ function AdminView({ setView }) {
                 </table>
               </div>
             </div>
-          )}
 
-          {activeTab === 'fleet' && (
-            <div className="bg-white p-8 rounded-xl border border-neutral-200 text-center text-neutral-500 py-20">
-              <Car className="w-12 h-12 mx-auto mb-4 text-neutral-300" />
-              <h2 className="text-xl font-bold text-neutral-900 mb-2">Fleet Management UI</h2>
-              <p>Here admins will add/edit cars, upload images, and set pricing breakpoints.</p>
-              <button className="mt-6 bg-blue-600 text-white px-6 py-2 rounded-lg text-sm font-medium">
-                + Add New Vehicle
-              </button>
-            </div>
-          )}
-
-          {(activeTab === 'calendar' || activeTab === 'inquiries') && (
-            <div className="bg-white p-8 rounded-xl border border-neutral-200 text-center text-neutral-500 py-20">
-              <Settings className="w-12 h-12 mx-auto mb-4 text-neutral-300" />
-              <h2 className="text-xl font-bold text-neutral-900 mb-2">{activeTab} Module</h2>
-              <p>This module will be connected to the Node.js API and PostgreSQL database.</p>
-            </div>
-          )}
+          </div>
         </div>
       </main>
-    </div>
-  );
-}
 
-function SidebarItem({ icon: Icon, label, active, onClick, badge }) {
-  return (
-    <button 
-      onClick={onClick}
-      className={`w-full flex items-center justify-between px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
-        active ? 'bg-blue-50 text-blue-700' : 'text-neutral-600 hover:bg-neutral-100'
-      }`}
-    >
-      <div className="flex items-center gap-3">
-        <Icon className={`w-5 h-5 ${active ? 'text-blue-600' : 'text-neutral-400'}`} />
-        {label}
-      </div>
-      {badge && (
-        <span className="bg-blue-600 text-white text-xs py-0.5 px-2 rounded-full">{badge}</span>
-      )}
-    </button>
-  );
-}
-
-function StatCard({ title, value, subtitle }) {
-  return (
-    <div className="bg-white p-6 rounded-xl border border-neutral-200 shadow-sm">
-      <h4 className="text-sm font-medium text-neutral-500 mb-2">{title}</h4>
-      <div className="text-3xl font-bold text-neutral-900 mb-1">{value}</div>
-      <div className="text-xs text-neutral-500">{subtitle}</div>
+      {/* Global styles for custom scrollbar hidden in normal classes */}
+      <style dangerouslySetInnerHTML={{__html: `
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 6px;
+          height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background-color: rgba(148, 163, 184, 0.2);
+          border-radius: 20px;
+        }
+        .custom-scrollbar:hover::-webkit-scrollbar-thumb {
+          background-color: rgba(148, 163, 184, 0.4);
+        }
+      `}} />
     </div>
   );
 }

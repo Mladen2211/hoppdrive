@@ -21,6 +21,22 @@ export function contactRoutes(container: Container): Router {
         // Notify connected admin clients in real-time
         eventBus.broadcast('new-inquiry', { id: request.id });
 
+        // Create notification for all admins
+        try {
+          const admins = await container.prisma.admin.findMany({ select: { id: true } });
+          await container.prisma.notification.createMany({
+            data: admins.map((a: { id: string }) => ({
+              adminId: a.id,
+              type: 'NEW_INQUIRY' as const,
+              title: 'Neue Anfrage',
+              body: `${req.body.fullName} hat eine neue Anfrage gesendet.`,
+              refId: request.id,
+            })),
+          });
+        } catch (notifErr) {
+          console.error('[Contact] Failed to create notifications:', notifErr);
+        }
+
         res.status(201).json({
           success: true,
           data: { id: request.id },
