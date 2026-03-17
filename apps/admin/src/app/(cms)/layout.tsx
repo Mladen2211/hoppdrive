@@ -4,21 +4,19 @@ import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import {
-  LayoutDashboard,
-  Car,
+  LayoutGrid,
+  CarFront,
   CalendarDays,
   MessageSquare,
-  BarChart3,
+  BarChart2,
   Settings,
   LogOut,
-  User,
   Menu,
   X,
   Globe,
-  FileSignature,
-  PanelLeftClose,
-  PanelLeftOpen,
+  FileText,
   ChevronRight,
+  ChevronLeft,
   Bell,
   Search,
 } from 'lucide-react';
@@ -26,12 +24,12 @@ import { useState, useEffect } from 'react';
 import { AdminAuthProvider, useAdminAuth } from '@/hooks/useAdminAuth';
 
 const navItems = [
-  { href: '/', label: 'Übersicht', icon: LayoutDashboard },
-  { href: '/fleet', label: 'Flotte', icon: Car },
+  { href: '/', label: 'Übersicht', icon: LayoutGrid },
+  { href: '/fleet', label: 'Flotte', icon: CarFront },
   { href: '/availability', label: 'Kalender', icon: CalendarDays },
-  { href: '/contracts', label: 'Verträge', icon: FileSignature },
+  { href: '/contracts', label: 'Verträge', icon: FileText },
   { href: '/inquiries', label: 'Anfragen', icon: MessageSquare },
-  { href: '/reports', label: 'Berichte', icon: BarChart3 },
+  { href: '/reports', label: 'Berichte', icon: BarChart2 },
   { href: '/settings', label: 'Website', icon: Globe },
 ];
 
@@ -46,241 +44,272 @@ const PAGE_TITLES: Record<string, string> = {
   '/profile': 'Profil',
 };
 
-function AdminSidebar({ collapsed, onToggle, mobileOpen, setMobileOpen }: { collapsed: boolean; onToggle: () => void; mobileOpen: boolean; setMobileOpen: (v: boolean) => void }) {
+/* ------------------------------------------------------------------ */
+/*  Sidebar                                                           */
+/* ------------------------------------------------------------------ */
+function AdminSidebar({
+  isExpanded,
+  setIsExpanded,
+  isMobileOpen,
+  setIsMobileOpen,
+}: {
+  isExpanded: boolean;
+  setIsExpanded: (v: boolean) => void;
+  isMobileOpen: boolean;
+  setIsMobileOpen: (v: boolean) => void;
+}) {
   const pathname = usePathname();
   const { admin, logout } = useAdminAuth();
 
-  // On mobile the sidebar always shows full content regardless of collapsed state
-  const compact = collapsed && !mobileOpen;
-
-  const NavLink = ({ href, label, icon: Icon }: { href: string; label: string; icon: any }) => {
-    const active = pathname === href;
-    return (
-      <Link
-        href={href}
-        onClick={() => setMobileOpen(false)}
-        title={compact ? label : undefined}
-        className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all ${
-          compact ? 'justify-center !px-2' : ''
-        } ${
-          active
-            ? 'bg-brand-600 text-white shadow-sm'
-            : 'text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100/60'
-        }`}
-      >
-        <Icon className="w-[18px] h-[18px] shrink-0" />
-        {!compact && <span>{label}</span>}
-      </Link>
-    );
-  };
-
   return (
-    <>
-      {/* Mobile header bar */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-white border-b border-neutral-200 z-40 flex items-center px-4">
-        <button
-          onClick={() => setMobileOpen(true)}
-          className="text-neutral-700"
-          aria-label="Menü öffnen"
-        >
-          <Menu className="w-5 h-5" />
-        </button>
-        <Image src="/logo-header.png" alt="HoppDrive" width={100} height={28} className="h-7 w-auto ml-3" />
-      </div>
-
-      {/* Overlay for mobile */}
-      {mobileOpen && (
-        <div
-          className="lg:hidden fixed inset-0 bg-black/30 z-40"
-          onClick={() => setMobileOpen(false)}
-        />
-      )}
-
-      {/* Sidebar — sits behind main content for depth effect */}
-      <aside
-        className={`fixed top-0 left-0 h-full bg-neutral-100/80 transition-all duration-200 flex flex-col ${
-          compact ? 'w-[72px]' : 'w-64'
-        } ${
-          mobileOpen ? 'translate-x-0 z-50 !bg-white shadow-xl !w-64' : '-translate-x-full z-[5]'
-        } lg:translate-x-0 lg:z-[5]`}
+    <aside
+      className={`
+        fixed md:relative inset-y-0 left-0 z-50
+        bg-white/90 backdrop-blur-2xl border-r border-slate-200/60 shadow-[4px_0_24px_rgba(0,0,0,0.02)]
+        transition-all duration-[400ms] ease-[cubic-bezier(0.25,1,0.5,1)] flex flex-col
+        ${isMobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+        ${isExpanded ? 'w-72' : 'w-[84px]'}
+      `}
+    >
+      {/* Circular collapse toggle — desktop only */}
+      <button
+        onClick={() => {
+          setIsExpanded(!isExpanded);
+          localStorage.setItem('sidebar-collapsed', String(isExpanded));
+        }}
+        className="hidden md:flex absolute -right-3.5 top-8 w-7 h-7 bg-white border border-slate-200 shadow-sm rounded-full items-center justify-center text-slate-400 hover:text-red-600 hover:border-red-200 transition-all z-50 hover:scale-105"
       >
-        {/* Logo area */}
-        <div className={`h-14 flex items-center shrink-0 ${
-          compact ? 'justify-center px-2' : 'justify-between px-4'
-        }`}>
-          {!compact && (
-            <Image src="/logo-header.png" alt="HoppDrive" width={100} height={28} className="h-6 w-auto" />
+        {isExpanded ? <ChevronLeft size={16} strokeWidth={2.5} /> : <ChevronRight size={16} strokeWidth={2.5} />}
+      </button>
+
+      {/* Mobile close */}
+      <button
+        onClick={() => setIsMobileOpen(false)}
+        className="md:hidden absolute right-4 top-5 text-slate-400 hover:text-slate-700"
+      >
+        <X size={20} />
+      </button>
+
+      {/* Logo area */}
+      <div className={`h-[72px] flex items-center shrink-0 transition-all duration-300 ${isExpanded ? 'px-6' : 'px-0 justify-center'}`}>
+        <div className="flex items-center gap-3">
+          {isExpanded ? (
+            <Image src="/logo-header.png" alt="HoppDrive" width={120} height={32} className="h-7 w-auto" />
+          ) : (
+            <div className="w-9 h-9 bg-gradient-to-br from-red-500 to-red-600 rounded-xl flex items-center justify-center text-white shadow-[0_4px_12px_rgba(220,38,38,0.25)] shrink-0">
+              <CarFront size={20} strokeWidth={2.5} />
+            </div>
           )}
-          {/* Collapse / expand toggle — desktop only */}
-          <button
-            onClick={onToggle}
-            className="hidden lg:flex p-1.5 rounded-lg text-neutral-400 hover:text-neutral-700 hover:bg-neutral-200/60 transition-colors"
-            aria-label={collapsed ? 'Sidebar ausklappen' : 'Sidebar einklappen'}
-            title={collapsed ? 'Ausklappen' : 'Einklappen'}
-          >
-            {collapsed
-              ? <PanelLeftOpen className="w-[18px] h-[18px]" />
-              : <PanelLeftClose className="w-[18px] h-[18px]" />}
-          </button>
-          {/* Mobile close */}
-          <button
-            onClick={() => setMobileOpen(false)}
-            className="lg:hidden p-1 rounded-lg text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 transition-colors"
-            aria-label="Menü schliessen"
-          >
-            <X className="w-5 h-5" />
-          </button>
+        </div>
+      </div>
+
+      {/* Navigation */}
+      <nav className="flex-1 overflow-y-auto overflow-x-hidden py-6 px-4 space-y-1.5">
+        <div className={`px-2 mb-4 text-[11px] font-bold tracking-widest text-slate-400 uppercase transition-all duration-300 ${isExpanded ? 'opacity-100' : 'opacity-0 h-0 mb-0 overflow-hidden'}`}>
+          Hauptmenü
         </div>
 
-        {/* Main navigation */}
-        <nav className={`flex-1 py-2 space-y-0.5 overflow-y-auto ${compact ? 'px-2' : 'px-3'}`}>
-          {navItems.map((item) => (
-            <NavLink key={item.href} {...item} />
-          ))}
-        </nav>
+        {navItems.map((item) => {
+          const Icon = item.icon;
+          const active = pathname === item.href;
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              onClick={() => setIsMobileOpen(false)}
+              title={!isExpanded ? item.label : undefined}
+              className={`relative flex items-center px-3 py-2.5 rounded-xl text-sm transition-all duration-200 group overflow-hidden ${
+                active ? 'text-red-700 font-medium' : 'text-slate-500 hover:text-slate-900'
+              }`}
+            >
+              {/* Active background + accent bar */}
+              {active && (
+                <>
+                  <div className="absolute inset-0 bg-red-50 opacity-80 rounded-xl" />
+                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-1/2 bg-red-600 rounded-r-full" />
+                </>
+              )}
 
-        {/* Bottom section */}
-        <div className={`border-t border-neutral-200/60 py-2 space-y-0.5 ${compact ? 'px-2' : 'px-3'}`}>
-          <button
-            onClick={logout}
-            title={compact ? 'Abmelden' : undefined}
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium text-neutral-500 hover:text-red-600 hover:bg-red-50 transition-all w-full ${
-              compact ? 'justify-center !px-2' : ''
-            }`}
-          >
-            <LogOut className="w-[18px] h-[18px] shrink-0" />
-            {!compact && <span>Abmelden</span>}
-          </button>
-        </div>
+              {/* Hover background */}
+              {!active && (
+                <div className="absolute inset-0 bg-slate-50 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl -z-10" />
+              )}
 
-        {/* User info */}
-        {admin && (
-          <div className={`border-t border-neutral-200/60 py-3 shrink-0 ${
-            compact ? 'px-2 flex justify-center' : 'px-4'
-          }`}>
-            {compact ? (
-              <Link href="/profile" title={admin.firstName || admin.name || 'Profil'}>
-                <div className="w-8 h-8 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center text-xs font-semibold">
-                  {(admin.firstName?.[0] || admin.name?.[0] || 'A').toUpperCase()}
-                </div>
-              </Link>
-            ) : (
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center text-xs font-semibold shrink-0">
-                  {(admin.firstName?.[0] || admin.name?.[0] || 'A').toUpperCase()}
-                </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-neutral-900 truncate">
-                    {admin.firstName && admin.lastName
-                      ? `${admin.firstName} ${admin.lastName}`
-                      : admin.name || 'Admin'}
-                  </p>
-                  <p className="text-[11px] text-neutral-400 truncate">{admin.email}</p>
-                </div>
+              <div className={`flex items-center z-10 ${isExpanded ? '' : 'mx-auto'}`}>
+                <Icon
+                  className={`w-5 h-5 shrink-0 transition-all duration-300 ${
+                    active
+                      ? 'text-red-600 drop-shadow-sm'
+                      : 'text-slate-400 group-hover:text-slate-600 group-hover:scale-110'
+                  }`}
+                  strokeWidth={active ? 2.5 : 2}
+                />
+                <span
+                  className={`transition-all duration-300 whitespace-nowrap ${
+                    isExpanded
+                      ? 'ml-3 w-auto opacity-100 translate-x-0'
+                      : 'ml-0 w-0 opacity-0 -translate-x-4 hidden'
+                  }`}
+                >
+                  {item.label}
+                </span>
               </div>
-            )}
+            </Link>
+          );
+        })}
+      </nav>
+
+      {/* User area */}
+      <div className="p-4 shrink-0">
+        <div
+          className={`flex items-center border border-slate-200/60 shadow-sm transition-all duration-300 overflow-hidden ${
+            isExpanded
+              ? 'p-3 bg-white rounded-2xl justify-between'
+              : 'p-2 bg-transparent border-transparent justify-center'
+          }`}
+        >
+          <div className="flex items-center gap-3 min-w-0">
+            <Link href="/profile" title={!isExpanded ? (admin?.firstName || admin?.name || 'Profil') : undefined}>
+              <div className={`w-9 h-9 shrink-0 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center font-bold text-sm border border-slate-200 ring-2 ring-white transition-all ${!isExpanded && 'hover:ring-red-100 cursor-pointer'}`}>
+                {(admin?.firstName?.[0] || admin?.name?.[0] || 'A').toUpperCase()}
+              </div>
+            </Link>
+            <div className={`flex flex-col truncate transition-all duration-300 ${isExpanded ? 'w-[100px] opacity-100' : 'w-0 opacity-0 hidden'}`}>
+              <span className="text-sm font-semibold text-slate-900 truncate">
+                {admin?.firstName && admin?.lastName
+                  ? `${admin.firstName} ${admin.lastName}`
+                  : admin?.name || 'Admin'}
+              </span>
+              <span className="text-[11px] text-slate-500 truncate">{admin?.email || 'HoppDrive'}</span>
+            </div>
           </div>
-        )}
-      </aside>
-    </>
+
+          {isExpanded && (
+            <button
+              onClick={logout}
+              className="text-slate-400 hover:text-red-600 hover:bg-red-50 p-1.5 rounded-lg transition-colors shrink-0"
+              title="Abmelden"
+            >
+              <LogOut size={16} />
+            </button>
+          )}
+        </div>
+      </div>
+    </aside>
   );
 }
 
-/** Top navbar inside main content area */
-function AdminTopbar({ openMobile }: { openMobile: () => void }) {
-  const pathname = usePathname();
-  const { admin } = useAdminAuth();
-
-  const pageTitle = PAGE_TITLES[pathname] || '';
-
-  return (
-    <header className="h-14 border-b border-neutral-200 bg-white/80 backdrop-blur-sm flex items-center justify-between px-6 lg:px-8 shrink-0 sticky top-0 z-20">
-      <div className="flex items-center gap-4">
-        <button onClick={openMobile} className="lg:hidden text-neutral-500 p-2 -ml-2 rounded-lg hover:bg-neutral-100/50 transition-colors" aria-label="Menü öffnen">
-          <Menu className="w-5 h-5" />
-        </button>
-        <div className="flex items-center text-sm text-neutral-500 hidden sm:flex">
-          <span className="hover:text-neutral-800 cursor-pointer transition-colors">HoppDrive</span>
-          <ChevronRight className="mx-1.5 text-neutral-300" />
-          <span className="text-neutral-900 font-medium bg-neutral-100 px-2 py-1 rounded-md">{pageTitle}</span>
-        </div>
-      </div>
-
-      <div className="flex items-center gap-2">
-        <div className="relative hidden lg:block">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
-          <input
-            type="text"
-            placeholder="Schnellsuche..."
-            className="pl-9 pr-4 py-2 bg-neutral-100/50 border border-transparent rounded-lg text-sm focus:outline-none focus:bg-white focus:ring-2 focus:ring-brand-500/20 focus:border-brand-400 w-64 transition-all placeholder:text-neutral-400 shadow-sm"
-          />
-        </div>
-
-        <div className="h-5 w-px bg-neutral-200 mx-2 hidden sm:block"></div>
-
-        <button className="relative p-2 text-neutral-400 hover:text-neutral-800 hover:bg-neutral-100/50 rounded-lg transition-all">
-          <Bell className="w-5 h-5" />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-brand-600 rounded-full ring-2 ring-white shadow-sm"></span>
-        </button>
-
-        <Link href="/settings" className="p-2 text-neutral-400 hover:text-neutral-800 hover:bg-neutral-100/50 rounded-lg transition-all" title="Website-Einstellungen">
-          <Settings className="w-5 h-5" />
-        </Link>
-      </div>
-    </header>
-  );
-}
-
+/* ------------------------------------------------------------------ */
+/*  Inner layout (auth guard + shell)                                 */
+/* ------------------------------------------------------------------ */
 const PUBLIC_ROUTES = ['/login', '/reset-password'];
 
 function AdminLayoutInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { loading, token } = useAdminAuth();
   const isPublicRoute = PUBLIC_ROUTES.includes(pathname);
-  const [collapsed, setCollapsed] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
 
+  const [isExpanded, setIsExpanded] = useState(true);
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
+
+  // Restore saved collapsed state
   useEffect(() => {
     const saved = localStorage.getItem('sidebar-collapsed');
-    if (saved === 'true') setCollapsed(true);
+    if (saved === 'true') setIsExpanded(false);
   }, []);
 
-  const toggleCollapsed = () => {
-    setCollapsed((prev) => {
-      localStorage.setItem('sidebar-collapsed', String(!prev));
-      return !prev;
-    });
-  };
+  // Close mobile sidebar on desktop resize
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 768) setIsMobileOpen(false);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
-  // Public routes (login, reset) render without sidebar
-  if (isPublicRoute) {
-    return <>{children}</>;
-  }
+  // --- Public routes (login, reset) ---
+  if (isPublicRoute) return <>{children}</>;
 
-  // While checking auth
+  // --- Loading auth ---
   if (loading) {
     return (
-      <div className="min-h-screen bg-neutral-100 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-2 border-brand-600 border-t-transparent" />
+      <div className="flex h-screen items-center justify-center bg-gradient-to-br from-[#F8FAFC] to-[#F1F5F9]">
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-red-600 border-t-transparent" />
       </div>
     );
   }
 
-  // Not authenticated (redirect happens in provider)
-  if (!token) {
-    return null;
-  }
+  // --- Not authenticated ---
+  if (!token) return null;
+
+  const pageTitle = PAGE_TITLES[pathname] || '';
 
   return (
-    <div className="min-h-screen bg-neutral-200/60">
-      <AdminSidebar collapsed={collapsed} onToggle={toggleCollapsed} mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} />
-      {/* Main content floats above sidebar for depth */}
-      <main className={`${collapsed ? 'lg:pl-14' : 'lg:pl-56'} pt-14 lg:pt-0 min-h-screen relative z-10 transition-[padding] duration-200`}>
-        <div className="min-h-screen bg-white lg:rounded-l-[20px] lg:shadow-[−12px_0_40px_rgba(0,0,0,0.08),−2px_0_8px_rgba(0,0,0,0.04)] flex flex-col"
-          style={{ boxShadow: '-12px 0 40px rgba(0,0,0,0.08), -2px 0 8px rgba(0,0,0,0.04)' }}
-        >
-          <AdminTopbar openMobile={() => setMobileOpen(true)} />
-          <div className="flex-1 p-6 lg:p-8">{children}</div>
+    <div className="flex h-screen bg-gradient-to-br from-[#F8FAFC] to-[#F1F5F9] font-sans text-slate-900 overflow-hidden selection:bg-red-100 selection:text-red-900">
+      {/* Mobile overlay */}
+      {isMobileOpen && (
+        <div
+          className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-40 md:hidden transition-opacity"
+          onClick={() => setIsMobileOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <AdminSidebar
+        isExpanded={isExpanded}
+        setIsExpanded={setIsExpanded}
+        isMobileOpen={isMobileOpen}
+        setIsMobileOpen={setIsMobileOpen}
+      />
+
+      {/* Main content */}
+      <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
+        {/* Glassmorphism header */}
+        <header className="h-[72px] bg-white/70 backdrop-blur-xl border-b border-slate-200/60 flex items-center justify-between px-4 sm:px-6 lg:px-8 z-30 sticky top-0 supports-[backdrop-filter]:bg-white/40">
+          <div className="flex items-center gap-4">
+            <button
+              className="md:hidden text-slate-500 hover:text-slate-900 p-2 -ml-2 rounded-lg hover:bg-slate-100/50 transition-colors"
+              onClick={() => setIsMobileOpen(true)}
+            >
+              <Menu size={20} />
+            </button>
+            <div className="items-center text-sm text-slate-500 hidden sm:flex">
+              <span className="hover:text-slate-800 cursor-pointer transition-colors">HoppDrive</span>
+              <ChevronRight size={14} className="mx-1.5 text-slate-300" />
+              <span className="text-slate-900 font-medium bg-slate-100 px-2 py-1 rounded-md">{pageTitle}</span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1 sm:gap-3">
+            <div className="relative hidden lg:block group">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-red-500 transition-colors" />
+              <input
+                type="text"
+                placeholder="Schnellsuche..."
+                className="pl-9 pr-4 py-2 bg-slate-100/50 border border-transparent rounded-lg text-sm focus:outline-none focus:bg-white focus:ring-2 focus:ring-red-500/20 focus:border-red-400 w-64 transition-all placeholder:text-slate-400 shadow-sm"
+              />
+              <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                <kbd className="px-1.5 py-0.5 text-[10px] font-medium text-slate-400 bg-white border border-slate-200 rounded shrink-0">⌘</kbd>
+                <kbd className="px-1.5 py-0.5 text-[10px] font-medium text-slate-400 bg-white border border-slate-200 rounded shrink-0">K</kbd>
+              </div>
+            </div>
+
+            <div className="h-5 w-px bg-slate-200 mx-2 hidden sm:block" />
+
+            <button className="relative p-2 text-slate-400 hover:text-slate-800 hover:bg-slate-100/50 rounded-lg transition-all">
+              <Bell className="w-5 h-5" />
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white shadow-sm" />
+            </button>
+
+            <Link href="/settings" className="p-2 text-slate-400 hover:text-slate-800 hover:bg-slate-100/50 rounded-lg transition-all" title="Website-Einstellungen">
+              <Settings className="w-5 h-5" />
+            </Link>
+          </div>
+        </header>
+
+        {/* Scrollable page content */}
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+          <div className="max-w-[1400px] mx-auto pb-12">{children}</div>
         </div>
       </main>
     </div>
