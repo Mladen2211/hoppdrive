@@ -29,7 +29,7 @@ export function invoiceRoutes(container: Container): Router {
     }
   });
 
-  /** POST /api/invoices/bulk – Create a combined invoice for multiple bookings (monthly / total) */
+  /** POST /api/invoices/bulk – Generate one invoice per booking, merged into a single PDF */
   router.post('/bulk', auth, async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { bookingIds, notes, vatRate: customVatRate, dueDays, label } = req.body;
@@ -41,13 +41,14 @@ export function invoiceRoutes(container: Container): Router {
       const bookings = await container.prisma.booking.findMany({
         where: { id: { in: bookingIds } },
         include: { vehicle: true },
+        orderBy: { startDate: 'asc' },
       }) as any[];
       if (bookings.length === 0) {
         res.status(404).json({ success: false, error: 'No bookings found' });
         return;
       }
 
-      // Generate sequential invoice number
+      // Get next sequential invoice number
       const year = new Date().getFullYear();
       const lastInv = await container.prisma.invoice.findFirst({
         where: { invoiceNumber: { startsWith: `HD-${year}-` } },
@@ -58,79 +59,84 @@ export function invoiceRoutes(container: Container): Router {
         const parts = lastInv.invoiceNumber.split('-');
         seq = parseInt(parts[2], 10) + 1;
       }
-      const invoiceNumber = `HD-${year}-${String(seq).padStart(5, '0')}`;
 
       const vatRate = customVatRate ?? SWISS_VAT_RATE;
-      let subtotal = 0;
-      const items: InvoiceLineItem[] = [];
+      const issueDate = new Date();
+      const dueDate = new Date();
+      dueDate.setDate(dueDate.getDate() + (dueDays ?? 30));
+
+      // Generate one invoice PDF per booking, then merge all pages into one PDF
+      const { PDFDocument } = await import('pdf-lib');
+      const mergedPdf = await PDFDocument.create();
 
       for (const b of bookings) {
         const days = Math.max(1, Math.ceil(
           (new Date(b.endDate).getTime() - new Date(b.startDate).getTime()) / (1000 * 60 * 60 * 24),
         ));
         const price = Number(b.totalPrice) || 0;
-        items.push({
-          description: `${b.vehicle.brand} ${b.vehicle.model} – ${b.customerName} (${new Date(b.startDate).toLocaleDateString('de-CH')} – ${new Date(b.endDate).toLocaleDateString('de-CH')})`,
+        const vatAmount = Math.round(price * vatRate) / 100;
+        const total = price + vatAmount;
+        const invoiceNumber = `HD-${year}-${String(seq).padStart(5, '0')}`;
+        seq++;
+
+        const items: InvoiceLineItem[] = [{
+          description: `Fahrzeugmiete – ${b.vehicle.brand} ${b.vehicle.model} (${new Date(b.startDate).toLocaleDateString('de-CH')} – ${new Date(b.endDate).toLocaleDateString('de-CH')})`,
           quantity: days,
           unitPrice: price / days,
           total: price,
+        }];
+
+        // Store invoice record
+        await container.prisma.invoice.create({
+          data: {
+            invoiceNumber,
+            bookingId: b.id,
+            customerName: b.customerName,
+            customerEmail: b.customerEmail,
+            issueDate,
+            dueDate,
+            subtotal: price,
+            vatRate,
+            vatAmount,
+            total,
+            currency: b.currency || 'CHF',
+            status: 'DRAFT',
+            notes: notes || (label ? `${label}` : null),
+          },
         });
-        subtotal += price;
-      }
 
-      const vatAmount = Math.round(subtotal * vatRate) / 100;
-      const total = subtotal + vatAmount;
-      const issueDate = new Date();
-      const dueDate = new Date();
-      dueDate.setDate(dueDate.getDate() + (dueDays ?? 30));
-
-      // Use first booking's customer or a label
-      const customerName = label || bookings[0].customerName;
-      const customerEmail = bookings[0].customerEmail;
-
-      // Store invoice linked to first booking
-      const invoice = await container.prisma.invoice.create({
-        data: {
+        // Generate individual invoice PDF
+        const pdfBytes = await container.pdfService.generateInvoice({
           invoiceNumber,
-          bookingId: bookings[0].id,
-          customerName,
-          customerEmail,
           issueDate,
           dueDate,
-          subtotal,
+          customerName: b.customerName,
+          customerEmail: b.customerEmail,
+          customerAddress: null,
+          items,
+          subtotal: price,
           vatRate,
           vatAmount,
           total,
-          currency: bookings[0].currency || 'CHF',
-          status: 'DRAFT',
-          notes: notes || (label ? `Sammelrechnung: ${label}` : null),
-        },
-        include: { booking: { include: { vehicle: true } } },
-      });
+          currency: b.currency || 'CHF',
+          notes: notes || null,
+          bookingRef: b.id.substring(0, 8).toUpperCase(),
+        });
 
-      // Generate the PDF immediately with all line items
-      const pdfBytes = await container.pdfService.generateInvoice({
-        invoiceNumber,
-        issueDate,
-        dueDate,
-        customerName,
-        customerEmail,
-        customerAddress: null,
-        items,
-        subtotal,
-        vatRate,
-        vatAmount,
-        total,
-        currency: bookings[0].currency || 'CHF',
-        notes: invoice.notes,
-        bookingRef: label || null,
-      });
+        // Copy pages into merged document
+        const singlePdf = await PDFDocument.load(pdfBytes);
+        const pages = await mergedPdf.copyPages(singlePdf, singlePdf.getPageIndices());
+        for (const page of pages) {
+          mergedPdf.addPage(page);
+        }
+      }
 
-      const filename = `HoppDrive-Rechnung-${invoiceNumber}.pdf`;
+      const mergedBytes = await mergedPdf.save();
+      const filename = `HoppDrive-${(label || 'Rechnungen').replace(/\s+/g, '-')}.pdf`;
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-      res.setHeader('Content-Length', pdfBytes.length);
-      res.send(Buffer.from(pdfBytes));
+      res.setHeader('Content-Length', mergedBytes.length);
+      res.send(Buffer.from(mergedBytes));
     } catch (err) {
       next(err);
     }
