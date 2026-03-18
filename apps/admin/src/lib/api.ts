@@ -170,6 +170,8 @@ export const api = {
     client.patch(`/invoices/${id}`, data).then(unwrap) as Promise<any>,
   downloadInvoice: (id: string) =>
     client.get(`/invoices/${id}/download`, { responseType: 'blob' }).then((res) => res.data) as Promise<Blob>,
+  downloadBulkInvoice: (data: { bookingIds: string[]; notes?: string; label?: string }) =>
+    client.post('/invoices/bulk', data, { responseType: 'blob' }).then((res) => res.data) as Promise<Blob>,
   sendInvoice: (id: string) =>
     client.post(`/invoices/${id}/send`).then(unwrap) as Promise<any>,
 

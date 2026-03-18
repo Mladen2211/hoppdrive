@@ -19,6 +19,9 @@ import {
   X,
   FileText,
   Filter,
+  Receipt,
+  Loader2,
+  CalendarRange,
 } from 'lucide-react';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { api } from '@/lib/api';
@@ -86,6 +89,15 @@ export default function ContractsPage() {
   const [showSignature, setShowSignature] = useState(false);
   const [signingBooking, setSigningBooking] = useState<Booking | null>(null);
   const [signingLoading, setSigningLoading] = useState(false);
+
+  // Invoice
+  const [invoiceLoading, setInvoiceLoading] = useState<string | null>(null); // bookingId being invoiced
+  const [bulkInvoiceLoading, setBulkInvoiceLoading] = useState<'month' | 'total' | null>(null);
+  const [showMonthPicker, setShowMonthPicker] = useState(false);
+  const [selectedMonth, setSelectedMonth] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  });
 
   async function fetchData() {
     try {
@@ -172,17 +184,72 @@ export default function ContractsPage() {
     }
   }
 
+  function triggerBlobDownload(blob: Blob, filename: string) {
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  }
+
+  async function handleCreateInvoice(booking: Booking) {
+    setInvoiceLoading(booking.id);
+    try {
+      const invoice = await api.createInvoice({ bookingId: booking.id });
+      const blob = await api.downloadInvoice(invoice.id);
+      triggerBlobDownload(blob, `HoppDrive-Rechnung-${invoice.invoiceNumber}.pdf`);
+    } catch (err: any) {
+      alert(err.message || 'Rechnung konnte nicht erstellt werden.');
+    } finally {
+      setInvoiceLoading(null);
+    }
+  }
+
+  async function handleBulkInvoice(type: 'month' | 'total') {
+    setBulkInvoiceLoading(type);
+    try {
+      let ids: string[];
+      let label: string;
+      if (type === 'month') {
+        const [yearStr, monthStr] = selectedMonth.split('-');
+        const y = parseInt(yearStr, 10);
+        const m = parseInt(monthStr, 10);
+        const monthStart = new Date(y, m - 1, 1);
+        const monthEnd = new Date(y, m, 0, 23, 59, 59);
+        ids = bookings
+          .filter((b) => b.status !== 'cancelled')
+          .filter((b) => {
+            const start = new Date(b.startDate);
+            return start >= monthStart && start <= monthEnd;
+          })
+          .map((b) => b.id);
+        const monthName = monthStart.toLocaleDateString('de-CH', { month: 'long', year: 'numeric' });
+        label = `Monatsrechnung ${monthName}`;
+      } else {
+        ids = bookings.filter((b) => b.status !== 'cancelled').map((b) => b.id);
+        label = 'Gesamtrechnung';
+      }
+      if (ids.length === 0) {
+        alert('Keine Buchungen für diesen Zeitraum gefunden.');
+        return;
+      }
+      const blob = await api.downloadBulkInvoice({ bookingIds: ids, label });
+      triggerBlobDownload(blob, `HoppDrive-${label.replace(/\s+/g, '-')}.pdf`);
+      setShowMonthPicker(false);
+    } catch (err: any) {
+      alert(err.message || 'Rechnung konnte nicht erstellt werden.');
+    } finally {
+      setBulkInvoiceLoading(null);
+    }
+  }
+
   async function handleDownloadContract(bookingId: string) {
     try {
       const blob = await api.downloadContract(bookingId);
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `HoppDrive-Vertrag-${bookingId.substring(0, 8).toUpperCase()}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      triggerBlobDownload(blob, `HoppDrive-Vertrag-${bookingId.substring(0, 8).toUpperCase()}.pdf`);
     } catch (err: any) {
       alert(err.message || 'Vertrag konnte nicht heruntergeladen werden.');
     }
@@ -220,6 +287,47 @@ export default function ContractsPage() {
         <div>
           <h1 className="text-2xl font-bold text-neutral-900">Verträge</h1>
           <p className="text-sm text-neutral-500 mt-1">Mietverträge verwalten, signieren und herunterladen</p>
+        </div>
+        <div className="flex items-center gap-2">
+          {/* Monthly invoice */}
+          <div className="relative">
+            <button
+              onClick={() => setShowMonthPicker(!showMonthPicker)}
+              disabled={bulkInvoiceLoading === 'month'}
+              className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-neutral-700 bg-white border border-neutral-300 hover:bg-neutral-50 rounded-lg transition-colors disabled:opacity-50"
+            >
+              {bulkInvoiceLoading === 'month' ? <Loader2 className="w-4 h-4 animate-spin" /> : <CalendarRange className="w-4 h-4" />}
+              Monatsrechnung
+            </button>
+            {showMonthPicker && (
+              <div className="absolute right-0 top-full mt-1 bg-white border border-neutral-200 rounded-lg shadow-lg p-3 z-20 min-w-[220px]">
+                <label className="block text-xs font-medium text-neutral-500 mb-1.5">Monat wählen</label>
+                <input
+                  type="month"
+                  value={selectedMonth}
+                  onChange={(e) => setSelectedMonth(e.target.value)}
+                  className="w-full border border-neutral-300 rounded-lg px-2.5 py-1.5 text-sm mb-2 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                />
+                <button
+                  onClick={() => handleBulkInvoice('month')}
+                  disabled={bulkInvoiceLoading === 'month'}
+                  className="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 rounded-lg transition-colors disabled:opacity-50"
+                >
+                  {bulkInvoiceLoading === 'month' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Receipt className="w-4 h-4" />}
+                  PDF erstellen
+                </button>
+              </div>
+            )}
+          </div>
+          {/* Total invoice */}
+          <button
+            onClick={() => handleBulkInvoice('total')}
+            disabled={bulkInvoiceLoading === 'total'}
+            className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors disabled:opacity-50"
+          >
+            {bulkInvoiceLoading === 'total' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Receipt className="w-4 h-4" />}
+            Gesamtrechnung
+          </button>
         </div>
       </div>
 
@@ -469,7 +577,17 @@ export default function ContractsPage() {
                                 className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-brand-700 bg-brand-50 hover:bg-brand-100 rounded-lg transition-colors border border-brand-200"
                               >
                                 <Download className="w-4 h-4" />
-                                PDF herunterladen
+                                Vertrag PDF
+                              </button>
+                            )}
+                            {!isCancelled && booking.totalPrice != null && booking.totalPrice > 0 && (
+                              <button
+                                onClick={() => handleCreateInvoice(booking)}
+                                disabled={invoiceLoading === booking.id}
+                                className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-red-700 bg-red-50 hover:bg-red-100 rounded-lg transition-colors border border-red-200 disabled:opacity-50"
+                              >
+                                {invoiceLoading === booking.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Receipt className="w-4 h-4" />}
+                                Rechnung erstellen
                               </button>
                             )}
                           </div>

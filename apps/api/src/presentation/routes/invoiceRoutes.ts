@@ -29,6 +29,113 @@ export function invoiceRoutes(container: Container): Router {
     }
   });
 
+  /** POST /api/invoices/bulk – Create a combined invoice for multiple bookings (monthly / total) */
+  router.post('/bulk', auth, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { bookingIds, notes, vatRate: customVatRate, dueDays, label } = req.body;
+      if (!Array.isArray(bookingIds) || bookingIds.length === 0) {
+        res.status(400).json({ success: false, error: 'bookingIds[] is required' });
+        return;
+      }
+
+      const bookings = await container.prisma.booking.findMany({
+        where: { id: { in: bookingIds } },
+        include: { vehicle: true },
+      }) as any[];
+      if (bookings.length === 0) {
+        res.status(404).json({ success: false, error: 'No bookings found' });
+        return;
+      }
+
+      // Generate sequential invoice number
+      const year = new Date().getFullYear();
+      const lastInv = await container.prisma.invoice.findFirst({
+        where: { invoiceNumber: { startsWith: `HD-${year}-` } },
+        orderBy: { invoiceNumber: 'desc' },
+      });
+      let seq = 1;
+      if (lastInv) {
+        const parts = lastInv.invoiceNumber.split('-');
+        seq = parseInt(parts[2], 10) + 1;
+      }
+      const invoiceNumber = `HD-${year}-${String(seq).padStart(5, '0')}`;
+
+      const vatRate = customVatRate ?? SWISS_VAT_RATE;
+      let subtotal = 0;
+      const items: InvoiceLineItem[] = [];
+
+      for (const b of bookings) {
+        const days = Math.max(1, Math.ceil(
+          (new Date(b.endDate).getTime() - new Date(b.startDate).getTime()) / (1000 * 60 * 60 * 24),
+        ));
+        const price = Number(b.totalPrice) || 0;
+        items.push({
+          description: `${b.vehicle.brand} ${b.vehicle.model} – ${b.customerName} (${new Date(b.startDate).toLocaleDateString('de-CH')} – ${new Date(b.endDate).toLocaleDateString('de-CH')})`,
+          quantity: days,
+          unitPrice: price / days,
+          total: price,
+        });
+        subtotal += price;
+      }
+
+      const vatAmount = Math.round(subtotal * vatRate) / 100;
+      const total = subtotal + vatAmount;
+      const issueDate = new Date();
+      const dueDate = new Date();
+      dueDate.setDate(dueDate.getDate() + (dueDays ?? 30));
+
+      // Use first booking's customer or a label
+      const customerName = label || bookings[0].customerName;
+      const customerEmail = bookings[0].customerEmail;
+
+      // Store invoice linked to first booking
+      const invoice = await container.prisma.invoice.create({
+        data: {
+          invoiceNumber,
+          bookingId: bookings[0].id,
+          customerName,
+          customerEmail,
+          issueDate,
+          dueDate,
+          subtotal,
+          vatRate,
+          vatAmount,
+          total,
+          currency: bookings[0].currency || 'CHF',
+          status: 'DRAFT',
+          notes: notes || (label ? `Sammelrechnung: ${label}` : null),
+        },
+        include: { booking: { include: { vehicle: true } } },
+      });
+
+      // Generate the PDF immediately with all line items
+      const pdfBytes = await container.pdfService.generateInvoice({
+        invoiceNumber,
+        issueDate,
+        dueDate,
+        customerName,
+        customerEmail,
+        customerAddress: null,
+        items,
+        subtotal,
+        vatRate,
+        vatAmount,
+        total,
+        currency: bookings[0].currency || 'CHF',
+        notes: invoice.notes,
+        bookingRef: label || null,
+      });
+
+      const filename = `HoppDrive-Rechnung-${invoiceNumber}.pdf`;
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.setHeader('Content-Length', pdfBytes.length);
+      res.send(Buffer.from(pdfBytes));
+    } catch (err) {
+      next(err);
+    }
+  });
+
   /** POST /api/invoices – Create invoice from a booking */
   router.post('/', auth, async (req: Request, res: Response, next: NextFunction) => {
     try {
