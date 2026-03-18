@@ -4,7 +4,13 @@ import { useEffect, useState, useRef } from 'react';
 import { Save, Loader2, Eye, EyeOff, Check, PenTool, RotateCcw, Trash2 } from 'lucide-react';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { api } from '@/lib/api';
-import SignatureCanvas from 'react-signature-canvas';
+import type SignatureCanvasType from 'react-signature-canvas';
+
+let SignatureCanvas: typeof import('react-signature-canvas').default | null = null;
+if (typeof window !== 'undefined') {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  SignatureCanvas = require('react-signature-canvas').default;
+}
 
 export default function ProfilePage() {
   const { token, login } = useAdminAuth();
@@ -12,6 +18,7 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
+  const [mounted, setMounted] = useState(false);
 
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -22,7 +29,7 @@ export default function ProfilePage() {
   const [existingSignature, setExistingSignature] = useState<string | null>(null);
   const [signatureSaving, setSignatureSaving] = useState(false);
   const [signatureSaved, setSignatureSaved] = useState(false);
-  const sigRef = useRef<SignatureCanvas | null>(null);
+  const sigRef = useRef<SignatureCanvasType | null>(null);
   const [sigIsEmpty, setSigIsEmpty] = useState(true);
 
   // Password section
@@ -31,6 +38,8 @@ export default function ProfilePage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
+
+  useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
     if (!token) return;
@@ -286,16 +295,18 @@ export default function ProfilePage() {
           )}
 
           <div className="relative border-2 border-dashed border-neutral-300 rounded-xl bg-neutral-50 overflow-hidden">
-            <SignatureCanvas
-              ref={sigRef}
-              penColor="#1a1a1a"
-              canvasProps={{
-                className: 'w-full',
-                style: { width: '100%', height: '160px' },
-              }}
-              onBegin={() => setSigIsEmpty(false)}
-              onEnd={() => setSigIsEmpty(false)}
-            />
+            {mounted && SignatureCanvas && (
+              <SignatureCanvas
+                ref={sigRef}
+                penColor="#1a1a1a"
+                canvasProps={{
+                  className: 'w-full',
+                  style: { width: '100%', height: '160px' },
+                }}
+                onBegin={() => setSigIsEmpty(false)}
+                onEnd={() => setSigIsEmpty(false)}
+              />
+            )}
             {sigIsEmpty && (
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                 <p className="text-neutral-400 text-sm">Neue Unterschrift zeichnen…</p>
@@ -314,7 +325,7 @@ export default function ProfilePage() {
             </button>
             <button
               type="button"
-              disabled={sigIsEmpty || signatureSaving}
+              disabled={signatureSaving}
               onClick={async () => {
                 if (!sigRef.current || sigRef.current.isEmpty()) {
                   setError('Bitte zuerst eine Unterschrift zeichnen.');
