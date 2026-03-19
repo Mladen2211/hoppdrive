@@ -115,4 +115,4 @@ export function PricingSection({ config }: PricingSectionProps) {
       </div>
     </section>
   );
-}}
+}
