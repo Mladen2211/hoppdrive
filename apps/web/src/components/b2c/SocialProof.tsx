@@ -53,7 +53,21 @@ function StarRating({ rating }: { rating: number }) {
   );
 }
 
-export function SocialProof() {
+export interface SocialProofContent {
+  label?: string;
+  heading?: string;
+  description?: string;
+}
+
+interface SocialProofProps {
+  content?: SocialProofContent;
+}
+
+export function SocialProof({ content }: SocialProofProps) {
+  const c = content || {};
+  const label = c.label ?? 'Kundenstimmen';
+  const heading = c.heading ?? 'Was unsere Kunden sagen';
+  const description = c.description ?? 'Hunderte zufriedene Mieter vertrauen HoppDrive für günstige und flexible Mobilität.';
   const [testimonials, setTestimonials] = useState<Testimonial[]>(FALLBACK_TESTIMONIALS);
 
   useEffect(() => {
@@ -70,13 +84,13 @@ export function SocialProof() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
           <span className="text-brand-600 font-semibold text-sm uppercase tracking-wider">
-            Kundenstimmen
+            {label}
           </span>
           <h2 className="text-3xl md:text-4xl font-bold mt-3 mb-4">
-            Was unsere Kunden sagen
+            {heading}
           </h2>
           <p className="text-neutral-500 max-w-2xl mx-auto text-lg">
-            Hunderte zufriedene Mieter vertrauen HoppDrive für günstige und flexible Mobilität.
+            {description}
           </p>
         </div>
 

@@ -24,7 +24,16 @@ const DEFAULTS: LocationConfig = {
   zoom: 14,
 };
 
-export function MapSection() {
+export interface MapContent {
+  heading?: string;
+}
+
+interface MapSectionProps {
+  content?: MapContent;
+}
+
+export function MapSection({ content }: MapSectionProps) {
+  const mapHeading = content?.heading;
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const [config, setConfig] = useState<LocationConfig | null>(null);
@@ -115,7 +124,7 @@ export function MapSection() {
         {/* Header */}
         <div className="text-center mb-10">
           <h2 className="text-3xl sm:text-4xl font-bold text-charcoal mb-3">
-            {config?.title || DEFAULTS.title}
+            {mapHeading || config?.title || DEFAULTS.title}
           </h2>
           {config?.address && (
             <a

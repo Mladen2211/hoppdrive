@@ -22,6 +22,7 @@ import {
   MapPin,
   Star,
   HelpCircle,
+  Home,
 } from 'lucide-react';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { AdminAuthProvider, useAdminAuth } from '@/hooks/useAdminAuth';
@@ -36,6 +37,7 @@ const navItems = [
   { href: '/locations', label: 'Standorte', icon: MapPin },
   { href: '/testimonials', label: 'Bewertungen', icon: Star },
   { href: '/faq', label: 'FAQ', icon: HelpCircle },
+  { href: '/homepage', label: 'Homepage', icon: Home },
   { href: '/reports', label: 'Berichte', icon: BarChart2 },
   { href: '/settings', label: 'Website', icon: Globe },
 ];
@@ -49,6 +51,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/locations': 'Standorte',
   '/testimonials': 'Kundenstimmen',
   '/faq': 'FAQ',
+  '/homepage': 'Homepage-Sektionen',
   '/reports': 'Berichte',
   '/settings': 'Website-Einstellungen',
   '/profile': 'Profil',

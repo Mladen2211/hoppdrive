@@ -78,7 +78,21 @@ function AccordionItem({ item, isOpen, onToggle }: { item: FaqItemData; isOpen: 
   );
 }
 
-export function FaqSection() {
+export interface FaqContent {
+  label?: string;
+  heading?: string;
+  description?: string;
+}
+
+interface FaqSectionProps {
+  content?: FaqContent;
+}
+
+export function FaqSection({ content }: FaqSectionProps) {
+  const c = content || {};
+  const label = c.label ?? 'Häufige Fragen';
+  const heading = c.heading ?? 'Alles was Sie wissen müssen';
+  const description = c.description ?? 'Finden Sie schnell Antworten auf die häufigsten Fragen rund um unsere Mietwagen.';
   const [faqItems, setFaqItems] = useState<FaqItemData[]>(FALLBACK_FAQ);
   const [openIndex, setOpenIndex] = useState<number | null>(0);
 
@@ -96,13 +110,13 @@ export function FaqSection() {
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
           <span className="text-brand-600 font-semibold text-sm uppercase tracking-wider">
-            Häufige Fragen
+            {label}
           </span>
           <h2 className="text-3xl md:text-4xl font-bold mt-3 mb-4">
-            Alles was Sie wissen müssen
+            {heading}
           </h2>
           <p className="text-neutral-500 max-w-2xl mx-auto text-lg">
-            Finden Sie schnell Antworten auf die häufigsten Fragen rund um unsere Mietwagen.
+            {description}
           </p>
         </div>
 

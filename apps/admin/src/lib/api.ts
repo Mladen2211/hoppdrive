@@ -196,4 +196,12 @@ export const api = {
     client.patch(`/faq/${id}`, data).then(unwrap) as Promise<any>,
   deleteFaqItem: (id: string) =>
     client.delete(`/faq/${id}`).then(unwrap) as Promise<any>,
+
+  // ─── Homepage Sections ────────────────────────────────────
+  getHomepageSections: () =>
+    client.get('/homepage-sections/all').then(unwrap) as Promise<any[]>,
+  updateHomepageSection: (key: string, data: { content?: any; sortOrder?: number; isActive?: boolean }) =>
+    client.put(`/homepage-sections/${key}`, data).then(unwrap) as Promise<any>,
+  toggleHomepageSection: (key: string) =>
+    client.patch(`/homepage-sections/${key}/toggle`).then(unwrap) as Promise<any>,
 };

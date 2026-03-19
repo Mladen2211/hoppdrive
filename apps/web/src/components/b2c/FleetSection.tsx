@@ -4,10 +4,17 @@ import { useState, useMemo } from 'react';
 import { SlidersHorizontal } from 'lucide-react';
 import { VehicleCard, type VehicleCardData } from './VehicleCard';
 
+export interface FleetContent {
+  label?: string;
+  heading?: string;
+  description?: string;
+}
+
 interface FleetSectionProps {
   vehicles: VehicleCardData[];
   loading?: boolean;
   onInquire: (vehicle: VehicleCardData) => void;
+  content?: FleetContent;
 }
 
 type FilterKey = 'all' | 'sedan' | 'suv' | 'estate' | 'van' | 'electric';
@@ -21,7 +28,11 @@ const FILTER_OPTIONS: { key: FilterKey; label: string }[] = [
   { key: 'electric', label: 'Elektro' },
 ];
 
-export function FleetSection({ vehicles, loading, onInquire }: FleetSectionProps) {
+export function FleetSection({ vehicles, loading, onInquire, content }: FleetSectionProps) {
+  const c = content || {};
+  const label = c.label ?? 'Unsere Flotte';
+  const heading = c.heading ?? 'Günstige Mietwagen für jeden Anlass';
+  const description = c.description ?? 'Zuverlässige Kombis, Limousinen & SUVs von Škoda, VW, Toyota und mehr. Wählen Sie Ihr Fahrzeug und profitieren Sie von bis zu 40% Langzeitrabatt.';
   const [activeFilter, setActiveFilter] = useState<FilterKey>('all');
 
   // Only show filter tabs that have at least one vehicle
@@ -40,14 +51,13 @@ export function FleetSection({ vehicles, loading, onInquire }: FleetSectionProps
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
           <span className="text-brand-600 font-semibold text-sm uppercase tracking-wider">
-            Unsere Flotte
+            {label}
           </span>
           <h2 className="text-3xl md:text-4xl font-bold mt-3 mb-4">
-            Günstige Mietwagen für jeden Anlass
+            {heading}
           </h2>
           <p className="text-neutral-500 max-w-2xl mx-auto text-lg">
-            Zuverlässige Kombis, Limousinen & SUVs von Škoda, VW, Toyota und mehr.
-            Wählen Sie Ihr Fahrzeug und profitieren Sie von bis zu 40% Langzeitrabatt.
+            {description}
           </p>
         </div>
 

@@ -30,4 +30,5 @@ export const api = {
   getSetting: (key: string) => request<any>(`/settings/${key}`),
   getTestimonials: () => request<any[]>('/testimonials'),
   getFaq: () => request<any[]>('/faq'),
+  getHomepageSections: () => request<any[]>('/homepage-sections'),
 };

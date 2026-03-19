@@ -5,12 +5,27 @@ import Link from 'next/link';
 import { CheckCircle2 } from 'lucide-react';
 import { api } from '@/lib/api';
 
+export interface ContactContent {
+  label?: string;
+  heading?: string;
+  description?: string;
+  ctaText?: string;
+  trustLine?: string;
+}
+
 interface ContactFormProps {
   preselectedVehicle?: string | null;
   vehicleNames: string[];
+  content?: ContactContent;
 }
 
-export function ContactForm({ preselectedVehicle, vehicleNames }: ContactFormProps) {
+export function ContactForm({ preselectedVehicle, vehicleNames, content }: ContactFormProps) {
+  const c = content || {};
+  const label = c.label ?? 'Kostenlos & unverbindlich';
+  const heading = c.heading ?? 'Jetzt Ihr Wunschfahrzeug anfragen';
+  const formDescription = c.description ?? 'Füllen Sie das Formular aus – wir melden uns innerhalb von 24 Stunden mit einem individuellen Angebot.';
+  const ctaText = c.ctaText ?? 'Kostenloses Angebot erhalten';
+  const trustLine = c.trustLine ?? '✓ Unverbindlich · ✓ Antwort in 24h · ✓ Vollkasko inklusive';
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -69,11 +84,11 @@ export function ContactForm({ preselectedVehicle, vehicleNames }: ContactFormPro
         <div className="bg-neutral-900 text-white rounded-3xl p-8 md:p-12 shadow-2xl">
           <div className="text-center mb-8">
             <span className="text-brand-400 font-semibold text-sm uppercase tracking-wider">
-              Kostenlos & unverbindlich
+              {label}
             </span>
-            <h2 className="text-3xl font-bold mt-2 mb-2">Jetzt Ihr Wunschfahrzeug anfragen</h2>
+            <h2 className="text-3xl font-bold mt-2 mb-2">{heading}</h2>
             <p className="text-neutral-400">
-              Füllen Sie das Formular aus – wir melden uns innerhalb von 24 Stunden mit einem individuellen Angebot.
+              {formDescription}
             </p>
           </div>
 
@@ -231,10 +246,10 @@ export function ContactForm({ preselectedVehicle, vehicleNames }: ContactFormPro
               disabled={loading}
               className="w-full bg-brand-600 hover:bg-brand-700 disabled:bg-brand-800 disabled:cursor-not-allowed text-white font-bold py-4 rounded-lg transition-colors shadow-lg shadow-brand-600/20"
             >
-              {loading ? 'Wird gesendet...' : 'Kostenloses Angebot erhalten'}
+              {loading ? 'Wird gesendet...' : ctaText}
             </button>
             <p className="text-center text-xs text-neutral-500 mt-3">
-              ✓ Unverbindlich · ✓ Antwort in 24h · ✓ Vollkasko inklusive
+              {trustLine}
             </p>
           </form>
         </div>

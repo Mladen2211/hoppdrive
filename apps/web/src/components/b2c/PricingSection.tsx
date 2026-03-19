@@ -1,4 +1,4 @@
-import { CheckCircle, Shield, Wrench, Phone, FileText } from 'lucide-react';
+import { Shield, Wrench, Phone, FileText } from 'lucide-react';
 
 interface PricingTier {
   number: string;
@@ -7,12 +7,21 @@ interface PricingTier {
   badge?: string;
 }
 
+export interface PricingContent {
+  label?: string;
+  heading?: string;
+  description?: string;
+  tiers?: PricingTier[];
+  includedItems?: string[];
+}
+
 interface PricingSectionProps {
   config?: {
     visible?: boolean;
     title?: string;
     tiers?: PricingTier[];
   } | null;
+  content?: PricingContent;
 }
 
 const DEFAULT_TIERS: PricingTier[] = [
@@ -21,29 +30,29 @@ const DEFAULT_TIERS: PricingTier[] = [
   { number: '03', title: 'Ab 31 Tagen', description: 'Maximaler 40% Rabatt. Bestes Preis-Leistungs-Verhältnis für echte Langzeitmobilität.', badge: '40% RABATT' },
 ];
 
-const INCLUDED_ITEMS = [
-  { icon: Shield, text: 'Vollkasko-Versicherung' },
-  { icon: Wrench, text: 'Wartung & Service' },
-  { icon: Phone, text: 'Pannenhilfe 24/7' },
-  { icon: FileText, text: 'Transparente Verträge' },
-];
+const DEFAULT_INCLUDED = ['Vollkasko-Versicherung', 'Wartung & Service', 'Pannenhilfe 24/7', 'Transparente Verträge'];
+const INCLUDED_ICONS = [Shield, Wrench, Phone, FileText];
 
-export function PricingSection({ config }: PricingSectionProps) {
+export function PricingSection({ config, content }: PricingSectionProps) {
   if (config && config.visible === false) return null;
 
-  const title = config?.title || 'So funktioniert unsere Preisgestaltung';
-  const tiers = config?.tiers?.length ? config.tiers : DEFAULT_TIERS;
+  const c = content || {};
+  const label = c.label ?? 'Preismodell';
+  const heading = c.heading ?? config?.title ?? 'So funktioniert unsere Preisgestaltung';
+  const description = c.description ?? 'Je länger Sie mieten, desto günstiger wird es. Alle Preise inklusive Vollkasko.';
+  const tiers = c.tiers?.length ? c.tiers : (config?.tiers?.length ? config.tiers : DEFAULT_TIERS);
+  const includedItems = c.includedItems?.length ? c.includedItems : DEFAULT_INCLUDED;
 
   return (
     <section id="pricing" className="py-24 bg-neutral-50 border-y border-neutral-200">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
           <span className="text-brand-600 font-semibold text-sm uppercase tracking-wider">
-            Preismodell
+            {label}
           </span>
-          <h2 className="text-3xl md:text-4xl font-bold mt-3 mb-4">{title}</h2>
+          <h2 className="text-3xl md:text-4xl font-bold mt-3 mb-4">{heading}</h2>
           <p className="text-neutral-500 max-w-2xl mx-auto text-lg">
-            Je länger Sie mieten, desto günstiger wird es. Alle Preise inklusive Vollkasko.
+            {description}
           </p>
         </div>
 
@@ -102,14 +111,17 @@ export function PricingSection({ config }: PricingSectionProps) {
         <div className="bg-white rounded-2xl border border-neutral-200 p-8 md:p-10">
           <h3 className="text-lg font-bold text-center mb-6">Immer inklusive – ohne Aufpreis</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {INCLUDED_ITEMS.map((item) => (
-              <div key={item.text} className="flex items-center gap-3">
-                <div className="flex-shrink-0 w-10 h-10 bg-brand-50 rounded-xl flex items-center justify-center">
-                  <item.icon className="w-5 h-5 text-brand-600" />
+            {includedItems.map((text, idx) => {
+              const Icon = INCLUDED_ICONS[idx % INCLUDED_ICONS.length];
+              return (
+                <div key={text} className="flex items-center gap-3">
+                  <div className="flex-shrink-0 w-10 h-10 bg-brand-50 rounded-xl flex items-center justify-center">
+                    <Icon className="w-5 h-5 text-brand-600" />
+                  </div>
+                  <span className="text-sm font-medium text-neutral-700">{text}</span>
                 </div>
-                <span className="text-sm font-medium text-neutral-700">{item.text}</span>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>
