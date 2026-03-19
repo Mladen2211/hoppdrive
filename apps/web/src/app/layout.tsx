@@ -14,11 +14,11 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://hoppdrive.ch';
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: 'HoppDrive – Günstige Autovermietung Schweiz | Ab CHF 59/Tag',
-    template: '%s | HoppDrive',
+    default: 'HoppDrive – Günstige Autovermietung Schweiz | Mietwagen Ab CHF 59/Tag',
+    template: '%s | HoppDrive – Autovermietung Schweiz',
   },
   description:
-    'HoppDrive – Günstige Kurz- & Langzeitvermietung in der Schweiz. Škoda, VW, Toyota & mehr ab CHF 59/Tag. Je länger Sie mieten, desto günstiger – bis 40% Rabatt. Vollkasko inklusive.',
+    'HoppDrive – Günstige Kurz- & Langzeitvermietung in der Schweiz. Škoda, VW, Toyota & mehr ab CHF 59/Tag. Bis 40% Langzeitrabatt. Vollkasko inklusive. Jetzt unverbindlich anfragen!',
   keywords: [
     'Autovermietung Schweiz',
     'günstige Mietwagen',
@@ -33,6 +33,13 @@ export const metadata: Metadata = {
     'Kombi mieten',
     'SUV mieten günstig',
     'Familienauto mieten Schweiz',
+    'car rental Switzerland',
+    'cheap car rental Switzerland',
+    'long term car rental',
+    'Mietauto Schweiz',
+    'Automiete Zürich',
+    'Mietwagen Langzeit günstig',
+    'Auto Langzeitmiete Vollkasko',
   ],
   authors: [{ name: 'HoppDrive' }],
   creator: 'HoppDrive',
@@ -116,12 +123,55 @@ export default function RootLayout({
     sameAs: [],
   };
 
+  const faqJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: [
+      {
+        '@type': 'Question',
+        name: 'Was kostet die Miete bei HoppDrive?',
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: 'Unsere Mietwagen starten ab CHF 59 pro Tag. Bei längerer Mietdauer profitieren Sie von automatischen Rabatten: 20% ab 8 Tagen und bis zu 40% ab 31 Tagen.',
+        },
+      },
+      {
+        '@type': 'Question',
+        name: 'Ist eine Versicherung inklusive?',
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: 'Ja, bei jeder Anmietung ist eine Vollkasko-Versicherung inklusive. Es gibt keine versteckten Zusatzkosten für den Versicherungsschutz.',
+        },
+      },
+      {
+        '@type': 'Question',
+        name: 'Wie lange kann ich ein Fahrzeug mieten?',
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: 'Sie können unsere Fahrzeuge ab 1 Tag bis zu mehreren Monaten mieten. Je länger die Mietdauer, desto günstiger der Tagespreis.',
+        },
+      },
+      {
+        '@type': 'Question',
+        name: 'Welche Dokumente brauche ich?',
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: 'Sie benötigen einen gültigen Führerschein und einen Identitätsausweis (Pass oder ID). Bei der Übergabe wird ein Mietvertrag vor Ort unterschrieben.',
+        },
+      },
+    ],
+  };
+
   return (
     <html lang="de-CH" className={firaSans.className}>
       <head>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
         />
       </head>
       <body className="min-h-screen flex flex-col">

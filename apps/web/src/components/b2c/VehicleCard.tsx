@@ -15,6 +15,7 @@ export interface VehicleCardData {
     range?: string;
   };
   thumbnailUrl: string | null;
+  isAvailable?: boolean;
 }
 
 interface VehicleCardProps {
@@ -25,9 +26,10 @@ interface VehicleCardProps {
 export function VehicleCard({ vehicle, onInquire }: VehicleCardProps) {
   const specsArray = buildSpecsList(vehicle.specs);
   const displayName = `${vehicle.brand} ${vehicle.model}`;
+  const monthlyPrice = Math.round(vehicle.basePricePerDay * 30 * 0.6); // 40% discount for 30+ days
 
   return (
-    <div className="group rounded-2xl border border-neutral-200 overflow-hidden hover:shadow-xl transition-all duration-300 bg-white">
+    <div className="group rounded-2xl border border-neutral-200 overflow-hidden hover:shadow-xl transition-all duration-300 bg-white flex flex-col">
       {/* Image – links to detail page */}
       <Link href={`/fahrzeuge/${vehicle.id}`} className="block">
         <div className="aspect-[4/3] overflow-hidden relative bg-neutral-100">
@@ -43,20 +45,39 @@ export function VehicleCard({ vehicle, onInquire }: VehicleCardProps) {
               Kein Bild
             </div>
           )}
+
+          {/* Price badge */}
           <div className="absolute top-4 right-4 bg-white/90 backdrop-blur text-xs font-bold px-3 py-1.5 rounded-full shadow-sm">
             Ab {vehicle.currency} {vehicle.basePricePerDay} / Tag
           </div>
+
+          {/* Availability indicator */}
+          {vehicle.isAvailable !== undefined && (
+            <div className={`absolute top-4 left-4 text-xs font-semibold px-3 py-1.5 rounded-full ${
+              vehicle.isAvailable
+                ? 'bg-emerald-500/90 text-white'
+                : 'bg-amber-500/90 text-white'
+            }`}>
+              {vehicle.isAvailable ? 'Verfügbar' : 'Reserviert'}
+            </div>
+          )}
         </div>
       </Link>
 
       {/* Content */}
-      <div className="p-6">
+      <div className="p-6 flex flex-col flex-1">
         <div className="text-xs font-semibold text-brand-600 uppercase tracking-wider mb-1">
-          {vehicle.type}
+          {translateType(vehicle.type)}
         </div>
         <Link href={`/fahrzeuge/${vehicle.id}`}>
-          <h3 className="text-xl font-bold mb-4 hover:text-brand-600 transition-colors">{displayName}</h3>
+          <h3 className="text-xl font-bold mb-2 hover:text-brand-600 transition-colors">{displayName}</h3>
         </Link>
+
+        {/* Monthly price hint */}
+        <p className="text-xs text-neutral-400 mb-4">
+          Ab ca. {vehicle.currency} {monthlyPrice} / Monat bei Langzeitmiete
+        </p>
+
         <div className="flex flex-wrap gap-2 mb-6">
           {specsArray.map((spec) => (
             <span
@@ -67,7 +88,8 @@ export function VehicleCard({ vehicle, onInquire }: VehicleCardProps) {
             </span>
           ))}
         </div>
-        <div className="flex gap-3">
+
+        <div className="flex gap-3 mt-auto">
           <Link
             href={`/fahrzeuge/${vehicle.id}`}
             className="flex-1 py-3 text-sm font-semibold text-center text-neutral-900 border-2 border-neutral-900 rounded-lg hover:bg-neutral-900 hover:text-white transition-colors"
@@ -84,6 +106,19 @@ export function VehicleCard({ vehicle, onInquire }: VehicleCardProps) {
       </div>
     </div>
   );
+}
+
+function translateType(type: string): string {
+  const labels: Record<string, string> = {
+    sedan: 'Limousine',
+    suv: 'SUV',
+    estate: 'Kombi',
+    coupe: 'Coupé',
+    convertible: 'Cabrio',
+    electric: 'Elektrofahrzeug',
+    van: 'Van',
+  };
+  return labels[type] || type;
 }
 
 function buildSpecsList(specs: VehicleCardData['specs']): string[] {

@@ -18,6 +18,8 @@ import { locationRoutes } from './routes/locationRoutes';
 import { notificationRoutes } from './routes/notificationRoutes';
 import { invoiceRoutes } from './routes/invoiceRoutes';
 import { searchRoutes } from './routes/searchRoutes';
+import { testimonialRoutes } from './routes/testimonialRoutes';
+import { faqRoutes } from './routes/faqRoutes';
 import { errorHandler } from './middleware/errorHandler';
 
 export function createApp(container: Container): express.Application {
@@ -77,6 +79,8 @@ export function createApp(container: Container): express.Application {
   app.use('/api/notifications', notificationRoutes(container));
   app.use('/api/invoices', invoiceRoutes(container));
   app.use('/api/search', searchRoutes(container));
+  app.use('/api/testimonials', testimonialRoutes(container));
+  app.use('/api/faq', faqRoutes(container));
 
   // ─── Global Error Handler ───────────────────────────────────
   app.use(errorHandler);

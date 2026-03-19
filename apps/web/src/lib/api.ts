@@ -28,4 +28,6 @@ export const api = {
   submitContact: (data: any) =>
     request<any>('/contact', { method: 'POST', body: JSON.stringify(data) }),
   getSetting: (key: string) => request<any>(`/settings/${key}`),
+  getTestimonials: () => request<any[]>('/testimonials'),
+  getFaq: () => request<any[]>('/faq'),
 };

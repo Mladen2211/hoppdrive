@@ -20,6 +20,8 @@ import {
   Bell,
   Search,
   MapPin,
+  Star,
+  HelpCircle,
 } from 'lucide-react';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { AdminAuthProvider, useAdminAuth } from '@/hooks/useAdminAuth';
@@ -32,6 +34,8 @@ const navItems = [
   { href: '/contracts', label: 'Verträge', icon: FileText },
   { href: '/inquiries', label: 'Anfragen', icon: MessageSquare },
   { href: '/locations', label: 'Standorte', icon: MapPin },
+  { href: '/testimonials', label: 'Bewertungen', icon: Star },
+  { href: '/faq', label: 'FAQ', icon: HelpCircle },
   { href: '/reports', label: 'Berichte', icon: BarChart2 },
   { href: '/settings', label: 'Website', icon: Globe },
 ];
@@ -43,6 +47,8 @@ const PAGE_TITLES: Record<string, string> = {
   '/contracts': 'Verträge',
   '/inquiries': 'Anfragen',
   '/locations': 'Standorte',
+  '/testimonials': 'Kundenstimmen',
+  '/faq': 'FAQ',
   '/reports': 'Berichte',
   '/settings': 'Website-Einstellungen',
   '/profile': 'Profil',

@@ -176,4 +176,24 @@ export const api = {
   // ─── Search ───────────────────────────────────────────────
   globalSearch: (q: string) =>
     client.get('/search', { params: { q } }).then(unwrap) as Promise<any>,
+
+  // ─── Testimonials ─────────────────────────────────────────
+  getTestimonials: () =>
+    client.get('/testimonials/all').then(unwrap) as Promise<any[]>,
+  createTestimonial: (data: { name: string; location?: string; text: string; rating?: number; avatarUrl?: string; isActive?: boolean; sortOrder?: number }) =>
+    client.post('/testimonials', data).then(unwrap) as Promise<any>,
+  updateTestimonial: (id: string, data: any) =>
+    client.patch(`/testimonials/${id}`, data).then(unwrap) as Promise<any>,
+  deleteTestimonial: (id: string) =>
+    client.delete(`/testimonials/${id}`).then(unwrap) as Promise<any>,
+
+  // ─── FAQ Items ────────────────────────────────────────────
+  getFaqItems: () =>
+    client.get('/faq/all').then(unwrap) as Promise<any[]>,
+  createFaqItem: (data: { question: string; answer: string; category?: string; isActive?: boolean; sortOrder?: number }) =>
+    client.post('/faq', data).then(unwrap) as Promise<any>,
+  updateFaqItem: (id: string, data: any) =>
+    client.patch(`/faq/${id}`, data).then(unwrap) as Promise<any>,
+  deleteFaqItem: (id: string) =>
+    client.delete(`/faq/${id}`).then(unwrap) as Promise<any>,
 };

@@ -8,6 +8,7 @@ import { Menu, X } from 'lucide-react';
 const NAV_LINKS = [
   { href: '/#fleet', label: 'Unsere Flotte' },
   { href: '/#pricing', label: 'Preismodell' },
+  { href: '/#faq', label: 'FAQ' },
   { href: '/#location', label: 'Standort' },
 ];
 

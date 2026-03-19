@@ -67,10 +67,15 @@ export function ContactForm({ preselectedVehicle, vehicleNames }: ContactFormPro
     <section id="contact-form" className="py-24 bg-white relative">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="bg-neutral-900 text-white rounded-3xl p-8 md:p-12 shadow-2xl">
-          <h2 className="text-3xl font-bold mb-2">Angebot anfragen</h2>
-          <p className="text-neutral-400 mb-8">
-            Füllen Sie das Formular aus. Unser Team wird sich innerhalb von 24 Stunden mit einem individuellen Angebot bei Ihnen melden.
-          </p>
+          <div className="text-center mb-8">
+            <span className="text-brand-400 font-semibold text-sm uppercase tracking-wider">
+              Kostenlos & unverbindlich
+            </span>
+            <h2 className="text-3xl font-bold mt-2 mb-2">Jetzt Ihr Wunschfahrzeug anfragen</h2>
+            <p className="text-neutral-400">
+              Füllen Sie das Formular aus – wir melden uns innerhalb von 24 Stunden mit einem individuellen Angebot.
+            </p>
+          </div>
 
           {error && (
             <div className="bg-red-500/20 border border-red-500/30 text-red-300 text-sm rounded-lg px-4 py-3 mb-6">
@@ -226,8 +231,11 @@ export function ContactForm({ preselectedVehicle, vehicleNames }: ContactFormPro
               disabled={loading}
               className="w-full bg-brand-600 hover:bg-brand-700 disabled:bg-brand-800 disabled:cursor-not-allowed text-white font-bold py-4 rounded-lg transition-colors shadow-lg shadow-brand-600/20"
             >
-              {loading ? 'Wird gesendet...' : 'Anfrage absenden'}
+              {loading ? 'Wird gesendet...' : 'Kostenloses Angebot erhalten'}
             </button>
+            <p className="text-center text-xs text-neutral-500 mt-3">
+              ✓ Unverbindlich · ✓ Antwort in 24h · ✓ Vollkasko inklusive
+            </p>
           </form>
         </div>
       </div>

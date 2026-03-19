@@ -274,3 +274,35 @@ enum InvoiceStatus {
   PENDING
   PAID
 }
+
+// ─── Testimonials ──────────────────────────────────────────────
+
+model Testimonial {
+  id        String   @id @default(uuid())
+  name      String
+  location  String?
+  text      String   @db.Text
+  rating    Int      @default(5)
+  avatarUrl String?  @map("avatar_url")
+  isActive  Boolean  @default(true) @map("is_active")
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("testimonials")
+}
+
+// ─── FAQ Items ─────────────────────────────────────────────────
+
+model FaqItem {
+  id        String   @id @default(uuid())
+  question  String   @db.Text
+  answer    String   @db.Text
+  category  String   @default("general")
+  isActive  Boolean  @default(true) @map("is_active")
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("faq_items")
+}

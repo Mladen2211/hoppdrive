@@ -75,3 +75,31 @@ export async function getAllVehicles(): Promise<VehicleListItem[]> {
 export async function getSetting(key: string): Promise<any | null> {
   return serverFetch<any>(`/settings/${key}`, 120);
 }
+
+export interface TestimonialItem {
+  id: string;
+  name: string;
+  location: string | null;
+  text: string;
+  rating: number;
+  avatarUrl: string | null;
+  sortOrder: number;
+}
+
+export interface FaqItemData {
+  id: string;
+  question: string;
+  answer: string;
+  category: string;
+  sortOrder: number;
+}
+
+export async function getTestimonials(): Promise<TestimonialItem[]> {
+  const data = await serverFetch<TestimonialItem[]>('/testimonials', 120);
+  return data ?? [];
+}
+
+export async function getFaqItems(): Promise<FaqItemData[]> {
+  const data = await serverFetch<FaqItemData[]>('/faq', 120);
+  return data ?? [];
+}
