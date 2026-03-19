@@ -13,26 +13,27 @@ SET "period_start" = b."start_date",
 FROM "bookings" b
 WHERE i."booking_id" = b."id";
 
+-- For any invoices without matching bookings, set reasonable defaults
+UPDATE "invoices" SET "period_start" = "issue_date", "period_end" = "due_date" WHERE "period_start" IS NULL;
+
 -- Now make the period columns NOT NULL
 ALTER TABLE "invoices" ALTER COLUMN "period_start" SET NOT NULL;
 ALTER TABLE "invoices" ALTER COLUMN "period_end" SET NOT NULL;
-
--- Convert existing statuses to PENDING/PAID:
--- PAID stays PAID, everything else becomes PENDING
-UPDATE "invoices" SET "status" = 'PENDING' WHERE "status" != 'PAID';
 
 -- Recreate the enum with only PENDING and PAID
 -- Step 1: Remove default
 ALTER TABLE "invoices" ALTER COLUMN "status" DROP DEFAULT;
 -- Step 2: Cast column to text temporarily
 ALTER TABLE "invoices" ALTER COLUMN "status" TYPE TEXT;
--- Step 3: Drop old enum
+-- Step 3: Convert existing statuses — PAID stays PAID, everything else becomes PENDING
+UPDATE "invoices" SET "status" = 'PENDING' WHERE "status" != 'PAID';
+-- Step 4: Drop old enum
 DROP TYPE "InvoiceStatus";
--- Step 4: Create new enum
+-- Step 5: Create new enum
 CREATE TYPE "InvoiceStatus" AS ENUM ('PENDING', 'PAID');
--- Step 5: Cast column back to enum
+-- Step 6: Cast column back to enum
 ALTER TABLE "invoices" ALTER COLUMN "status" TYPE "InvoiceStatus" USING "status"::"InvoiceStatus";
--- Step 6: Set new default
+-- Step 7: Set new default
 ALTER TABLE "invoices" ALTER COLUMN "status" SET DEFAULT 'PENDING';
 
 -- Add self-referencing FK for reissue chain
