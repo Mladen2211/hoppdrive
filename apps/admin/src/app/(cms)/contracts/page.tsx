@@ -18,10 +18,10 @@ import {
   ChevronUp,
   X,
   FileText,
-  Filter,
   Receipt,
   Loader2,
-  CalendarRange,
+  RefreshCw,
+  AlertTriangle,
 } from 'lucide-react';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { api } from '@/lib/api';
@@ -50,6 +50,25 @@ interface Booking {
   signedAt?: string | null;
 }
 
+interface Invoice {
+  id: string;
+  invoiceNumber: string;
+  bookingId: string;
+  periodStart: string;
+  periodEnd: string;
+  issueDate: string;
+  dueDate: string;
+  subtotal: number;
+  vatAmount: number;
+  penalty: number;
+  total: number;
+  currency: string;
+  status: 'PENDING' | 'PAID';
+  parentInvoiceId?: string | null;
+  notes?: string | null;
+  createdAt: string;
+}
+
 const CONTRACT_STATUS_CONFIG: Record<string, { label: string; color: string; icon: any }> = {
   PENDING: { label: 'Ausstehend', color: 'bg-amber-50 text-amber-700 border-amber-200', icon: Clock },
   SIGNED: { label: 'Signiert', color: 'bg-green-50 text-green-700 border-green-200', icon: CheckCircle },
@@ -65,6 +84,10 @@ const BOOKING_STATUS_COLORS: Record<string, string> = {
 
 function fmtDate(iso: string) {
   return new Date(iso).toLocaleDateString('de-CH', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+function toInputDate(iso: string) {
+  return new Date(iso).toISOString().split('T')[0];
 }
 
 export default function ContractsPage() {
@@ -90,14 +113,19 @@ export default function ContractsPage() {
   const [signingBooking, setSigningBooking] = useState<Booking | null>(null);
   const [signingLoading, setSigningLoading] = useState(false);
 
-  // Invoice
-  const [invoiceLoading, setInvoiceLoading] = useState<string | null>(null); // bookingId being invoiced
-  const [bulkInvoiceLoading, setBulkInvoiceLoading] = useState<'month' | 'total' | null>(null);
-  const [showMonthPicker, setShowMonthPicker] = useState(false);
-  const [selectedMonth, setSelectedMonth] = useState(() => {
-    const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  });
+  // Invoice creation per booking
+  const [invoicePeriod, setInvoicePeriod] = useState<Record<string, { start: string; end: string }>>({});
+  const [invoiceLoading, setInvoiceLoading] = useState<string | null>(null);
+
+  // Invoice list per booking
+  const [bookingInvoices, setBookingInvoices] = useState<Record<string, Invoice[]>>({});
+  const [invoicesLoading, setInvoicesLoading] = useState<string | null>(null);
+
+  // Reissue dialog
+  const [reissueInvoice, setReissueInvoice] = useState<Invoice | null>(null);
+  const [reissuePenalty, setReissuePenalty] = useState('');
+  const [reissueNotes, setReissueNotes] = useState('');
+  const [reissueLoading, setReissueLoading] = useState(false);
 
   async function fetchData() {
     try {
@@ -120,6 +148,32 @@ export default function ContractsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
+  // When a booking is expanded, load its invoices + set default period
+  useEffect(() => {
+    if (!expandedId) return;
+    const booking = bookings.find((b) => b.id === expandedId);
+    if (booking && !invoicePeriod[expandedId]) {
+      setInvoicePeriod((prev) => ({
+        ...prev,
+        [expandedId]: { start: toInputDate(booking.startDate), end: toInputDate(booking.endDate) },
+      }));
+    }
+    loadInvoicesForBooking(expandedId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [expandedId]);
+
+  async function loadInvoicesForBooking(bookingId: string) {
+    setInvoicesLoading(bookingId);
+    try {
+      const invoices = await api.getInvoices({ bookingId });
+      setBookingInvoices((prev) => ({ ...prev, [bookingId]: invoices }));
+    } catch (err) {
+      console.error('Failed to load invoices', err);
+    } finally {
+      setInvoicesLoading(null);
+    }
+  }
+
   // Derived data
   const vehicleMap = useMemo(() => {
     const m = new Map<string, Vehicle>();
@@ -130,7 +184,6 @@ export default function ContractsPage() {
   const filteredBookings = useMemo(() => {
     return bookings
       .filter((b) => {
-        // Status filter
         if (statusFilter === 'pending') return (b.contractStatus || 'PENDING') === 'PENDING' && b.status !== 'cancelled';
         if (statusFilter === 'signed') return b.contractStatus === 'SIGNED';
         if (statusFilter === 'cancelled') return b.status === 'cancelled';
@@ -150,7 +203,6 @@ export default function ContractsPage() {
       .sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime());
   }, [bookings, statusFilter, search, vehicleMap]);
 
-  // Stats
   const stats = useMemo(() => {
     const activeBookings = bookings.filter((b) => b.status !== 'cancelled');
     return {
@@ -160,7 +212,8 @@ export default function ContractsPage() {
     };
   }, [bookings]);
 
-  // Actions
+  // ─── Actions ─────────────────────────────────────────────
+
   function openSignaturePad(booking: Booking) {
     setSigningBooking(booking);
     setShowSignature(true);
@@ -196,11 +249,23 @@ export default function ContractsPage() {
   }
 
   async function handleCreateInvoice(booking: Booking) {
+    const period = invoicePeriod[booking.id];
+    if (!period || !period.start || !period.end) {
+      alert('Bitte Zeitraum auswählen.');
+      return;
+    }
     setInvoiceLoading(booking.id);
     try {
-      const invoice = await api.createInvoice({ bookingId: booking.id });
+      const invoice = await api.createInvoice({
+        bookingId: booking.id,
+        periodStart: period.start,
+        periodEnd: period.end,
+      });
+      // Download the new invoice immediately
       const blob = await api.downloadInvoice(invoice.id);
       triggerBlobDownload(blob, `HoppDrive-Rechnung-${invoice.invoiceNumber}.pdf`);
+      // Refresh invoice list
+      await loadInvoicesForBooking(booking.id);
     } catch (err: any) {
       alert(err.message || 'Rechnung konnte nicht erstellt werden.');
     } finally {
@@ -208,41 +273,44 @@ export default function ContractsPage() {
     }
   }
 
-  async function handleBulkInvoice(type: 'month' | 'total') {
-    setBulkInvoiceLoading(type);
+  async function handleToggleStatus(inv: Invoice) {
+    const newStatus = inv.status === 'PENDING' ? 'PAID' : 'PENDING';
     try {
-      let ids: string[];
-      let label: string;
-      if (type === 'month') {
-        const [yearStr, monthStr] = selectedMonth.split('-');
-        const y = parseInt(yearStr, 10);
-        const m = parseInt(monthStr, 10);
-        const monthStart = new Date(y, m - 1, 1);
-        const monthEnd = new Date(y, m, 0, 23, 59, 59);
-        ids = bookings
-          .filter((b) => b.status !== 'cancelled')
-          .filter((b) => {
-            const start = new Date(b.startDate);
-            return start >= monthStart && start <= monthEnd;
-          })
-          .map((b) => b.id);
-        const monthName = monthStart.toLocaleDateString('de-CH', { month: 'long', year: 'numeric' });
-        label = `Monatsrechnung ${monthName}`;
-      } else {
-        ids = bookings.filter((b) => b.status !== 'cancelled').map((b) => b.id);
-        label = 'Gesamtrechnung';
-      }
-      if (ids.length === 0) {
-        alert('Keine Buchungen für diesen Zeitraum gefunden.');
-        return;
-      }
-      const blob = await api.downloadBulkInvoice({ bookingIds: ids, label });
-      triggerBlobDownload(blob, `HoppDrive-${label.replace(/\s+/g, '-')}.pdf`);
-      setShowMonthPicker(false);
+      await api.toggleInvoiceStatus(inv.id, newStatus);
+      await loadInvoicesForBooking(inv.bookingId);
     } catch (err: any) {
-      alert(err.message || 'Rechnung konnte nicht erstellt werden.');
+      alert(err.message || 'Status konnte nicht geändert werden.');
+    }
+  }
+
+  async function handleReissue() {
+    if (!reissueInvoice) return;
+    setReissueLoading(true);
+    try {
+      const newInvoice = await api.reissueInvoice(reissueInvoice.id, {
+        penalty: Number(reissuePenalty) || 0,
+        notes: reissueNotes || undefined,
+      });
+      // Download reissued invoice
+      const blob = await api.downloadInvoice(newInvoice.id);
+      triggerBlobDownload(blob, `HoppDrive-Rechnung-${newInvoice.invoiceNumber}.pdf`);
+      await loadInvoicesForBooking(reissueInvoice.bookingId);
+      setReissueInvoice(null);
+      setReissuePenalty('');
+      setReissueNotes('');
+    } catch (err: any) {
+      alert(err.message || 'Mahnung konnte nicht erstellt werden.');
     } finally {
-      setBulkInvoiceLoading(null);
+      setReissueLoading(false);
+    }
+  }
+
+  async function handleDownloadInvoice(inv: Invoice) {
+    try {
+      const blob = await api.downloadInvoice(inv.id);
+      triggerBlobDownload(blob, `HoppDrive-Rechnung-${inv.invoiceNumber}.pdf`);
+    } catch (err: any) {
+      alert(err.message || 'Rechnung konnte nicht heruntergeladen werden.');
     }
   }
 
@@ -287,47 +355,6 @@ export default function ContractsPage() {
         <div>
           <h1 className="text-2xl font-bold text-neutral-900">Verträge</h1>
           <p className="text-sm text-neutral-500 mt-1">Mietverträge verwalten, signieren und herunterladen</p>
-        </div>
-        <div className="flex items-center gap-2">
-          {/* Monthly invoice */}
-          <div className="relative">
-            <button
-              onClick={() => setShowMonthPicker(!showMonthPicker)}
-              disabled={bulkInvoiceLoading === 'month'}
-              className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-neutral-700 bg-white border border-neutral-300 hover:bg-neutral-50 rounded-lg transition-colors disabled:opacity-50"
-            >
-              {bulkInvoiceLoading === 'month' ? <Loader2 className="w-4 h-4 animate-spin" /> : <CalendarRange className="w-4 h-4" />}
-              Monatsrechnung
-            </button>
-            {showMonthPicker && (
-              <div className="absolute right-0 top-full mt-1 bg-white border border-neutral-200 rounded-lg shadow-lg p-3 z-20 min-w-[220px]">
-                <label className="block text-xs font-medium text-neutral-500 mb-1.5">Monat wählen</label>
-                <input
-                  type="month"
-                  value={selectedMonth}
-                  onChange={(e) => setSelectedMonth(e.target.value)}
-                  className="w-full border border-neutral-300 rounded-lg px-2.5 py-1.5 text-sm mb-2 focus:outline-none focus:ring-2 focus:ring-brand-500"
-                />
-                <button
-                  onClick={() => handleBulkInvoice('month')}
-                  disabled={bulkInvoiceLoading === 'month'}
-                  className="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 rounded-lg transition-colors disabled:opacity-50"
-                >
-                  {bulkInvoiceLoading === 'month' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Receipt className="w-4 h-4" />}
-                  PDF erstellen
-                </button>
-              </div>
-            )}
-          </div>
-          {/* Total invoice */}
-          <button
-            onClick={() => handleBulkInvoice('total')}
-            disabled={bulkInvoiceLoading === 'total'}
-            className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors disabled:opacity-50"
-          >
-            {bulkInvoiceLoading === 'total' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Receipt className="w-4 h-4" />}
-            Gesamtrechnung
-          </button>
         </div>
       </div>
 
@@ -409,6 +436,8 @@ export default function ContractsPage() {
               const StatusIcon = statusConfig.icon;
               const isExpanded = expandedId === booking.id;
               const isCancelled = booking.status === 'cancelled';
+              const invoices = bookingInvoices[booking.id] || [];
+              const period = invoicePeriod[booking.id] || { start: '', end: '' };
 
               return (
                 <div key={booking.id} className={isCancelled ? 'opacity-60' : ''}>
@@ -417,12 +446,10 @@ export default function ContractsPage() {
                     onClick={() => setExpandedId(isExpanded ? null : booking.id)}
                     className="w-full flex items-center gap-4 px-5 py-4 text-left hover:bg-neutral-50 transition-colors"
                   >
-                    {/* Contract status icon */}
                     <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 border ${statusConfig.color}`}>
                       <StatusIcon className="w-4 h-4" />
                     </div>
 
-                    {/* Info */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <p className="text-sm font-semibold text-neutral-900 truncate">{booking.customerName}</p>
@@ -435,7 +462,6 @@ export default function ContractsPage() {
                       </p>
                     </div>
 
-                    {/* Price */}
                     {booking.totalPrice != null && booking.totalPrice > 0 && (
                       <div className="text-right shrink-0 hidden sm:block">
                         <p className="text-sm font-semibold text-neutral-900">
@@ -444,7 +470,6 @@ export default function ContractsPage() {
                       </div>
                     )}
 
-                    {/* Actions (quick) */}
                     <div className="flex items-center gap-1.5 shrink-0">
                       {contractStatus === 'SIGNED' && (
                         <span
@@ -544,23 +569,18 @@ export default function ContractsPage() {
                         {/* Contract info + actions */}
                         <div className="space-y-3">
                           <h4 className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">Vertrag</h4>
-
                           <div className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm font-medium border ${statusConfig.color}`}>
                             <StatusIcon className="w-3.5 h-3.5" />
                             {statusConfig.label}
                           </div>
-
                           {booking.signedAt && (
                             <p className="text-xs text-neutral-500">
                               Signiert am {new Date(booking.signedAt).toLocaleString('de-CH')}
                             </p>
                           )}
-
                           <p className="text-[11px] text-neutral-400 font-mono">
                             Nr. {booking.id.substring(0, 8).toUpperCase()}
                           </p>
-
-                          {/* Action buttons */}
                           <div className="flex flex-wrap gap-2 pt-1">
                             {contractStatus === 'PENDING' && !isCancelled && (
                               <button
@@ -580,19 +600,131 @@ export default function ContractsPage() {
                                 Vertrag PDF
                               </button>
                             )}
-                            {!isCancelled && booking.totalPrice != null && booking.totalPrice > 0 && (
-                              <button
-                                onClick={() => handleCreateInvoice(booking)}
-                                disabled={invoiceLoading === booking.id}
-                                className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-red-700 bg-red-50 hover:bg-red-100 rounded-lg transition-colors border border-red-200 disabled:opacity-50"
-                              >
-                                {invoiceLoading === booking.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Receipt className="w-4 h-4" />}
-                                Rechnung erstellen
-                              </button>
-                            )}
                           </div>
                         </div>
                       </div>
+
+                      {/* ─── Invoice Section ──────────────────────── */}
+                      {!isCancelled && booking.totalPrice != null && booking.totalPrice > 0 && (
+                        <div className="mt-6 pt-5 border-t border-neutral-200">
+                          <h4 className="text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-3">Rechnungen</h4>
+
+                          {/* New invoice: date range + create */}
+                          <div className="flex flex-wrap items-end gap-3 mb-4 p-3 bg-white rounded-lg border border-neutral-200">
+                            <div>
+                              <label className="block text-[11px] font-medium text-neutral-500 mb-1">Von</label>
+                              <input
+                                type="date"
+                                value={period.start}
+                                onChange={(e) => setInvoicePeriod((p) => ({ ...p, [booking.id]: { ...p[booking.id], start: e.target.value } }))}
+                                className="border border-neutral-300 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[11px] font-medium text-neutral-500 mb-1">Bis</label>
+                              <input
+                                type="date"
+                                value={period.end}
+                                onChange={(e) => setInvoicePeriod((p) => ({ ...p, [booking.id]: { ...p[booking.id], end: e.target.value } }))}
+                                className="border border-neutral-300 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                              />
+                            </div>
+                            <button
+                              onClick={() => handleCreateInvoice(booking)}
+                              disabled={invoiceLoading === booking.id}
+                              className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors disabled:opacity-50"
+                            >
+                              {invoiceLoading === booking.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Receipt className="w-4 h-4" />}
+                              Rechnung erstellen
+                            </button>
+                          </div>
+
+                          {/* Existing invoices list */}
+                          {invoicesLoading === booking.id ? (
+                            <div className="flex items-center gap-2 text-sm text-neutral-400 py-3">
+                              <Loader2 className="w-4 h-4 animate-spin" /> Rechnungen laden…
+                            </div>
+                          ) : invoices.length === 0 ? (
+                            <p className="text-sm text-neutral-400 py-2">Keine Rechnungen vorhanden.</p>
+                          ) : (
+                            <div className="space-y-2">
+                              {invoices.map((inv) => (
+                                <div
+                                  key={inv.id}
+                                  className="flex flex-wrap items-center gap-3 p-3 bg-white rounded-lg border border-neutral-200"
+                                >
+                                  {/* Invoice number + period */}
+                                  <div className="flex-1 min-w-[200px]">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-sm font-semibold text-neutral-900">{inv.invoiceNumber}</span>
+                                      {inv.parentInvoiceId && (
+                                        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-orange-50 text-orange-700 border border-orange-200">
+                                          Mahnung
+                                        </span>
+                                      )}
+                                    </div>
+                                    <p className="text-xs text-neutral-500 mt-0.5">
+                                      {fmtDate(inv.periodStart)} – {fmtDate(inv.periodEnd)}
+                                      {inv.penalty > 0 && (
+                                        <span className="ml-2 text-orange-600">
+                                          (+ {inv.currency} {inv.penalty.toFixed(2)} Mahngebühr)
+                                        </span>
+                                      )}
+                                    </p>
+                                  </div>
+
+                                  {/* Amount */}
+                                  <div className="text-right">
+                                    <p className="text-sm font-semibold text-neutral-900">
+                                      {inv.currency} {inv.total.toFixed(2)}
+                                    </p>
+                                    <p className="text-[11px] text-neutral-400">
+                                      {fmtDate(inv.issueDate)}
+                                    </p>
+                                  </div>
+
+                                  {/* Status badge – click to toggle */}
+                                  <button
+                                    onClick={() => handleToggleStatus(inv)}
+                                    className={`px-2.5 py-1 rounded-full text-xs font-semibold border transition-colors cursor-pointer ${
+                                      inv.status === 'PAID'
+                                        ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100'
+                                        : 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
+                                    }`}
+                                    title={inv.status === 'PAID' ? 'Klicken: auf Ausstehend setzen' : 'Klicken: als Bezahlt markieren'}
+                                  >
+                                    {inv.status === 'PAID' ? 'Bezahlt' : 'Ausstehend'}
+                                  </button>
+
+                                  {/* Actions */}
+                                  <div className="flex items-center gap-1">
+                                    <button
+                                      onClick={() => handleDownloadInvoice(inv)}
+                                      className="p-1.5 rounded-lg text-brand-600 hover:bg-brand-50 transition-colors"
+                                      title="Rechnung herunterladen"
+                                    >
+                                      <Download className="w-4 h-4" />
+                                    </button>
+                                    {inv.status === 'PENDING' && (
+                                      <button
+                                        onClick={() => {
+                                          setReissueInvoice(inv);
+                                          setReissuePenalty('');
+                                          setReissueNotes('');
+                                        }}
+                                        className="p-1.5 rounded-lg text-orange-600 hover:bg-orange-50 transition-colors"
+                                        title="Mahnung erstellen"
+                                      >
+                                        <RefreshCw className="w-4 h-4" />
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -613,6 +745,83 @@ export default function ContractsPage() {
             setSigningBooking(null);
           }}
         />
+      )}
+
+      {/* Reissue Modal */}
+      {reissueInvoice && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-lg bg-orange-100 text-orange-600 flex items-center justify-center">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-neutral-900">Mahnung erstellen</h3>
+                <p className="text-sm text-neutral-500">Rechnung {reissueInvoice.invoiceNumber} erneut ausstellen</p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 mb-1">Mahngebühr ({reissueInvoice.currency})</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={reissuePenalty}
+                  onChange={(e) => setReissuePenalty(e.target.value)}
+                  placeholder="0.00"
+                  className="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 mb-1">Bemerkung (optional)</label>
+                <input
+                  type="text"
+                  value={reissueNotes}
+                  onChange={(e) => setReissueNotes(e.target.value)}
+                  placeholder="z.B. 2. Mahnung"
+                  className="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                />
+              </div>
+
+              <div className="bg-neutral-50 rounded-lg p-3 text-sm">
+                <div className="flex justify-between text-neutral-600">
+                  <span>Originalbetrag</span>
+                  <span>{reissueInvoice.currency} {(reissueInvoice.total - reissueInvoice.penalty).toFixed(2)}</span>
+                </div>
+                {Number(reissuePenalty) > 0 && (
+                  <div className="flex justify-between text-orange-600 mt-1">
+                    <span>+ Mahngebühr</span>
+                    <span>{reissueInvoice.currency} {Number(reissuePenalty).toFixed(2)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between font-bold text-neutral-900 mt-2 pt-2 border-t border-neutral-200">
+                  <span>Neuer Betrag</span>
+                  <span>{reissueInvoice.currency} {((reissueInvoice.total - reissueInvoice.penalty) + Number(reissuePenalty || 0)).toFixed(2)}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 mt-5">
+              <button
+                onClick={() => setReissueInvoice(null)}
+                className="flex-1 px-4 py-2 text-sm font-medium text-neutral-700 bg-neutral-100 hover:bg-neutral-200 rounded-lg transition-colors"
+              >
+                Abbrechen
+              </button>
+              <button
+                onClick={handleReissue}
+                disabled={reissueLoading}
+                className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-orange-600 hover:bg-orange-700 rounded-lg transition-colors disabled:opacity-50"
+              >
+                {reissueLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                Mahnung senden
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

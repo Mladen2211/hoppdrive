@@ -9,7 +9,9 @@ export function invoiceRoutes(container: Container): Router {
   const router = Router();
   const auth = createAuthMiddleware(container.tokenService);
 
-  /** GET /api/invoices – List invoices */
+  /* ────────────────────────────────────────────────────────────
+   *  GET /api/invoices – List invoices, optionally by bookingId
+   * ──────────────────────────────────────────────────────────── */
   router.get('/', auth, async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { status, bookingId } = req.query;
@@ -29,125 +31,16 @@ export function invoiceRoutes(container: Container): Router {
     }
   });
 
-  /** POST /api/invoices/bulk – Generate one invoice per booking, merged into a single PDF */
-  router.post('/bulk', auth, async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const { bookingIds, notes, vatRate: customVatRate, dueDays, label } = req.body;
-      if (!Array.isArray(bookingIds) || bookingIds.length === 0) {
-        res.status(400).json({ success: false, error: 'bookingIds[] is required' });
-        return;
-      }
-
-      const bookings = await container.prisma.booking.findMany({
-        where: { id: { in: bookingIds } },
-        include: { vehicle: true },
-        orderBy: { startDate: 'asc' },
-      }) as any[];
-      if (bookings.length === 0) {
-        res.status(404).json({ success: false, error: 'No bookings found' });
-        return;
-      }
-
-      // Get next sequential invoice number
-      const year = new Date().getFullYear();
-      const lastInv = await container.prisma.invoice.findFirst({
-        where: { invoiceNumber: { startsWith: `HD-${year}-` } },
-        orderBy: { invoiceNumber: 'desc' },
-      });
-      let seq = 1;
-      if (lastInv) {
-        const parts = lastInv.invoiceNumber.split('-');
-        seq = parseInt(parts[2], 10) + 1;
-      }
-
-      const vatRate = customVatRate ?? SWISS_VAT_RATE;
-      const issueDate = new Date();
-      const dueDate = new Date();
-      dueDate.setDate(dueDate.getDate() + (dueDays ?? 30));
-
-      // Generate one invoice PDF per booking, then merge all pages into one PDF
-      const { PDFDocument } = await import('pdf-lib');
-      const mergedPdf = await PDFDocument.create();
-
-      for (const b of bookings) {
-        const days = Math.max(1, Math.ceil(
-          (new Date(b.endDate).getTime() - new Date(b.startDate).getTime()) / (1000 * 60 * 60 * 24),
-        ));
-        const price = Number(b.totalPrice) || 0;
-        const vatAmount = Math.round(price * vatRate) / 100;
-        const total = price + vatAmount;
-        const invoiceNumber = `HD-${year}-${String(seq).padStart(5, '0')}`;
-        seq++;
-
-        const items: InvoiceLineItem[] = [{
-          description: `Fahrzeugmiete – ${b.vehicle.brand} ${b.vehicle.model} (${new Date(b.startDate).toLocaleDateString('de-CH')} – ${new Date(b.endDate).toLocaleDateString('de-CH')})`,
-          quantity: days,
-          unitPrice: price / days,
-          total: price,
-        }];
-
-        // Store invoice record
-        await container.prisma.invoice.create({
-          data: {
-            invoiceNumber,
-            bookingId: b.id,
-            customerName: b.customerName,
-            customerEmail: b.customerEmail,
-            issueDate,
-            dueDate,
-            subtotal: price,
-            vatRate,
-            vatAmount,
-            total,
-            currency: b.currency || 'CHF',
-            status: 'DRAFT',
-            notes: notes || (label ? `${label}` : null),
-          },
-        });
-
-        // Generate individual invoice PDF
-        const pdfBytes = await container.pdfService.generateInvoice({
-          invoiceNumber,
-          issueDate,
-          dueDate,
-          customerName: b.customerName,
-          customerEmail: b.customerEmail,
-          customerAddress: null,
-          items,
-          subtotal: price,
-          vatRate,
-          vatAmount,
-          total,
-          currency: b.currency || 'CHF',
-          notes: notes || null,
-          bookingRef: b.id.substring(0, 8).toUpperCase(),
-        });
-
-        // Copy pages into merged document
-        const singlePdf = await PDFDocument.load(pdfBytes);
-        const pages = await mergedPdf.copyPages(singlePdf, singlePdf.getPageIndices());
-        for (const page of pages) {
-          mergedPdf.addPage(page);
-        }
-      }
-
-      const mergedBytes = await mergedPdf.save();
-      const filename = `HoppDrive-${(label || 'Rechnungen').replace(/\s+/g, '-')}.pdf`;
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-      res.setHeader('Content-Length', mergedBytes.length);
-      res.send(Buffer.from(mergedBytes));
-    } catch (err) {
-      next(err);
-    }
-  });
-
-  /** POST /api/invoices – Create invoice from a booking */
+  /* ────────────────────────────────────────────────────────────
+   *  POST /api/invoices – Create invoice for a booking + date range
+   *  Body: { bookingId, periodStart, periodEnd, notes?, vatRate?, dueDays? }
+   * ──────────────────────────────────────────────────────────── */
   router.post('/', auth, async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { bookingId, notes, vatRate: customVatRate, dueDays } = req.body;
-      if (!bookingId) {
-        res.status(400).json({ success: false, error: 'bookingId is required' });
+      const { bookingId, periodStart, periodEnd, notes, vatRate: customVatRate, dueDays } = req.body;
+
+      if (!bookingId || !periodStart || !periodEnd) {
+        res.status(400).json({ success: false, error: 'bookingId, periodStart and periodEnd are required' });
         return;
       }
 
@@ -160,23 +53,28 @@ export function invoiceRoutes(container: Container): Router {
         return;
       }
 
-      // Generate sequential invoice number: HD-YYYY-NNNNN
-      const year = new Date().getFullYear();
-      const lastInvoice = await container.prisma.invoice.findFirst({
-        where: { invoiceNumber: { startsWith: `HD-${year}-` } },
-        orderBy: { invoiceNumber: 'desc' },
-      });
-      let seq = 1;
-      if (lastInvoice) {
-        const parts = lastInvoice.invoiceNumber.split('-');
-        seq = parseInt(parts[2], 10) + 1;
+      const pStart = new Date(periodStart);
+      const pEnd = new Date(periodEnd);
+      if (pEnd <= pStart) {
+        res.status(400).json({ success: false, error: 'periodEnd must be after periodStart' });
+        return;
       }
-      const invoiceNumber = `HD-${year}-${String(seq).padStart(5, '0')}`;
+
+      // Calculate days in the invoiced period
+      const totalBookingDays = Math.max(1, Math.ceil(
+        (new Date(booking.endDate).getTime() - new Date(booking.startDate).getTime()) / (1000 * 60 * 60 * 24),
+      ));
+      const invoiceDays = Math.max(1, Math.ceil(
+        (pEnd.getTime() - pStart.getTime()) / (1000 * 60 * 60 * 24),
+      ));
+      const dailyRate = Number(booking.totalPrice) / totalBookingDays;
+      const subtotal = Math.round(dailyRate * invoiceDays * 100) / 100;
 
       const vatRate = customVatRate ?? SWISS_VAT_RATE;
-      const subtotal = Number(booking.totalPrice);
       const vatAmount = Math.round(subtotal * vatRate) / 100;
-      const total = subtotal + vatAmount;
+      const total = Math.round((subtotal + vatAmount) * 100) / 100;
+
+      const invoiceNumber = await nextInvoiceNumber(container);
       const issueDate = new Date();
       const dueDate = new Date();
       dueDate.setDate(dueDate.getDate() + (dueDays ?? 30));
@@ -187,14 +85,17 @@ export function invoiceRoutes(container: Container): Router {
           bookingId,
           customerName: booking.customerName,
           customerEmail: booking.customerEmail,
+          periodStart: pStart,
+          periodEnd: pEnd,
           issueDate,
           dueDate,
           subtotal,
           vatRate,
           vatAmount,
           total,
-          currency: booking.currency,
-          status: 'DRAFT',
+          penalty: 0,
+          currency: booking.currency || 'CHF',
+          status: 'PENDING',
           notes: notes || null,
         },
         include: { booking: { include: { vehicle: true } } },
@@ -206,26 +107,90 @@ export function invoiceRoutes(container: Container): Router {
     }
   });
 
-  /** PATCH /api/invoices/:id – Update invoice (status, notes, etc.) */
-  router.patch('/:id', auth, async (req: Request, res: Response, next: NextFunction) => {
+  /* ────────────────────────────────────────────────────────────
+   *  PATCH /api/invoices/:id/status – Toggle PENDING / PAID
+   * ──────────────────────────────────────────────────────────── */
+  router.patch('/:id/status', auth, async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { status, notes, customerAddress } = req.body;
+      const { status } = req.body;
+      if (!status || !['PENDING', 'PAID'].includes(status)) {
+        res.status(400).json({ success: false, error: 'status must be PENDING or PAID' });
+        return;
+      }
+
       const invoice = await container.prisma.invoice.update({
         where: { id: req.params.id },
-        data: {
-          ...(status !== undefined && { status }),
-          ...(notes !== undefined && { notes }),
-          ...(customerAddress !== undefined && { customerAddress }),
-        },
+        data: { status },
         include: { booking: { include: { vehicle: true } } },
       });
+
       res.json({ success: true, data: mapInvoice(invoice) });
     } catch (err) {
       next(err);
     }
   });
 
-  /** GET /api/invoices/:id/download – Download invoice PDF */
+  /* ────────────────────────────────────────────────────────────
+   *  POST /api/invoices/:id/reissue – Reissue with penalty
+   *  Body: { penalty: number, notes? }
+   * ──────────────────────────────────────────────────────────── */
+  router.post('/:id/reissue', auth, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { penalty, notes } = req.body;
+      const penaltyAmount = Number(penalty) || 0;
+
+      const original = await container.prisma.invoice.findUnique({
+        where: { id: req.params.id },
+        include: { booking: { include: { vehicle: true } } },
+      });
+      if (!original) {
+        res.status(404).json({ success: false, error: 'Invoice not found' });
+        return;
+      }
+
+      const subtotal = Number(original.subtotal);
+      const vatRate = Number(original.vatRate);
+      const vatAmount = Math.round(subtotal * vatRate) / 100;
+      const total = Math.round((subtotal + vatAmount + penaltyAmount) * 100) / 100;
+
+      const invoiceNumber = await nextInvoiceNumber(container);
+      const issueDate = new Date();
+      const dueDate = new Date();
+      dueDate.setDate(dueDate.getDate() + 14); // 14-day deadline on reissue
+
+      const reissued = await container.prisma.invoice.create({
+        data: {
+          invoiceNumber,
+          bookingId: original.bookingId,
+          customerName: original.customerName,
+          customerEmail: original.customerEmail,
+          customerAddress: original.customerAddress,
+          periodStart: original.periodStart,
+          periodEnd: original.periodEnd,
+          issueDate,
+          dueDate,
+          subtotal,
+          vatRate,
+          vatAmount,
+          penalty: penaltyAmount,
+          total,
+          currency: original.currency,
+          status: 'PENDING',
+          parentInvoiceId: original.id,
+          notes: notes || (penaltyAmount > 0 ? `Mahnung – Verzugsgebühr: ${original.currency} ${penaltyAmount.toFixed(2)}` : null),
+        },
+        include: { booking: { include: { vehicle: true } } },
+      });
+
+      res.status(201).json({ success: true, data: mapInvoice(reissued) });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  /* ────────────────────────────────────────────────────────────
+   *  GET /api/invoices/:id/download – Download invoice PDF
+   * ──────────────────────────────────────────────────────────── */
   router.get('/:id/download', auth, async (req: Request, res: Response, next: NextFunction) => {
     try {
       const invoice = await container.prisma.invoice.findUnique({
@@ -237,18 +202,29 @@ export function invoiceRoutes(container: Container): Router {
         return;
       }
 
-      const days = Math.ceil(
-        (invoice.booking.endDate.getTime() - invoice.booking.startDate.getTime()) / (1000 * 60 * 60 * 24),
-      );
+      const periodDays = Math.max(1, Math.ceil(
+        (invoice.periodEnd.getTime() - invoice.periodStart.getTime()) / (1000 * 60 * 60 * 24),
+      ));
+      const subtotal = Number(invoice.subtotal);
+      const penaltyAmt = Number(invoice.penalty);
 
       const items: InvoiceLineItem[] = [
         {
-          description: `Fahrzeugmiete – ${invoice.booking.vehicle.brand} ${invoice.booking.vehicle.model} (${invoice.booking.startDate.toLocaleDateString('de-CH')} – ${invoice.booking.endDate.toLocaleDateString('de-CH')})`,
-          quantity: days,
-          unitPrice: Number(invoice.subtotal) / days,
-          total: Number(invoice.subtotal),
+          description: `Fahrzeugmiete – ${(invoice.booking as any).vehicle.brand} ${(invoice.booking as any).vehicle.model} (${invoice.periodStart.toLocaleDateString('de-CH')} – ${invoice.periodEnd.toLocaleDateString('de-CH')})`,
+          quantity: periodDays,
+          unitPrice: subtotal / periodDays,
+          total: subtotal,
         },
       ];
+
+      if (penaltyAmt > 0) {
+        items.push({
+          description: 'Verzugsgebühr / Mahngebühr',
+          quantity: 1,
+          unitPrice: penaltyAmt,
+          total: penaltyAmt,
+        });
+      }
 
       const pdfBytes = await container.pdfService.generateInvoice({
         invoiceNumber: invoice.invoiceNumber,
@@ -258,7 +234,7 @@ export function invoiceRoutes(container: Container): Router {
         customerEmail: invoice.customerEmail,
         customerAddress: invoice.customerAddress,
         items,
-        subtotal: Number(invoice.subtotal),
+        subtotal: subtotal + penaltyAmt,
         vatRate: Number(invoice.vatRate),
         vatAmount: Number(invoice.vatAmount),
         total: Number(invoice.total),
@@ -277,35 +253,25 @@ export function invoiceRoutes(container: Container): Router {
     }
   });
 
-  /** POST /api/invoices/:id/send – Send invoice via email */
-  router.post('/:id/send', auth, async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const invoice = await container.prisma.invoice.findUnique({
-        where: { id: req.params.id },
-        include: { booking: { include: { vehicle: true } } },
-      });
-      if (!invoice) {
-        res.status(404).json({ success: false, error: 'Invoice not found' });
-        return;
-      }
-      if (!invoice.customerEmail) {
-        res.status(400).json({ success: false, error: 'No customer email on invoice' });
-        return;
-      }
-
-      // Mark as sent
-      await container.prisma.invoice.update({
-        where: { id: req.params.id },
-        data: { status: 'SENT' },
-      });
-
-      res.json({ success: true, data: null, message: 'Invoice sent' });
-    } catch (err) {
-      next(err);
-    }
-  });
-
   return router;
+}
+
+/* ══════════════════════════════════════════════════════════════
+ *  Helpers
+ * ══════════════════════════════════════════════════════════════ */
+
+async function nextInvoiceNumber(container: Container): Promise<string> {
+  const year = new Date().getFullYear();
+  const lastInvoice = await container.prisma.invoice.findFirst({
+    where: { invoiceNumber: { startsWith: `HD-${year}-` } },
+    orderBy: { invoiceNumber: 'desc' },
+  });
+  let seq = 1;
+  if (lastInvoice) {
+    const parts = lastInvoice.invoiceNumber.split('-');
+    seq = parseInt(parts[2], 10) + 1;
+  }
+  return `HD-${year}-${String(seq).padStart(5, '0')}`;
 }
 
 function mapInvoice(inv: any) {
@@ -316,14 +282,18 @@ function mapInvoice(inv: any) {
     customerName: inv.customerName,
     customerEmail: inv.customerEmail,
     customerAddress: inv.customerAddress,
+    periodStart: inv.periodStart,
+    periodEnd: inv.periodEnd,
     issueDate: inv.issueDate,
     dueDate: inv.dueDate,
     subtotal: Number(inv.subtotal),
     vatRate: Number(inv.vatRate),
     vatAmount: Number(inv.vatAmount),
+    penalty: Number(inv.penalty),
     total: Number(inv.total),
     currency: inv.currency,
     status: inv.status,
+    parentInvoiceId: inv.parentInvoiceId,
     notes: inv.notes,
     createdAt: inv.createdAt,
     booking: inv.booking

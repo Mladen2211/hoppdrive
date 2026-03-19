@@ -164,16 +164,14 @@ export const api = {
   // ─── Invoices ─────────────────────────────────────────────
   getInvoices: (params?: { status?: string; bookingId?: string }) =>
     client.get('/invoices', { params }).then(unwrap) as Promise<any[]>,
-  createInvoice: (data: { bookingId: string; notes?: string; vatRate?: number; dueDays?: number }) =>
+  createInvoice: (data: { bookingId: string; periodStart: string; periodEnd: string; notes?: string; vatRate?: number; dueDays?: number }) =>
     client.post('/invoices', data).then(unwrap) as Promise<any>,
-  updateInvoice: (id: string, data: { status?: string; notes?: string; customerAddress?: string }) =>
-    client.patch(`/invoices/${id}`, data).then(unwrap) as Promise<any>,
+  toggleInvoiceStatus: (id: string, status: 'PENDING' | 'PAID') =>
+    client.patch(`/invoices/${id}/status`, { status }).then(unwrap) as Promise<any>,
+  reissueInvoice: (id: string, data: { penalty: number; notes?: string }) =>
+    client.post(`/invoices/${id}/reissue`, data).then(unwrap) as Promise<any>,
   downloadInvoice: (id: string) =>
     client.get(`/invoices/${id}/download`, { responseType: 'blob' }).then((res) => res.data) as Promise<Blob>,
-  downloadBulkInvoice: (data: { bookingIds: string[]; notes?: string; label?: string }) =>
-    client.post('/invoices/bulk', data, { responseType: 'blob' }).then((res) => res.data) as Promise<Blob>,
-  sendInvoice: (id: string) =>
-    client.post(`/invoices/${id}/send`).then(unwrap) as Promise<any>,
 
   // ─── Search ───────────────────────────────────────────────
   globalSearch: (q: string) =>
