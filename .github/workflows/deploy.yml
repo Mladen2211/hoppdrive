@@ -30,7 +30,7 @@ jobs:
           context: .
           file: ./apps/api/Dockerfile
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/hoppdrive-api:latest
+          tags: ghcr.io/mladen2211/hoppdrive-api:latest
 
       - name: Build & Push Web
         uses: docker/build-push-action@v5
@@ -38,7 +38,7 @@ jobs:
           context: .
           file: ./apps/web/Dockerfile
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/hoppdrive-web:latest
+          tags: ghcr.io/mladen2211/hoppdrive-web:latest
           build-args: |
             NEXT_PUBLIC_API_URL=https://api-hoppdrive.mraguz.me/api
             NEXT_PUBLIC_ADMIN_URL=https://hoppdrive-admin.mraguz.me
@@ -50,7 +50,7 @@ jobs:
           context: .
           file: ./apps/admin/Dockerfile
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/hoppdrive-admin:latest
+          tags: ghcr.io/mladen2211/hoppdrive-admin:latest
           build-args: |
             NEXT_PUBLIC_API_URL=https://api-hoppdrive.mraguz.me/api
             NEXT_PUBLIC_MAPBOX_TOKEN=${{ secrets.NEXT_PUBLIC_MAPBOX_TOKEN }}
