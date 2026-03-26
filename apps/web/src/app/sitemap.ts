@@ -44,6 +44,12 @@ export default async function sitemap(): Promise<SitemapEntry[]> {
       changeFrequency: 'monthly',
       priority: 0.3,
     },
+    {
+      url: `${SITE_URL}/agb`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.3,
+    },
     ...vehicleEntries,
   ];
 }

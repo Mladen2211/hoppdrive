@@ -26,6 +26,12 @@ export function Footer() {
           >
             Datenschutz
           </Link>
+          <Link
+            href="/agb"
+            className="hover:text-charcoal transition-colors text-sm"
+          >
+            AGB
+          </Link>
           <button
             className="hover:text-charcoal transition-colors text-sm"
             id="cookie-settings-trigger"
