@@ -42,7 +42,7 @@ jobs:
           build-args: |
             NEXT_PUBLIC_API_URL=https://api-hoppdrive.mraguz.me/api
             NEXT_PUBLIC_ADMIN_URL=https://hoppdrive-admin.mraguz.me
-            NEXT_PUBLIC_MAPBOX_TOKEN=${{ secrets.NEXT_PUBLIC_MAPBOX_TOKEN }}
+            NEXT_PUBLIC_MAPBOX_TOKEN=${{ vars.NEXT_PUBLIC_MAPBOX_TOKEN }}
 
       - name: Build & Push Admin
         uses: docker/build-push-action@v5
@@ -53,4 +53,4 @@ jobs:
           tags: ghcr.io/mladen2211/hoppdrive-admin:latest
           build-args: |
             NEXT_PUBLIC_API_URL=https://api-hoppdrive.mraguz.me/api
-            NEXT_PUBLIC_MAPBOX_TOKEN=${{ secrets.NEXT_PUBLIC_MAPBOX_TOKEN }}
+            NEXT_PUBLIC_MAPBOX_TOKEN=${{ vars.NEXT_PUBLIC_MAPBOX_TOKEN }}
