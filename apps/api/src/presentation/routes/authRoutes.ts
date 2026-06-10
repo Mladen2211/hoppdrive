@@ -18,7 +18,7 @@ const loginLimiter = rateLimit({
 async function logAuthAction(container: Container, adminId: string, action: string, details?: string) {
   try {
     await container.auditLogRepo.save(
-      AuditLog.create({ id: uuid(), adminId, action, resource: 'auth', resourceId: adminId, details }),
+      AuditLog.create({ id: uuid(), adminId, action, resource: 'auth', resourceId: adminId, details: details ?? null }),
     );
   } catch { /* audit failure must never break the request */ }
 }
