@@ -6,7 +6,7 @@
     "dev": "next dev --port 98",
     "build": "next build",
     "start": "next start --port 98",
-    "lint": "next lint"
+    "lint": "next lint && tsc --noEmit"
   },
   "dependencies": {
     "@hoppdrive/shared": "*",

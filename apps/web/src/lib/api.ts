@@ -52,7 +52,7 @@ export const api = {
     request<PricingCalculation>(`/pricing?vehicleId=${vehicleId}&days=${days}`),
   submitContact: (data: CreateContactRequestPayload) =>
     request<{ id: string }>('/contact', { method: 'POST', body: JSON.stringify(data) }),
-  getSetting: (key: string) => request<unknown>(`/settings/${key}`),
+  getSetting: <T = unknown>(key: string) => request<T>(`/settings/${key}`),
   getTestimonials: () => request<TestimonialDto[]>('/testimonials'),
   getFaq: () => request<FaqItemDto[]>('/faq'),
   getHomepageSections: () => request<HomepageSectionDto[]>('/homepage-sections'),

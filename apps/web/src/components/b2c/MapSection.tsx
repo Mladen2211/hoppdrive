@@ -42,7 +42,7 @@ export function MapSection({ content }: MapSectionProps) {
   // Fetch location settings
   useEffect(() => {
     api
-      .getSetting('location')
+      .getSetting<Partial<LocationConfig>>('location')
       .then((data) => setConfig({ ...DEFAULTS, ...data }))
       .catch(() => setConfig(DEFAULTS));
   }, []);
