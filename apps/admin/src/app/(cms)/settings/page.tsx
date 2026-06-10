@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { api } from '@/lib/api';
-import { Save, Loader2, Plus, Trash2, Eye, EyeOff, Search, MapPin } from 'lucide-react';
+import { Save, Loader2, Plus, Trash2, Eye, EyeOff, Search, MapPin, Receipt } from 'lucide-react';
 
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || '';
 
@@ -43,6 +43,7 @@ export default function SettingsPage() {
   const [pricing, setPricing] = useState(DEFAULT_PRICING);
   const [features, setFeatures] = useState(DEFAULT_FEATURES);
   const [location, setLocation] = useState(DEFAULT_LOCATION);
+  const [invoiceSettings, setInvoiceSettings] = useState({ uid: '', iban: '', bankName: '' });
   const [saving, setSaving] = useState<string | null>(null);
   const [saved, setSaved] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -55,6 +56,7 @@ export default function SettingsPage() {
       if (all.pricing) setPricing(all.pricing);
       if (all.features) setFeatures(all.features);
       if (all.location) setLocation(all.location);
+      if (all.invoice_settings) setInvoiceSettings(all.invoice_settings);
     } catch {
       // Defaults are fine
     } finally {
@@ -348,6 +350,71 @@ export default function SettingsPage() {
         saved={saved}
         onSave={() => saveSetting('location', location)}
       />
+
+      {/* ─── Invoice / Zahlungsinfos Section ─────────────── */}
+      <section className="bg-white rounded-xl shadow-sm border border-neutral-200 p-6 mt-8">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-brand-50 text-brand-600 flex items-center justify-center">
+              <Receipt className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-neutral-900">Rechnungsinfos</h2>
+              <p className="text-xs text-neutral-500 mt-0.5">Erscheinen auf jeder generierten Rechnung (PDF)</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              disabled={saving === 'invoice_settings'}
+              onClick={() => saveSetting('invoice_settings', invoiceSettings)}
+              className="flex items-center gap-2 bg-brand-600 hover:bg-brand-700 disabled:bg-brand-400 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+            >
+              {saving === 'invoice_settings' ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Save className="w-4 h-4" />
+              )}
+              Speichern
+            </button>
+            {saved === 'invoice_settings' && (
+              <span className="text-sm text-green-600 font-medium">✓ Gespeichert</span>
+            )}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 mb-1">MwSt-Nr. (UID)</label>
+            <input
+              type="text"
+              value={invoiceSettings.uid}
+              onChange={(e) => setInvoiceSettings((s) => ({ ...s, uid: e.target.value }))}
+              placeholder="CHE-XXX.XXX.XXX MWST"
+              className="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 font-mono"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 mb-1">IBAN</label>
+            <input
+              type="text"
+              value={invoiceSettings.iban}
+              onChange={(e) => setInvoiceSettings((s) => ({ ...s, iban: e.target.value }))}
+              placeholder="CH56 0483 5012 3456 7800 9"
+              className="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 font-mono"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 mb-1">Bankname</label>
+            <input
+              type="text"
+              value={invoiceSettings.bankName}
+              onChange={(e) => setInvoiceSettings((s) => ({ ...s, bankName: e.target.value }))}
+              placeholder="Raiffeisenbank Zürich"
+              className="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+            />
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

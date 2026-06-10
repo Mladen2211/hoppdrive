@@ -226,6 +226,16 @@ export function invoiceRoutes(container: Container): Router {
         });
       }
 
+      const settingRow = await container.prisma.siteSetting.findUnique({ where: { key: 'invoice_settings' } });
+      if (settingRow?.value) {
+        const s = settingRow.value as any;
+        container.pdfService.updateCompany({
+          uid: s.uid || undefined,
+          iban: s.iban || undefined,
+          bankName: s.bankName || undefined,
+        });
+      }
+
       const pdfBytes = await container.pdfService.generateInvoice({
         invoiceNumber: invoice.invoiceNumber,
         issueDate: invoice.issueDate,
@@ -234,7 +244,7 @@ export function invoiceRoutes(container: Container): Router {
         customerEmail: invoice.customerEmail,
         customerAddress: invoice.customerAddress,
         items,
-        subtotal: subtotal + penaltyAmt,
+        subtotal,
         vatRate: Number(invoice.vatRate),
         vatAmount: Number(invoice.vatAmount),
         total: Number(invoice.total),

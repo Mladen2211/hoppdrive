@@ -13,6 +13,8 @@ interface CompanyInfo {
   phone: string;
   email: string;
   uid: string; // Swiss UID / VAT number (MwSt-Nr.)
+  iban?: string;
+  bankName?: string;
   signatureData?: string | null; // admin company signature (base64 PNG)
 }
 
@@ -24,7 +26,9 @@ const DEFAULT_COMPANY: CompanyInfo = {
   country: 'Schweiz',
   phone: '+41 44 833 33 33',
   email: 'info@hoppdrive.ch',
-  uid: 'CHE-XXX.XXX.XXX MWST', // placeholder – update from SiteSettings
+  uid: 'CHE-XXX.XXX.XXX MWST',
+  iban: '',
+  bankName: '',
 };
 
 /* ================================================================
@@ -407,11 +411,13 @@ export class PdfService {
     y -= 5;
     page.drawRectangle({ x: 50, y, width: width - 100, height: 1, color: brandRed });
     y -= 18;
-    const paymentLines = [
+    const paymentLines: string[] = [
       `Bitte überweisen Sie den Betrag bis zum ${data.dueDate.toLocaleDateString('de-CH')} auf folgendes Konto:`,
       `Kontoinhaber: ${this.company.name}`,
-      'Zahlungsvermerk: ' + data.invoiceNumber,
     ];
+    if (this.company.bankName) paymentLines.push(`Bank: ${this.company.bankName}`);
+    if (this.company.iban) paymentLines.push(`IBAN: ${this.company.iban}`);
+    paymentLines.push('Zahlungsvermerk: ' + data.invoiceNumber);
     for (const line of paymentLines) {
       page.drawText(line, { x: 50, y, size: 9, font: helvetica, color: gray });
       y -= 14;

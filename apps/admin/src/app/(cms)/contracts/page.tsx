@@ -817,7 +817,7 @@ export default function ContractsPage() {
                 className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-orange-600 hover:bg-orange-700 rounded-lg transition-colors disabled:opacity-50"
               >
                 {reissueLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-                Mahnung senden
+                Mahnung erstellen
               </button>
             </div>
           </div>
