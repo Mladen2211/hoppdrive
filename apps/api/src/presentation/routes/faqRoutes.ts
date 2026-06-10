@@ -58,10 +58,16 @@ export function faqRoutes(container: Container): Router {
   router.patch('/:id', auth, async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { id } = req.params;
-      const row = await container.prisma.faqItem.update({
-        where: { id },
-        data: req.body,
-      });
+      // Whitelist allowed fields to prevent overwriting system fields (id, createdAt, etc.)
+      const { question, answer, category, isActive, sortOrder } = req.body;
+      const data: Record<string, unknown> = {};
+      if (question !== undefined) data.question = question;
+      if (answer !== undefined) data.answer = answer;
+      if (category !== undefined) data.category = category;
+      if (isActive !== undefined) data.isActive = isActive;
+      if (sortOrder !== undefined) data.sortOrder = sortOrder;
+
+      const row = await container.prisma.faqItem.update({ where: { id }, data });
       res.json({ success: true, data: row });
     } catch (err) {
       next(err);

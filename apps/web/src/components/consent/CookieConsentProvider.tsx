@@ -58,7 +58,9 @@ export function CookieConsentProvider({ children }: { children: ReactNode }) {
 
   const persistConsent = useCallback((state: ConsentState) => {
     setConsent(state);
-    localStorage.setItem(COOKIE_KEY, JSON.stringify(state));
+    try {
+      localStorage.setItem(COOKIE_KEY, JSON.stringify(state));
+    } catch { /* QuotaExceededError — consent stored in memory only */ }
     setShowBanner(false);
   }, []);
 

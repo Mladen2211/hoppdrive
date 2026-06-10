@@ -41,17 +41,15 @@ export function createApp(container: Container): express.Application {
     },
     credentials: true,
   }));
-  app.use(morgan('short'));
+  app.use(morgan('combined'));
   app.use(express.json({
     limit: '5mb',
-    // Capture raw body for debugging JSON parse issues (verify runs before parsing)
-    verify: (req: any, _res: any, buf: Buffer, encoding: any) => {
-      try {
-        req.rawBody = buf.toString(encoding || 'utf8');
-      } catch {
-        // ignore
-      }
-    },
+    // Only capture raw body in development for debugging JSON parse issues
+    verify: process.env.NODE_ENV !== 'production'
+      ? (req: any, _res: any, buf: Buffer, encoding: any) => {
+          try { req.rawBody = buf.toString(encoding || 'utf8'); } catch { /* ignore */ }
+        }
+      : undefined,
   }));
   app.use(cookieParser());
 
@@ -63,8 +61,17 @@ export function createApp(container: Container): express.Application {
   }));
 
   // ─── Health Check ───────────────────────────────────────────
-  app.get('/api/health', (_req, res) => {
-    res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  app.get('/api/health', async (_req, res) => {
+    try {
+      await container.prisma.$queryRaw`SELECT 1`;
+      res.json({ status: 'ok', timestamp: new Date().toISOString(), database: 'ok' });
+    } catch (err) {
+      res.status(503).json({
+        status: 'error',
+        timestamp: new Date().toISOString(),
+        database: 'unavailable',
+      });
+    }
   });
 
   // ─── API Routes ─────────────────────────────────────────────

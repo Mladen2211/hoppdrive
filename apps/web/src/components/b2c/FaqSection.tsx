@@ -102,7 +102,7 @@ export function FaqSection({ content }: FaqSectionProps) {
       .then((data) => {
         if (data && data.length > 0) setFaqItems(data);
       })
-      .catch(() => {});
+      .catch((err) => console.error('[FaqSection] Failed to load FAQ:', err));
   }, []);
 
   return (

@@ -79,6 +79,14 @@ export function contactRoutes(container: Container): Router {
     audit('contact-request', 'update-status'),
     async (req: Request, res: Response, next: NextFunction) => {
       try {
+        const VALID_STATUSES = ['pending', 'reviewed', 'responded', 'converted', 'archived'];
+        if (!req.body.status || !VALID_STATUSES.includes(req.body.status)) {
+          res.status(400).json({
+            success: false,
+            error: `status must be one of: ${VALID_STATUSES.join(', ')}`,
+          });
+          return;
+        }
         await container.updateContactStatus.execute({
           id: req.params.id,
           status: req.body.status,

@@ -33,16 +33,16 @@ export default function HomePage() {
   useEffect(() => {
     api.getVehicles()
       .then((data) => setVehicles(data))
-      .catch(() => setVehicles([]))
+      .catch((err) => { console.error('[homepage] Failed to load vehicles:', err); setVehicles([]); })
       .finally(() => setLoading(false));
 
     api.getSetting('pricing')
       .then((data) => setPricingConfig(data))
-      .catch(() => {});
+      .catch((err) => console.error('[homepage] Failed to load pricing config:', err));
 
     api.getHomepageSections()
       .then((data) => setSections(data))
-      .catch(() => setSections([]))
+      .catch((err) => { console.error('[homepage] Failed to load sections:', err); setSections([]); })
       .finally(() => setSectionsLoaded(true));
   }, []);
 

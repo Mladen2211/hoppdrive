@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Fira_Sans } from 'next/font/google';
 import './globals.css';
 import { CookieConsentProvider } from '@/components/consent/CookieConsentProvider';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 const firaSans = Fira_Sans({
   subsets: ['latin'],
@@ -175,9 +176,11 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-screen flex flex-col">
-        <CookieConsentProvider>
-          {children}
-        </CookieConsentProvider>
+        <ErrorBoundary>
+          <CookieConsentProvider>
+            {children}
+          </CookieConsentProvider>
+        </ErrorBoundary>
       </body>
     </html>
   );

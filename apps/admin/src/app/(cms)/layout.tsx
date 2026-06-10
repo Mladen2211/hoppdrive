@@ -172,19 +172,27 @@ function NotificationBell() {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
+  const failCountRef = useRef(0);
 
   const fetchNotifications = useCallback(async () => {
     try {
       const data = await api.getNotifications();
       setNotifications(data.items ?? []);
       setUnreadCount(data.unreadCount ?? 0);
-    } catch { /* ignore */ }
+      failCountRef.current = 0; // reset failure streak on success
+    } catch {
+      failCountRef.current += 1;
+    }
   }, []);
 
-  // Fetch on mount + every 30s
+  // Fetch on mount + every 30s; stop polling after 5 consecutive failures
   useEffect(() => {
     fetchNotifications();
-    const iv = setInterval(fetchNotifications, 30000);
+    const iv = setInterval(() => {
+      if (failCountRef.current < 5) {
+        fetchNotifications();
+      }
+    }, 30000);
     return () => clearInterval(iv);
   }, [fetchNotifications]);
 
@@ -300,8 +308,9 @@ function AdminSidebar({
       {/* Circular collapse toggle — desktop only */}
       <button
         onClick={() => {
-          setIsExpanded(!isExpanded);
-          localStorage.setItem('sidebar-collapsed', String(isExpanded));
+          const next = !isExpanded;
+          setIsExpanded(next);
+          try { localStorage.setItem('sidebar-collapsed', String(!next)); } catch { /* QuotaExceededError */ }
         }}
         className="hidden md:flex absolute -right-3.5 top-8 w-7 h-7 bg-white border border-slate-200 shadow-sm rounded-full items-center justify-center text-slate-400 hover:text-red-600 hover:border-red-200 transition-all z-50 hover:scale-105"
       >
@@ -440,8 +449,10 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
 
   // Restore saved collapsed state
   useEffect(() => {
-    const saved = localStorage.getItem('sidebar-collapsed');
-    if (saved === 'true') setIsExpanded(false);
+    try {
+      const saved = localStorage.getItem('sidebar-collapsed');
+      if (saved === 'true') setIsExpanded(false);
+    } catch { /* ignore localStorage errors */ }
   }, []);
 
   // Close mobile sidebar on desktop resize

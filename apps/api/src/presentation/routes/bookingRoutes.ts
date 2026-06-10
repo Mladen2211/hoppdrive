@@ -1,7 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import type { Container } from '../../infrastructure/config/container';
 import { validate, createBookingSchema, finalizeContractSchema } from '../validators';
-import { createAuthMiddleware } from '../middleware/authMiddleware';
+import { createAuthMiddleware, type AuthenticatedRequest } from '../middleware/authMiddleware';
 import { createAuditMiddleware } from '../middleware/auditMiddleware';
 import { BookingStatus } from '@prisma/client';
 
@@ -98,6 +98,14 @@ export function bookingRoutes(container: Container): Router {
       }
       const fromDate = new Date(from as string);
       const toDate = new Date(to as string);
+      if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) {
+        res.status(400).json({ success: false, error: 'from and to must be valid ISO date strings' });
+        return;
+      }
+      if (fromDate >= toDate) {
+        res.status(400).json({ success: false, error: 'from must be before to' });
+        return;
+      }
       toDate.setHours(23, 59, 59, 999);
 
       // Fetch all non-cancelled bookings that overlap the range
@@ -181,7 +189,7 @@ export function bookingRoutes(container: Container): Router {
     auth,
     validate(finalizeContractSchema),
     audit('booking', 'sign_contract'),
-    async (req: Request, res: Response, next: NextFunction) => {
+    async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
       try {
         const { id } = req.params;
         const { signature, customerEmail } = req.body;
@@ -213,8 +221,11 @@ export function bookingRoutes(container: Container): Router {
           include: { vehicle: true, location: true },
         });
 
-        // Fetch admin signature for company side of contract
-        const admin = await container.prisma.admin.findFirst({ select: { signatureData: true } });
+        // Fetch the signing admin's signature for the company side of contract
+        const admin = await container.prisma.admin.findUnique({
+          where: { id: req.adminId! },
+          select: { signatureData: true },
+        });
         if (admin?.signatureData) {
           container.pdfService.updateCompany({ signatureData: admin.signatureData });
         }
@@ -266,7 +277,7 @@ export function bookingRoutes(container: Container): Router {
   );
 
   /** GET /api/bookings/:id/download-contract – Download contract PDF */
-  router.get('/:id/download-contract', auth, async (req: Request, res: Response, next: NextFunction) => {
+  router.get('/:id/download-contract', auth, async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     try {
       const { id } = req.params;
 
@@ -284,8 +295,11 @@ export function bookingRoutes(container: Container): Router {
         return;
       }
 
-      // Fetch admin signature for company side of contract
-      const admin = await container.prisma.admin.findFirst({ select: { signatureData: true } });
+      // Fetch the authenticated admin's signature for the company side of contract
+      const admin = await container.prisma.admin.findUnique({
+        where: { id: req.adminId! },
+        select: { signatureData: true },
+      });
       if (admin?.signatureData) {
         container.pdfService.updateCompany({ signatureData: admin.signatureData });
       }

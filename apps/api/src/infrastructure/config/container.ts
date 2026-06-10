@@ -50,6 +50,16 @@ import { GetDashboardStatsUseCase } from '../../application/use-cases/dashboard/
  * Wires together all layers following the Dependency Inversion Principle.
  */
 export function createContainer() {
+  // ─── Production env guard ──────────────────────────────────
+  if (process.env.NODE_ENV === 'production') {
+    const required = ['JWT_SECRET', 'JWT_REFRESH_SECRET', 'CORS_ORIGIN'];
+    for (const key of required) {
+      if (!process.env[key]) {
+        throw new Error(`[startup] Missing required environment variable: ${key}`);
+      }
+    }
+  }
+
   // ─── Infrastructure ────────────────────────────────────────
   const prisma: PrismaClient = getPrismaClient();
 

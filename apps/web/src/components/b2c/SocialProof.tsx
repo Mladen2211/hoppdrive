@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { Star, Quote } from 'lucide-react';
 import { api } from '@/lib/api';
 
@@ -76,7 +77,7 @@ export function SocialProof({ content }: SocialProofProps) {
       .then((data) => {
         if (data && data.length > 0) setTestimonials(data);
       })
-      .catch(() => {});
+      .catch((err) => console.error('[SocialProof] Failed to load testimonials:', err));
   }, []);
 
   return (
@@ -106,11 +107,12 @@ export function SocialProof({ content }: SocialProofProps) {
               </p>
               <div className="flex items-center gap-3">
                 {t.avatarUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
+                  <Image
                     src={t.avatarUrl}
                     alt={t.name}
-                    className="w-10 h-10 rounded-full object-cover"
+                    width={40}
+                    height={40}
+                    className="rounded-full object-cover"
                   />
                 ) : (
                   <div className="w-10 h-10 rounded-full bg-brand-100 flex items-center justify-center text-brand-600 font-bold text-sm">

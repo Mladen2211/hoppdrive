@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import { ChevronRight, CheckCircle, Shield, Clock, Car } from 'lucide-react';
 
 const DEFAULT_TRUST_ITEMS = [
@@ -46,11 +47,13 @@ export function HeroSection({ content }: HeroSectionProps) {
   return (
     <header className="relative bg-neutral-950 text-white overflow-hidden">
       <div className="absolute inset-0">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
+        <Image
           src={bgImage}
           alt="Modernes Auto auf Schweizer Strasse – HoppDrive günstige Autovermietung"
-          className="w-full h-full object-cover opacity-25"
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover opacity-25"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/85 to-neutral-950/50" />
       </div>

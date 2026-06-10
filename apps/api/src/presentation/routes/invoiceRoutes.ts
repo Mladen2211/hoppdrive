@@ -262,16 +262,20 @@ export function invoiceRoutes(container: Container): Router {
 
 async function nextInvoiceNumber(container: Container): Promise<string> {
   const year = new Date().getFullYear();
-  const lastInvoice = await container.prisma.invoice.findFirst({
-    where: { invoiceNumber: { startsWith: `HD-${year}-` } },
-    orderBy: { invoiceNumber: 'desc' },
-  });
-  let seq = 1;
-  if (lastInvoice) {
-    const parts = lastInvoice.invoiceNumber.split('-');
-    seq = parseInt(parts[2], 10) + 1;
-  }
-  return `HD-${year}-${String(seq).padStart(5, '0')}`;
+  // Use a serializable transaction to prevent race conditions producing duplicate numbers
+  return container.prisma.$transaction(async (tx) => {
+    const lastInvoice = await tx.invoice.findFirst({
+      where: { invoiceNumber: { startsWith: `HD-${year}-` } },
+      orderBy: { invoiceNumber: 'desc' },
+      select: { invoiceNumber: true },
+    });
+    let seq = 1;
+    if (lastInvoice) {
+      const parts = lastInvoice.invoiceNumber.split('-');
+      seq = parseInt(parts[2], 10) + 1;
+    }
+    return `HD-${year}-${String(seq).padStart(5, '0')}`;
+  }, { isolationLevel: 'Serializable' });
 }
 
 function mapInvoice(inv: any) {

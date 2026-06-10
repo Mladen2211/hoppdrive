@@ -32,6 +32,10 @@ export class CreateBookingUseCase {
       throw new Error(`Vehicle ${input.vehicleId} not found`);
     }
 
+    if (!vehicle.isAvailable) {
+      throw new Error('Vehicle is not available for booking');
+    }
+
     const dateRange = DateRange.create(
       new Date(input.startDate),
       new Date(input.endDate),

@@ -1,7 +1,27 @@
 import { Router, Request, Response, NextFunction } from 'express';
+import rateLimit from 'express-rate-limit';
+import { v4 as uuid } from 'uuid';
+import { AuditLog } from '../../domain';
 import type { Container } from '../../infrastructure/config/container';
 import { validate, loginSchema, resetPasswordSchema, updateProfileSchema } from '../validators';
 import { createAuthMiddleware, type AuthenticatedRequest } from '../middleware/authMiddleware';
+
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: 'Too many login attempts. Please try again in 15 minutes.' },
+  skipSuccessfulRequests: true,
+});
+
+async function logAuthAction(container: Container, adminId: string, action: string, details?: string) {
+  try {
+    await container.auditLogRepo.save(
+      AuditLog.create({ id: uuid(), adminId, action, resource: 'auth', resourceId: adminId, details }),
+    );
+  } catch { /* audit failure must never break the request */ }
+}
 
 export function authRoutes(container: Container): Router {
   const router = Router();
@@ -10,6 +30,7 @@ export function authRoutes(container: Container): Router {
   /** POST /api/auth/login */
   router.post(
     '/login',
+    loginLimiter,
     validate(loginSchema),
     async (req: Request, res: Response, next: NextFunction) => {
       try {
@@ -27,6 +48,7 @@ export function authRoutes(container: Container): Router {
           path: '/api/auth',
         });
 
+        await logAuthAction(container, result.admin.id, 'login');
         res.json({
           success: true,
           data: {
@@ -82,6 +104,7 @@ export function authRoutes(container: Container): Router {
           adminId: req.adminId!,
           newPassword: req.body.newPassword,
         });
+        await logAuthAction(container, req.adminId!, 'reset_password');
         res.json({
           success: true,
           data: null,
@@ -134,6 +157,11 @@ export function authRoutes(container: Container): Router {
         const { signatureData } = req.body;
         if (typeof signatureData !== 'string') {
           res.status(400).json({ success: false, error: 'signatureData (base64) is required' });
+          return;
+        }
+        // Limit to 150 KB to prevent disk exhaustion
+        if (Buffer.byteLength(signatureData, 'utf8') > 150_000) {
+          res.status(413).json({ success: false, error: 'Signature data exceeds maximum allowed size (150 KB)' });
           return;
         }
         await container.prisma.admin.update({
@@ -195,6 +223,9 @@ export function authRoutes(container: Container): Router {
           where: { id: req.adminId! },
           data: updateData,
         });
+
+        await logAuthAction(container, req.adminId!, 'update_profile',
+          email !== undefined ? 'email changed' : undefined);
 
         res.json({
           success: true,

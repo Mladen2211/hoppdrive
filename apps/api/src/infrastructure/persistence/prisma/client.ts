@@ -1,7 +1,5 @@
 import { PrismaClient } from '@prisma/client';
 
-const prisma = new PrismaClient();
-
 let instance: PrismaClient | null = null;
 
 export function getPrismaClient(): PrismaClient {
@@ -13,5 +11,6 @@ export function getPrismaClient(): PrismaClient {
   return instance;
 }
 
-export { prisma };
+// Re-export the singleton for legacy imports
+export const prisma = getPrismaClient();
 export default prisma;
