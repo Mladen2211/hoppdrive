@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
-import { ChevronLeft, ChevronRight, Plus, X, Calendar, User, Car, FileText, DollarSign, PenTool, Download, Mail, CheckCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, X, Calendar, User, Car, FileText, DollarSign, PenTool, Download, Mail, CheckCircle, Tablet, Wrench, Trash2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { api } from '@/lib/api';
 import dynamic from 'next/dynamic';
@@ -29,6 +30,19 @@ interface Booking {
   contractStatus?: string;
   signedAt?: string | null;
 }
+
+interface MaintenancePeriod {
+  id: string;
+  vehicleId: string;
+  startDate: string;
+  endDate: string;
+  reason: string;
+  notes: string | null;
+}
+
+const MAINTENANCE_REASON_LABELS: Record<string, string> = {
+  repair: 'Reparatur', accident: 'Unfall', other: 'Sonstiges',
+};
 
 const EMPTY_FORM = {
   vehicleId: '',
@@ -68,9 +82,11 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default function AvailabilityPage() {
+  const router = useRouter();
   const { token } = useAdminAuth();
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [maintenancePeriods, setMaintenancePeriods] = useState<MaintenancePeriod[]>([]);
   const [selectedVehicle, setSelectedVehicle] = useState<string>('all');
   const [loading, setLoading] = useState(true);
 
@@ -97,16 +113,28 @@ export default function AvailabilityPage() {
 
   async function fetchData() {
     try {
-      const [vehicleData, bookingData] = await Promise.all([
+      const [vehicleData, bookingData, maintenanceData] = await Promise.all([
         api.getVehicles(),
         api.getBookings(),
+        api.getMaintenance(),
       ]);
       setVehicles(vehicleData);
       setBookings(bookingData.items || bookingData || []);
+      setMaintenancePeriods(maintenanceData);
     } catch (err) {
       console.error('Failed to load availability data', err);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleDeleteMaintenance(id: string) {
+    if (!confirm('Diesen Wartungszeitraum wirklich löschen?')) return;
+    try {
+      await api.deleteMaintenance(id);
+      setMaintenancePeriods((prev) => prev.filter((p) => p.id !== id));
+    } catch (err) {
+      console.error('Failed to delete maintenance period', err);
     }
   }
 
@@ -273,12 +301,39 @@ export default function AvailabilityPage() {
     return map;
   }, [bookings, vehicles, selectedVehicle]);
 
+  const maintenanceDates = useMemo(() => {
+    const map = new Map<string, { period: MaintenancePeriod; vehicle: Vehicle | undefined }[]>();
+
+    const relevant =
+      selectedVehicle === 'all'
+        ? maintenancePeriods
+        : maintenancePeriods.filter((p) => p.vehicleId === selectedVehicle);
+
+    for (const period of relevant) {
+      const start = new Date(period.startDate);
+      const end = new Date(period.endDate);
+      const current = new Date(start);
+
+      while (current <= end) {
+        const key = current.toISOString().split('T')[0];
+        const vehicle = vehicles.find((v) => v.id === period.vehicleId);
+        const existing = map.get(key) || [];
+        existing.push({ period, vehicle });
+        map.set(key, existing);
+        current.setDate(current.getDate() + 1);
+      }
+    }
+
+    return map;
+  }, [maintenancePeriods, vehicles, selectedVehicle]);
+
   const daysInMonth = getDaysInMonth(year, month);
   const firstDay = getFirstDayOfMonth(year, month);
   const today = new Date().toISOString().split('T')[0];
 
-  // Bookings for the selected date (day-detail panel)
+  // Bookings/maintenance for the selected date (day-detail panel)
   const selectedDateEntries = selectedDate ? (bookedDates.get(selectedDate) || []) : [];
+  const selectedDateMaintenance = selectedDate ? (maintenanceDates.get(selectedDate) || []) : [];
 
   if (loading) {
     return (
@@ -344,9 +399,12 @@ export default function AvailabilityPage() {
               const day = i + 1;
               const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
               const entries = bookedDates.get(dateStr) || [];
+              const maintenanceEntries = maintenanceDates.get(dateStr) || [];
               const isToday = dateStr === today;
               const hasBookings = entries.length > 0;
+              const hasMaintenance = maintenanceEntries.length > 0;
               const isSelected = dateStr === selectedDate;
+              const totalEntries = entries.length + maintenanceEntries.length;
 
               return (
                 <button
@@ -357,6 +415,8 @@ export default function AvailabilityPage() {
                       ? 'border-brand-600 ring-2 ring-brand-300 bg-brand-50'
                       : isToday
                       ? 'border-brand-500 bg-brand-50'
+                      : hasMaintenance && !hasBookings
+                      ? 'border-amber-300 bg-[repeating-linear-gradient(135deg,theme(colors.amber.50),theme(colors.amber.50)_6px,theme(colors.amber.100)_6px,theme(colors.amber.100)_12px)] hover:border-amber-400'
                       : hasBookings
                       ? 'border-orange-200 bg-orange-50 hover:border-orange-300'
                       : 'border-neutral-200 hover:bg-neutral-50'
@@ -365,7 +425,16 @@ export default function AvailabilityPage() {
                   <div className={`font-semibold mb-0.5 ${isToday ? 'text-brand-600' : 'text-neutral-700'}`}>
                     {day}
                   </div>
-                  {entries.slice(0, 2).map(({ booking, vehicle }, idx) => (
+                  {maintenanceEntries.slice(0, 1).map(({ period, vehicle }, idx) => (
+                    <div
+                      key={`m-${idx}`}
+                      className="text-[10px] leading-tight text-amber-700 truncate font-medium"
+                      title={`Wartung: ${vehicle?.brand ?? ''} ${vehicle?.model ?? ''} — ${MAINTENANCE_REASON_LABELS[period.reason] || period.reason}`}
+                    >
+                      🔧 {vehicle ? `${vehicle.brand} ${vehicle.model.slice(0, 4)}` : 'Wartung'}
+                    </div>
+                  ))}
+                  {entries.slice(0, hasMaintenance ? 1 : 2).map(({ booking, vehicle }, idx) => (
                     <div
                       key={idx}
                       className="text-[10px] leading-tight text-orange-700 truncate"
@@ -374,8 +443,8 @@ export default function AvailabilityPage() {
                       {vehicle ? `${vehicle.brand} ${vehicle.model.slice(0, 4)}` : 'Gebucht'}
                     </div>
                   ))}
-                  {entries.length > 2 && (
-                    <div className="text-[10px] text-neutral-400">+{entries.length - 2}</div>
+                  {totalEntries > 2 && (
+                    <div className="text-[10px] text-neutral-400">+{totalEntries - 2}</div>
                   )}
                 </button>
               );
@@ -391,6 +460,10 @@ export default function AvailabilityPage() {
             <div className="flex items-center gap-1.5">
               <div className="w-3 h-3 rounded border border-orange-200 bg-orange-50" />
               <span>Gebucht</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 rounded border border-amber-300 bg-[repeating-linear-gradient(135deg,theme(colors.amber.50),theme(colors.amber.50)_3px,theme(colors.amber.100)_3px,theme(colors.amber.100)_6px)]" />
+              <span>Wartung</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-3 h-3 rounded border border-neutral-200" />
@@ -420,6 +493,41 @@ export default function AvailabilityPage() {
                   <Plus className="w-4 h-4" />
                 </button>
               </div>
+
+              {selectedDateMaintenance.length > 0 && (
+                <div className="space-y-2 mb-4">
+                  {selectedDateMaintenance.map(({ period, vehicle }) => (
+                    <div key={period.id} className="border border-amber-200 bg-amber-50 rounded-lg p-3">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="flex items-center gap-1.5 text-sm font-semibold text-amber-900">
+                          <Wrench className="w-3.5 h-3.5" />
+                          {vehicle ? `${vehicle.brand} ${vehicle.model}` : 'Unbekannt'}
+                        </span>
+                        <button
+                          onClick={() => handleDeleteMaintenance(period.id)}
+                          className="text-amber-700 hover:text-amber-900"
+                          title="Wartung entfernen"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                      <div className="text-xs text-amber-800 space-y-0.5">
+                        <div className="flex items-center gap-1">
+                          <Calendar className="w-3 h-3" />
+                          {fmtDate(period.startDate)} – {fmtDate(period.endDate)}
+                        </div>
+                        <div>{MAINTENANCE_REASON_LABELS[period.reason] || period.reason}</div>
+                        {period.notes && (
+                          <div className="flex items-start gap-1 mt-1">
+                            <FileText className="w-3 h-3 mt-0.5 shrink-0" />
+                            <span className="text-amber-700">{period.notes}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
 
               {selectedDateEntries.length === 0 ? (
                 <div className="text-center py-8">
@@ -490,13 +598,24 @@ export default function AvailabilityPage() {
                               </button>
                             </>
                           ) : (
-                            <button
-                              onClick={() => openSignaturePad(booking.id, booking.customerName, booking.customerEmail || '')}
-                              className="flex items-center gap-1 text-[10px] font-medium text-brand-600 hover:text-brand-700"
-                            >
-                              <PenTool className="w-3 h-3" />
-                              Vertrag unterschreiben
-                            </button>
+                            <>
+                              <button
+                                onClick={() => router.push(`/contracts/${booking.id}/sign`)}
+                                className="flex items-center gap-1 text-[10px] font-medium text-brand-600 hover:text-brand-700"
+                                title="Auf Gerät unterschreiben (Kunde)"
+                              >
+                                <Tablet className="w-3 h-3" />
+                                Auf Gerät
+                              </button>
+                              <button
+                                onClick={() => openSignaturePad(booking.id, booking.customerName, booking.customerEmail || '')}
+                                className="flex items-center gap-1 text-[10px] font-medium text-brand-600 hover:text-brand-700 ml-auto"
+                                title="Schnell hier unterschreiben"
+                              >
+                                <PenTool className="w-3 h-3" />
+                                Schnell
+                              </button>
+                            </>
                           )}
                         </div>
                       )}

@@ -4,22 +4,18 @@ import { useState, type FormEvent } from 'react';
 import Link from 'next/link';
 import { CheckCircle2 } from 'lucide-react';
 import { api } from '@/lib/api';
+import { useSelectedVehicle } from './SelectedVehicleContext';
+import type { ContactContent } from '@/types/homepage-sections';
 
-export interface ContactContent {
-  label?: string;
-  heading?: string;
-  description?: string;
-  ctaText?: string;
-  trustLine?: string;
-}
+export type { ContactContent };
 
 interface ContactFormProps {
-  preselectedVehicle?: string | null;
   vehicleNames: string[];
   content?: ContactContent;
 }
 
-export function ContactForm({ preselectedVehicle, vehicleNames, content }: ContactFormProps) {
+export function ContactForm({ vehicleNames, content }: ContactFormProps) {
+  const { selectedVehicle: preselectedVehicle } = useSelectedVehicle();
   const c = content || {};
   const label = c.label ?? 'Kostenlos & unverbindlich';
   const heading = c.heading ?? 'Jetzt Ihr Wunschfahrzeug anfragen';

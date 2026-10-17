@@ -9,6 +9,7 @@ import {
   PrismaBookingRepository,
   PrismaPricingRuleRepository,
   PrismaAuditLogRepository,
+  PrismaVehicleMaintenanceRepository,
 } from '../persistence/repositories';
 
 // ─── Infrastructure Services ──────────────────────────────────
@@ -16,7 +17,7 @@ import { BcryptPasswordHasher, JwtTokenService } from '../services/AuthServices'
 import { InMemoryCacheService, RedisCacheService } from '../services/CacheService';
 import { BrevoEmailService } from '../services/BrevoEmailService';
 import { SharpImageService } from '../services/SharpImageService';
-import { PdfGeneratorService } from '../services/PdfGeneratorService';
+import { ContractStorageService } from '../services/ContractStorageService';
 import { PdfService } from '../services/PdfService';
 
 // ─── Use Cases ────────────────────────────────────────────────
@@ -41,8 +42,15 @@ import {
   ResetPasswordUseCase,
 } from '../../application/use-cases/auth';
 
-import { CreateBookingUseCase, GetBookingsUseCase } from '../../application/use-cases/bookings';
+import { CreateBookingUseCase, GetBookingsUseCase, TransitionBookingStatusUseCase } from '../../application/use-cases/bookings';
 import { CalculatePricingUseCase } from '../../application/use-cases/pricing/CalculatePricingUseCase';
+import { GetPricingRulesUseCase } from '../../application/use-cases/pricing/GetPricingRulesUseCase';
+import { CreatePricingRuleUseCase } from '../../application/use-cases/pricing/CreatePricingRuleUseCase';
+import { UpdatePricingRuleUseCase } from '../../application/use-cases/pricing/UpdatePricingRuleUseCase';
+import { DeletePricingRuleUseCase } from '../../application/use-cases/pricing/DeletePricingRuleUseCase';
+import { ScheduleMaintenanceUseCase } from '../../application/use-cases/maintenance/ScheduleMaintenanceUseCase';
+import { GetMaintenanceUseCase } from '../../application/use-cases/maintenance/GetMaintenanceUseCase';
+import { DeleteMaintenanceUseCase } from '../../application/use-cases/maintenance/DeleteMaintenanceUseCase';
 import { GetDashboardStatsUseCase } from '../../application/use-cases/dashboard/GetDashboardStatsUseCase';
 
 /**
@@ -84,7 +92,10 @@ export function createContainer() {
     process.env.UPLOAD_DIR || './uploads',
   );
 
-  const pdfGenerator = new PdfGeneratorService();
+  const contractStorage = new ContractStorageService(
+    process.env.UPLOAD_DIR || './uploads',
+  );
+
   const pdfService = new PdfService();
 
   // ─── Repositories ──────────────────────────────────────────
@@ -94,6 +105,7 @@ export function createContainer() {
   const bookingRepo = new PrismaBookingRepository(prisma);
   const pricingRuleRepo = new PrismaPricingRuleRepository(prisma);
   const auditLogRepo = new PrismaAuditLogRepository(prisma);
+  const maintenanceRepo = new PrismaVehicleMaintenanceRepository(prisma);
 
   // ─── Use Cases ─────────────────────────────────────────────
   const createVehicle = new CreateVehicleUseCase(vehicleRepo, cacheService);
@@ -111,10 +123,18 @@ export function createContainer() {
   const refreshToken = new RefreshTokenUseCase(adminRepo, tokenService);
   const resetPassword = new ResetPasswordUseCase(adminRepo, passwordHasher);
 
-  const createBooking = new CreateBookingUseCase(bookingRepo, vehicleRepo, pricingRuleRepo);
+  const createBooking = new CreateBookingUseCase(bookingRepo, vehicleRepo, pricingRuleRepo, maintenanceRepo);
   const getBookings = new GetBookingsUseCase(bookingRepo);
+  const transitionBookingStatus = new TransitionBookingStatusUseCase(bookingRepo);
 
   const calculatePricing = new CalculatePricingUseCase(vehicleRepo, pricingRuleRepo);
+  const getPricingRules = new GetPricingRulesUseCase(pricingRuleRepo);
+  const createPricingRule = new CreatePricingRuleUseCase(pricingRuleRepo);
+  const updatePricingRule = new UpdatePricingRuleUseCase(pricingRuleRepo);
+  const deletePricingRule = new DeletePricingRuleUseCase(pricingRuleRepo);
+  const scheduleMaintenance = new ScheduleMaintenanceUseCase(maintenanceRepo, bookingRepo);
+  const getMaintenance = new GetMaintenanceUseCase(maintenanceRepo);
+  const deleteMaintenance = new DeleteMaintenanceUseCase(maintenanceRepo);
   const getDashboardStats = new GetDashboardStatsUseCase(bookingRepo, vehicleRepo, contactRepo);
 
   return {
@@ -124,7 +144,7 @@ export function createContainer() {
     tokenService,
     imageService,
     emailService,
-    pdfGenerator,
+    contractStorage,
     pdfService,
     auditLogRepo,
 
@@ -149,9 +169,19 @@ export function createContainer() {
     // Bookings
     createBooking,
     getBookings,
+    transitionBookingStatus,
 
     // Pricing
     calculatePricing,
+    getPricingRules,
+    createPricingRule,
+    updatePricingRule,
+    deletePricingRule,
+
+    // Maintenance
+    scheduleMaintenance,
+    getMaintenance,
+    deleteMaintenance,
 
     // Dashboard
     getDashboardStats,

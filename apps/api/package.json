@@ -13,6 +13,7 @@
     "clean": "rimraf dist"
   },
   "dependencies": {
+    "@getbrevo/brevo": "^6.0.2",
     "@hoppdrive/shared": "*",
     "@prisma/client": "^5.20.0",
     "bcryptjs": "^2.4.3",

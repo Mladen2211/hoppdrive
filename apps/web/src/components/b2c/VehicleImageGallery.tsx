@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface VehicleImage {
@@ -17,10 +17,27 @@ interface VehicleImageGalleryProps {
   alt: string;
 }
 
+const CROSSFADE_MS = 150;
+
 export function VehicleImageGallery({ images, thumbnailUrl, alt }: VehicleImageGalleryProps) {
   const sorted = [...images].sort((a, b) => a.sortOrder - b.sortOrder);
   const hasMultiple = sorted.length > 1;
   const [activeIndex, setActiveIndex] = useState(0);
+  const [displayIndex, setDisplayIndex] = useState(0);
+  const [fading, setFading] = useState(false);
+
+  // Crossfade: fade the current image out, swap the src while invisible, fade back in.
+  // (The old `transition-opacity` class here did nothing — swapping `src` on the same
+  // <img> has no opacity state change to transition between.)
+  useEffect(() => {
+    if (activeIndex === displayIndex) return;
+    setFading(true);
+    const timer = setTimeout(() => {
+      setDisplayIndex(activeIndex);
+      setFading(false);
+    }, CROSSFADE_MS);
+    return () => clearTimeout(timer);
+  }, [activeIndex, displayIndex]);
 
   // Fallback: if no gallery images, use thumbnail
   if (sorted.length === 0 && thumbnailUrl) {
@@ -53,9 +70,11 @@ export function VehicleImageGallery({ images, thumbnailUrl, alt }: VehicleImageG
       <div className="relative aspect-[4/3] rounded-2xl overflow-hidden bg-neutral-100 group">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={sorted[activeIndex].url}
-          alt={sorted[activeIndex].alt || alt}
-          className="w-full h-full object-cover transition-opacity duration-300"
+          src={sorted[displayIndex].url}
+          alt={sorted[displayIndex].alt || alt}
+          className={`w-full h-full object-cover transition-opacity duration-150 ease-out ${
+            fading ? 'opacity-0' : 'opacity-100'
+          }`}
         />
 
         {hasMultiple && (

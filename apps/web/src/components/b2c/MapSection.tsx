@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { MapPin } from 'lucide-react';
-import { api } from '@/lib/api';
+import type { MapContent } from '@/types/homepage-sections';
 
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || '';
 
@@ -24,28 +24,19 @@ const DEFAULTS: LocationConfig = {
   zoom: 14,
 };
 
-export interface MapContent {
-  heading?: string;
-}
+export type { MapContent };
 
 interface MapSectionProps {
   content?: MapContent;
+  locationConfig?: Partial<LocationConfig> | null;
 }
 
-export function MapSection({ content }: MapSectionProps) {
+export function MapSection({ content, locationConfig }: MapSectionProps) {
   const mapHeading = content?.heading;
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
-  const [config, setConfig] = useState<LocationConfig | null>(null);
+  const [config] = useState<LocationConfig>({ ...DEFAULTS, ...locationConfig });
   const [loaded, setLoaded] = useState(false);
-
-  // Fetch location settings
-  useEffect(() => {
-    api
-      .getSetting<Partial<LocationConfig>>('location')
-      .then((data) => setConfig({ ...DEFAULTS, ...data }))
-      .catch(() => setConfig(DEFAULTS));
-  }, []);
 
   // Load Mapbox GL JS from CDN
   useEffect(() => {

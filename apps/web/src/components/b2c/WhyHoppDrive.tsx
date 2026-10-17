@@ -1,4 +1,5 @@
 import { Shield, PiggyBank, Wrench, HeartHandshake } from 'lucide-react';
+import type { WhyHoppDriveContent } from '@/types/homepage-sections';
 
 const ICONS = [PiggyBank, Shield, Wrench, HeartHandshake];
 
@@ -25,12 +26,7 @@ const DEFAULT_ITEMS = [
   },
 ];
 
-export interface WhyHoppDriveContent {
-  label?: string;
-  heading?: string;
-  description?: string;
-  items?: { title: string; description: string }[];
-}
+export type { WhyHoppDriveContent };
 
 interface WhyHoppDriveProps {
   content?: WhyHoppDriveContent;

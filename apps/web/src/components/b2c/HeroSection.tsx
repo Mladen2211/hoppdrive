@@ -1,5 +1,6 @@
 import Image from 'next/image';
 import { ChevronRight, CheckCircle, Shield, Clock, Car } from 'lucide-react';
+import type { HeroContent } from '@/types/homepage-sections';
 
 const DEFAULT_TRUST_ITEMS = [
   'Vollkasko inklusive',
@@ -10,18 +11,7 @@ const DEFAULT_TRUST_ITEMS = [
 
 const TRUST_ICONS = [Shield, Clock, Car, CheckCircle];
 
-export interface HeroContent {
-  badgeText?: string;
-  heading?: string;
-  headingHighlight?: string;
-  description?: string;
-  ctaPrimaryText?: string;
-  ctaPrimaryLink?: string;
-  ctaSecondaryText?: string;
-  ctaSecondaryLink?: string;
-  backgroundImageUrl?: string;
-  trustItems?: string[];
-}
+export type { HeroContent };
 
 interface HeroSectionProps {
   content?: HeroContent;

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, type FormEvent } from 'react';
-import { Plus, Pencil, Trash2, X, Upload, Car } from 'lucide-react';
+import { Plus, Pencil, Trash2, X, Upload, Car, Wrench, Loader2 } from 'lucide-react';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { api } from '@/lib/api';
 
@@ -13,7 +13,7 @@ interface Vehicle {
   year: number;
   basePricePerDay: number;
   isAvailable: boolean;
-  images: { id: string; url: string; alt: string; order: number }[];
+  images: { id: string; url: string; alt: string; sortOrder: number }[];
   specs: {
     horsepower: number;
     transmission: string;
@@ -23,12 +23,12 @@ interface Vehicle {
   };
 }
 
-const VEHICLE_TYPES = ['sedan', 'suv', 'sports', 'electric', 'van', 'luxury'];
+const VEHICLE_TYPES = ['sedan', 'suv', 'estate', 'coupe', 'convertible', 'electric', 'van'];
 const FUEL_TYPES = ['petrol', 'diesel', 'electric', 'hybrid'];
 const TRANSMISSIONS = ['automatic', 'manual'];
 
 const VEHICLE_TYPE_LABELS: Record<string, string> = {
-  sedan: 'Limousine', suv: 'SUV', sports: 'Sportwagen', electric: 'Elektro', van: 'Van', luxury: 'Luxus',
+  sedan: 'Limousine', suv: 'SUV', estate: 'Kombi', coupe: 'Coupé', convertible: 'Cabrio', electric: 'Elektro', van: 'Van',
 };
 const FUEL_TYPE_LABELS: Record<string, string> = {
   petrol: 'Benzin', diesel: 'Diesel', electric: 'Elektrisch', hybrid: 'Hybrid',
@@ -36,6 +36,14 @@ const FUEL_TYPE_LABELS: Record<string, string> = {
 const TRANSMISSION_LABELS: Record<string, string> = {
   automatic: 'Automatik', manual: 'Schaltgetriebe',
 };
+const MAINTENANCE_REASONS = ['repair', 'accident', 'other'] as const;
+const MAINTENANCE_REASON_LABELS: Record<string, string> = {
+  repair: 'Reparatur', accident: 'Unfall', other: 'Sonstiges',
+};
+
+function fmtDate(iso: string) {
+  return new Date(iso).toLocaleDateString('de-CH', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
 
 const emptyForm = {
   brand: '',
@@ -43,6 +51,7 @@ const emptyForm = {
   type: VEHICLE_TYPES[0],
   year: new Date().getFullYear(),
   basePricePerDay: 0,
+  isAvailable: true,
   specs: {
     horsepower: 0,
     transmission: TRANSMISSIONS[0],
@@ -61,6 +70,16 @@ export default function FleetManagerPage() {
   const [form, setForm] = useState(emptyForm);
   const [imageFiles, setImageFiles] = useState<FileList | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  // Maintenance / decommission periods
+  const [maintenanceVehicle, setMaintenanceVehicle] = useState<Vehicle | null>(null);
+  const [maintenancePeriods, setMaintenancePeriods] = useState<
+    { id: string; startDate: string; endDate: string; reason: string; notes: string | null }[]
+  >([]);
+  const [maintenanceLoading, setMaintenanceLoading] = useState(false);
+  const [maintenanceForm, setMaintenanceForm] = useState({ startDate: '', endDate: '', reason: 'repair', notes: '' });
+  const [maintenanceSubmitting, setMaintenanceSubmitting] = useState(false);
+  const [maintenanceError, setMaintenanceError] = useState<string | null>(null);
 
   async function fetchVehicles() {
     if (!token) return;
@@ -94,6 +113,7 @@ export default function FleetManagerPage() {
       type: v.type,
       year: v.year,
       basePricePerDay: v.basePricePerDay,
+      isAvailable: v.isAvailable,
       specs: {
         horsepower: v.specs.horsepower,
         transmission: v.specs.transmission,
@@ -112,11 +132,16 @@ export default function FleetManagerPage() {
     setSubmitting(true);
 
     try {
-      if (editingId) {
-        await api.updateVehicle(editingId, form);
-      } else {
-        await api.createVehicle(form);
+      const vehicleId = editingId
+        ? (await api.updateVehicle(editingId, form)).id
+        : (await api.createVehicle(form)).id;
+
+      if (imageFiles && imageFiles.length > 0) {
+        for (const file of Array.from(imageFiles)) {
+          await api.uploadVehicleImage(vehicleId, file);
+        }
       }
+
       setShowForm(false);
       await fetchVehicles();
     } catch (err) {
@@ -134,6 +159,67 @@ export default function FleetManagerPage() {
       setVehicles((prev) => prev.filter((v) => v.id !== id));
     } catch (err) {
       console.error('Delete failed', err);
+    }
+  }
+
+  async function handleToggleAvailability(v: Vehicle) {
+    if (!token) return;
+    const nextAvailable = !v.isAvailable;
+    setVehicles((prev) => prev.map((x) => (x.id === v.id ? { ...x, isAvailable: nextAvailable } : x)));
+    try {
+      await api.updateVehicle(v.id, { isAvailable: nextAvailable });
+    } catch (err) {
+      console.error('Toggle availability failed', err);
+      setVehicles((prev) => prev.map((x) => (x.id === v.id ? { ...x, isAvailable: v.isAvailable } : x)));
+    }
+  }
+
+  async function openMaintenance(v: Vehicle) {
+    setMaintenanceVehicle(v);
+    setMaintenanceForm({ startDate: '', endDate: '', reason: 'repair', notes: '' });
+    setMaintenanceError(null);
+    setMaintenanceLoading(true);
+    try {
+      const periods = await api.getMaintenance(v.id);
+      setMaintenancePeriods(periods);
+    } catch (err) {
+      console.error('Failed to load maintenance periods', err);
+    } finally {
+      setMaintenanceLoading(false);
+    }
+  }
+
+  async function handleAddMaintenance() {
+    if (!maintenanceVehicle) return;
+    if (!maintenanceForm.startDate || !maintenanceForm.endDate) {
+      setMaintenanceError('Start- und Enddatum sind erforderlich.');
+      return;
+    }
+    setMaintenanceSubmitting(true);
+    setMaintenanceError(null);
+    try {
+      const created = await api.createMaintenance({
+        vehicleId: maintenanceVehicle.id,
+        startDate: new Date(maintenanceForm.startDate).toISOString(),
+        endDate: new Date(maintenanceForm.endDate).toISOString(),
+        reason: maintenanceForm.reason as 'repair' | 'accident' | 'other',
+        notes: maintenanceForm.notes || undefined,
+      });
+      setMaintenancePeriods((prev) => [...prev, created]);
+      setMaintenanceForm({ startDate: '', endDate: '', reason: 'repair', notes: '' });
+    } catch (err: any) {
+      setMaintenanceError(err.message || 'Wartungszeitraum konnte nicht angelegt werden.');
+    } finally {
+      setMaintenanceSubmitting(false);
+    }
+  }
+
+  async function handleDeleteMaintenance(id: string) {
+    try {
+      await api.deleteMaintenance(id);
+      setMaintenancePeriods((prev) => prev.filter((p) => p.id !== id));
+    } catch (err) {
+      console.error('Failed to delete maintenance period', err);
     }
   }
 
@@ -237,6 +323,18 @@ export default function FleetManagerPage() {
                   />
                 </div>
               </div>
+
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={form.isAvailable}
+                  onChange={(e) => setForm({ ...form, isAvailable: e.target.checked })}
+                  className="w-4 h-4 rounded border-neutral-300 text-brand-600 focus:ring-brand-500"
+                />
+                <span className="text-sm font-medium text-neutral-700">
+                  Auf der Website sichtbar / buchbar
+                </span>
+              </label>
 
               <hr className="border-neutral-200" />
               <p className="text-sm font-semibold text-neutral-700">Spezifikationen</p>
@@ -429,18 +527,27 @@ export default function FleetManagerPage() {
                     <td className="px-6 py-3 text-neutral-600">{v.year}</td>
                     <td className="px-6 py-3 font-medium">CHF {v.basePricePerDay}</td>
                     <td className="px-6 py-3">
-                      <span
-                        className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold ${
+                      <button
+                        onClick={() => handleToggleAvailability(v)}
+                        title="Sichtbarkeit umschalten"
+                        className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold transition-colors ${
                           v.isAvailable
-                            ? 'bg-green-100 text-green-700'
-                            : 'bg-neutral-100 text-neutral-500'
+                            ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                            : 'bg-neutral-100 text-neutral-500 hover:bg-neutral-200'
                         }`}
                       >
                         {v.isAvailable ? 'Verfügbar' : 'Nicht verfügbar'}
-                      </span>
+                      </button>
                     </td>
                     <td className="px-6 py-3">
                       <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => openMaintenance(v)}
+                          className="p-1.5 rounded hover:bg-amber-50 text-neutral-500 hover:text-amber-600 transition-colors"
+                          title="Wartung planen"
+                        >
+                          <Wrench className="w-4 h-4" />
+                        </button>
                         <button
                           onClick={() => openEdit(v)}
                           className="p-1.5 rounded hover:bg-neutral-100 text-neutral-500 hover:text-brand-600 transition-colors"
@@ -464,6 +571,128 @@ export default function FleetManagerPage() {
           </table>
         </div>
       </div>
+
+      {/* Maintenance / decommission modal */}
+      {maintenanceVehicle && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div className="flex items-center justify-between p-6 border-b border-neutral-200">
+              <div>
+                <h2 className="text-lg font-bold flex items-center gap-2">
+                  <Wrench className="w-4 h-4 text-amber-600" />
+                  Wartung planen
+                </h2>
+                <p className="text-xs text-neutral-500 mt-0.5">
+                  {maintenanceVehicle.brand} {maintenanceVehicle.model}
+                </p>
+              </div>
+              <button
+                onClick={() => setMaintenanceVehicle(null)}
+                className="text-neutral-400 hover:text-neutral-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-5">
+              {/* Existing periods */}
+              <div>
+                <p className="text-xs font-semibold text-neutral-500 uppercase mb-2">Geplante Zeiträume</p>
+                {maintenanceLoading ? (
+                  <div className="flex items-center gap-2 text-sm text-neutral-400 py-3">
+                    <Loader2 className="w-4 h-4 animate-spin" /> Laden…
+                  </div>
+                ) : maintenancePeriods.length === 0 ? (
+                  <p className="text-sm text-neutral-400 py-2">Keine Wartungszeiträume geplant.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {maintenancePeriods.map((p) => (
+                      <div key={p.id} className="flex items-center justify-between bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                        <div>
+                          <p className="text-sm font-medium text-neutral-900">
+                            {fmtDate(p.startDate)} – {fmtDate(p.endDate)}
+                          </p>
+                          <p className="text-xs text-amber-700">
+                            {MAINTENANCE_REASON_LABELS[p.reason] || p.reason}
+                            {p.notes ? ` · ${p.notes}` : ''}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => handleDeleteMaintenance(p.id)}
+                          className="text-neutral-400 hover:text-red-600 p-1.5"
+                          title="Löschen"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <hr className="border-neutral-200" />
+
+              {/* New period form */}
+              <div className="space-y-3">
+                <p className="text-xs font-semibold text-neutral-500 uppercase">Neuer Zeitraum</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs text-neutral-500 mb-1">Von</label>
+                    <input
+                      type="date"
+                      value={maintenanceForm.startDate}
+                      onChange={(e) => setMaintenanceForm((f) => ({ ...f, startDate: e.target.value }))}
+                      className="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-neutral-500 mb-1">Bis</label>
+                    <input
+                      type="date"
+                      value={maintenanceForm.endDate}
+                      onChange={(e) => setMaintenanceForm((f) => ({ ...f, endDate: e.target.value }))}
+                      className="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs text-neutral-500 mb-1">Grund</label>
+                  <select
+                    value={maintenanceForm.reason}
+                    onChange={(e) => setMaintenanceForm((f) => ({ ...f, reason: e.target.value }))}
+                    className="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  >
+                    {MAINTENANCE_REASONS.map((r) => (
+                      <option key={r} value={r}>{MAINTENANCE_REASON_LABELS[r]}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs text-neutral-500 mb-1">Notizen (optional)</label>
+                  <input
+                    type="text"
+                    value={maintenanceForm.notes}
+                    onChange={(e) => setMaintenanceForm((f) => ({ ...f, notes: e.target.value }))}
+                    placeholder="z.B. Werkstatt Muster AG, Termin 14:00"
+                    className="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  />
+                </div>
+                {maintenanceError && (
+                  <p className="text-sm text-red-600">{maintenanceError}</p>
+                )}
+                <button
+                  onClick={handleAddMaintenance}
+                  disabled={maintenanceSubmitting}
+                  className="w-full flex items-center justify-center gap-2 bg-amber-600 hover:bg-amber-700 disabled:bg-amber-400 text-white text-sm font-semibold py-2.5 rounded-lg transition-colors"
+                >
+                  {maintenanceSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wrench className="w-4 h-4" />}
+                  Zeitraum hinzufügen
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

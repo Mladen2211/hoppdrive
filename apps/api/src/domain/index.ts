@@ -5,6 +5,7 @@ export { ContactRequest, type ContactRequestProps, type ContactRequestStatus } f
 export { Admin, type AdminProps } from './entities/Admin';
 export { Booking, type BookingProps, type BookingStatus } from './entities/Booking';
 export { PricingRule, type PricingRuleProps } from './entities/PricingRule';
+export { VehicleMaintenance, type VehicleMaintenanceProps, type MaintenanceReason } from './entities/VehicleMaintenance';
 export { AuditLog, type AuditLogProps } from './entities/AuditLog';
 
 // ─── Value Objects ────────────────────────────────────────────
@@ -20,6 +21,7 @@ export type { IContactRequestRepository } from './repositories/IContactRequestRe
 export type { IAdminRepository } from './repositories/IAdminRepository';
 export type { IBookingRepository } from './repositories/IBookingRepository';
 export type { IPricingRuleRepository } from './repositories/IPricingRuleRepository';
+export type { IVehicleMaintenanceRepository } from './repositories/IVehicleMaintenanceRepository';
 export type { IAuditLogRepository } from './repositories/IAuditLogRepository';
 
 // ─── Domain Services ─────────────────────────────────────────

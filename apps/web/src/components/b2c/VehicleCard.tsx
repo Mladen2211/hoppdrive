@@ -1,11 +1,13 @@
 import Link from 'next/link';
 import Image from 'next/image';
+import { vehicleSlug, translateType } from '@/lib/seo';
 
 export interface VehicleCardData {
   id: string;
   brand: string;
   model: string;
   type: string;
+  year: number;
   basePricePerDay: number;
   currency: string;
   specs: {
@@ -28,11 +30,12 @@ export function VehicleCard({ vehicle, onInquire }: VehicleCardProps) {
   const specsArray = buildSpecsList(vehicle.specs);
   const displayName = `${vehicle.brand} ${vehicle.model}`;
   const monthlyPrice = Math.round(vehicle.basePricePerDay * 30 * 0.6); // 40% discount for 30+ days
+  const href = `/fahrzeuge/${vehicleSlug(vehicle)}`;
 
   return (
     <div className="group rounded-2xl border border-neutral-200 overflow-hidden hover:shadow-xl transition-all duration-300 bg-white flex flex-col">
       {/* Image – links to detail page */}
-      <Link href={`/fahrzeuge/${vehicle.id}`} className="block">
+      <Link href={href} className="block">
         <div className="aspect-[4/3] overflow-hidden relative bg-neutral-100">
           {vehicle.thumbnailUrl ? (
             <Image
@@ -40,7 +43,7 @@ export function VehicleCard({ vehicle, onInquire }: VehicleCardProps) {
               alt={displayName}
               fill
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              className="object-cover group-hover:scale-105 transition-transform duration-500"
+              className="object-cover [@media(hover:hover)_and_(pointer:fine)]:group-hover:scale-105 transition-transform duration-500"
             />
           ) : (
             <div className="flex items-center justify-center h-full text-neutral-300 text-sm">
@@ -71,7 +74,7 @@ export function VehicleCard({ vehicle, onInquire }: VehicleCardProps) {
         <div className="text-xs font-semibold text-brand-600 uppercase tracking-wider mb-1">
           {translateType(vehicle.type)}
         </div>
-        <Link href={`/fahrzeuge/${vehicle.id}`}>
+        <Link href={href}>
           <h3 className="text-xl font-bold mb-2 hover:text-brand-600 transition-colors">{displayName}</h3>
         </Link>
 
@@ -93,7 +96,7 @@ export function VehicleCard({ vehicle, onInquire }: VehicleCardProps) {
 
         <div className="flex gap-3 mt-auto">
           <Link
-            href={`/fahrzeuge/${vehicle.id}`}
+            href={href}
             className="flex-1 py-3 text-sm font-semibold text-center text-neutral-900 border-2 border-neutral-900 rounded-lg hover:bg-neutral-900 hover:text-white transition-colors"
           >
             Details ansehen
@@ -108,19 +111,6 @@ export function VehicleCard({ vehicle, onInquire }: VehicleCardProps) {
       </div>
     </div>
   );
-}
-
-function translateType(type: string): string {
-  const labels: Record<string, string> = {
-    sedan: 'Limousine',
-    suv: 'SUV',
-    estate: 'Kombi',
-    coupe: 'Coupé',
-    convertible: 'Cabrio',
-    electric: 'Elektrofahrzeug',
-    van: 'Van',
-  };
-  return labels[type] || type;
 }
 
 function buildSpecsList(specs: VehicleCardData['specs']): string[] {

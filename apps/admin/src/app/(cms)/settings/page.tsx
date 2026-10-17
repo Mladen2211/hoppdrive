@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { api } from '@/lib/api';
-import { Save, Loader2, Plus, Trash2, Eye, EyeOff, Search, MapPin, Receipt } from 'lucide-react';
+import { Save, Loader2, Plus, Trash2, Eye, EyeOff, Search, MapPin, Receipt, Globe2 } from 'lucide-react';
 
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || '';
 
@@ -38,15 +38,28 @@ const DEFAULT_LOCATION = {
   zoom: 14,
 };
 
+const DEFAULT_SEO = {
+  metaTitle: '',
+  metaDescription: '',
+  ogImageUrl: '',
+};
+
 export default function SettingsPage() {
   const { token } = useAdminAuth();
   const [pricing, setPricing] = useState(DEFAULT_PRICING);
   const [features, setFeatures] = useState(DEFAULT_FEATURES);
   const [location, setLocation] = useState(DEFAULT_LOCATION);
-  const [invoiceSettings, setInvoiceSettings] = useState({ uid: '', iban: '', bankName: '' });
+  const [seo, setSeo] = useState(DEFAULT_SEO);
+  const [invoiceSettings, setInvoiceSettings] = useState({ uid: '', iban: '', bankName: '', vatRate: 8.1 });
   const [saving, setSaving] = useState<string | null>(null);
   const [saved, setSaved] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Real day-tier discount rules — separate from the decorative marketing copy above.
+  const [pricingRules, setPricingRules] = useState<{ id: string; fromDay: number; toDay: number | null; discountPercent: number }[]>([]);
+  const [pricingRulesLoading, setPricingRulesLoading] = useState(true);
+  const [savingRuleId, setSavingRuleId] = useState<string | null>(null);
+  const [savedRuleId, setSavedRuleId] = useState<string | null>(null);
 
   const fetchSettings = useCallback(async () => {
     if (!token) return;
@@ -56,7 +69,8 @@ export default function SettingsPage() {
       if (all.pricing) setPricing(all.pricing);
       if (all.features) setFeatures(all.features);
       if (all.location) setLocation(all.location);
-      if (all.invoice_settings) setInvoiceSettings(all.invoice_settings);
+      if (all.seo) setSeo(all.seo);
+      if (all.invoice_settings) setInvoiceSettings((s) => ({ ...s, ...all.invoice_settings }));
     } catch {
       // Defaults are fine
     } finally {
@@ -64,9 +78,63 @@ export default function SettingsPage() {
     }
   }, [token]);
 
+  const fetchPricingRules = useCallback(async () => {
+    if (!token) return;
+    setPricingRulesLoading(true);
+    try {
+      const rules = await api.getPricingRules();
+      setPricingRules(rules.sort((a: any, b: any) => a.fromDay - b.fromDay));
+    } catch {
+      // Leave empty — admin can still add new rules
+    } finally {
+      setPricingRulesLoading(false);
+    }
+  }, [token]);
+
   useEffect(() => {
     fetchSettings();
-  }, [fetchSettings]);
+    fetchPricingRules();
+  }, [fetchSettings, fetchPricingRules]);
+
+  function updateRuleField(id: string, field: 'fromDay' | 'toDay' | 'discountPercent', value: number | null) {
+    setPricingRules((prev) => prev.map((r) => (r.id === id ? { ...r, [field]: value } : r)));
+  }
+
+  async function handleAddRule() {
+    try {
+      const created = await api.createPricingRule({ fromDay: 1, toDay: null, discountPercent: 0 });
+      setPricingRules((prev) => [...prev, created].sort((a, b) => a.fromDay - b.fromDay));
+    } catch (err: any) {
+      alert(err.message || 'Regel konnte nicht erstellt werden.');
+    }
+  }
+
+  async function handleSaveRule(rule: { id: string; fromDay: number; toDay: number | null; discountPercent: number }) {
+    setSavingRuleId(rule.id);
+    try {
+      await api.updatePricingRule(rule.id, {
+        fromDay: rule.fromDay,
+        toDay: rule.toDay,
+        discountPercent: rule.discountPercent,
+      });
+      setSavedRuleId(rule.id);
+      setTimeout(() => setSavedRuleId(null), 2000);
+    } catch (err: any) {
+      alert(err.message || 'Regel konnte nicht gespeichert werden.');
+    } finally {
+      setSavingRuleId(null);
+    }
+  }
+
+  async function handleDeleteRule(id: string) {
+    if (!confirm('Diese Preisregel wirklich löschen?')) return;
+    try {
+      await api.deletePricingRule(id);
+      setPricingRules((prev) => prev.filter((r) => r.id !== id));
+    } catch (err: any) {
+      alert(err.message || 'Regel konnte nicht gelöscht werden.');
+    }
+  }
 
   async function saveSetting(key: string, value: any) {
     setSaving(key);
@@ -94,10 +162,10 @@ export default function SettingsPage() {
     <div className="max-w-4xl">
       <h1 className="text-2xl font-bold text-neutral-900 mb-8">Website-Einstellungen</h1>
 
-      {/* ─── Pricing Section ──────────────────────────────── */}
+      {/* ─── Pricing Marketing Copy (decorative — see "Preisregeln" below for the real rates) ─── */}
       <section className="bg-white rounded-xl shadow-sm border border-neutral-200 p-6 mb-8">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-bold text-neutral-900">Preisgestaltung</h2>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-lg font-bold text-neutral-900">Preisgestaltung – Marketing-Text</h2>
           <div className="flex items-center gap-3">
             <button
               onClick={() => setPricing((p) => ({ ...p, visible: !p.visible }))}
@@ -127,6 +195,11 @@ export default function SettingsPage() {
             )}
           </div>
         </div>
+
+        <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-5">
+          ⚠️ Nur Anzeigetext auf der Startseite — hat <strong>keinen Einfluss</strong> auf den tatsächlich berechneten Mietpreis.
+          Die echten Rabattstufen werden unter „Preisregeln&rdquo; weiter unten verwaltet.
+        </p>
 
         <div className="mb-4">
           <label className="block text-sm font-medium text-neutral-700 mb-1">Titel</label>
@@ -231,6 +304,91 @@ export default function SettingsPage() {
             <Plus className="w-4 h-4" /> Stufe hinzufügen
           </button>
         </div>
+      </section>
+
+      {/* ─── Preisregeln (real, applied discount tiers) ────── */}
+      <section className="bg-white rounded-xl shadow-sm border border-neutral-200 p-6 mb-8">
+        <div className="mb-1">
+          <h2 className="text-lg font-bold text-neutral-900">Preisregeln</h2>
+          <p className="text-xs text-neutral-500 mt-0.5">
+            Diese Staffelung wird tatsächlich auf jede Buchung angewendet — Tag-Bereiche dürfen sich nicht überschneiden.
+          </p>
+        </div>
+
+        {pricingRulesLoading ? (
+          <div className="flex items-center gap-2 text-sm text-neutral-400 py-6">
+            <Loader2 className="w-4 h-4 animate-spin" /> Regeln laden…
+          </div>
+        ) : (
+          <div className="space-y-3 mt-4">
+            {pricingRules.length === 0 && (
+              <p className="text-sm text-neutral-400 py-2">Keine Preisregeln vorhanden.</p>
+            )}
+            {pricingRules.map((rule) => (
+              <div key={rule.id} className="grid grid-cols-12 gap-3 items-end bg-neutral-50 p-4 rounded-lg">
+                <div className="col-span-3">
+                  <label className="block text-xs text-neutral-500 mb-1">Ab Tag</label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={rule.fromDay}
+                    onChange={(e) => updateRuleField(rule.id, 'fromDay', Number(e.target.value) || 1)}
+                    className="w-full border border-neutral-300 rounded px-2 py-1.5 text-sm"
+                  />
+                </div>
+                <div className="col-span-3">
+                  <label className="block text-xs text-neutral-500 mb-1">Bis Tag (leer = unbegrenzt)</label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={rule.toDay ?? ''}
+                    onChange={(e) => updateRuleField(rule.id, 'toDay', e.target.value ? Number(e.target.value) : null)}
+                    placeholder="unbegrenzt"
+                    className="w-full border border-neutral-300 rounded px-2 py-1.5 text-sm"
+                  />
+                </div>
+                <div className="col-span-3">
+                  <label className="block text-xs text-neutral-500 mb-1">Rabatt (%)</label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    step={0.01}
+                    value={rule.discountPercent}
+                    onChange={(e) => updateRuleField(rule.id, 'discountPercent', Number(e.target.value) || 0)}
+                    className="w-full border border-neutral-300 rounded px-2 py-1.5 text-sm"
+                  />
+                </div>
+                <div className="col-span-3 flex items-center gap-2">
+                  <button
+                    onClick={() => handleSaveRule(rule)}
+                    disabled={savingRuleId === rule.id}
+                    className="flex items-center gap-1.5 bg-brand-600 hover:bg-brand-700 disabled:bg-brand-400 text-white text-sm font-medium px-3 py-1.5 rounded-lg transition-colors"
+                  >
+                    {savingRuleId === rule.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                    Speichern
+                  </button>
+                  <button
+                    onClick={() => handleDeleteRule(rule.id)}
+                    className="text-red-400 hover:text-red-600 p-1.5"
+                    title="Löschen"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                  {savedRuleId === rule.id && (
+                    <span className="text-xs text-green-600 font-medium">✓</span>
+                  )}
+                </div>
+              </div>
+            ))}
+            <button
+              onClick={handleAddRule}
+              className="flex items-center gap-1.5 text-sm text-brand-600 hover:text-brand-700 font-medium"
+            >
+              <Plus className="w-4 h-4" /> Preisregel hinzufügen
+            </button>
+          </div>
+        )}
       </section>
 
       {/* ─── Features / Trust Signals Section ─────────────── */}
@@ -351,6 +509,74 @@ export default function SettingsPage() {
         onSave={() => saveSetting('location', location)}
       />
 
+      {/* ─── SEO / Meta-Angaben Section ────────────────────── */}
+      <section className="bg-white rounded-xl shadow-sm border border-neutral-200 p-6 mt-8">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-brand-50 text-brand-600 flex items-center justify-center">
+              <Globe2 className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-neutral-900">SEO / Meta-Angaben</h2>
+              <p className="text-xs text-neutral-500 mt-0.5">Steuert Titel, Beschreibung und Social-Preview-Bild der Startseite</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              disabled={saving === 'seo'}
+              onClick={() => saveSetting('seo', seo)}
+              className="flex items-center gap-2 bg-brand-600 hover:bg-brand-700 disabled:bg-brand-400 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+            >
+              {saving === 'seo' ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Save className="w-4 h-4" />
+              )}
+              Speichern
+            </button>
+            {saved === 'seo' && (
+              <span className="text-sm text-green-600 font-medium">✓ Gespeichert</span>
+            )}
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 mb-1">Meta-Titel</label>
+            <input
+              type="text"
+              value={seo.metaTitle}
+              onChange={(e) => setSeo((s) => ({ ...s, metaTitle: e.target.value }))}
+              placeholder="HoppDrive – Günstige Autovermietung Schweiz | Mietwagen Ab CHF 59/Tag"
+              className="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+            />
+            <p className="text-xs text-neutral-400 mt-1">Leer lassen, um den Standardtitel zu verwenden.</p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 mb-1">Meta-Beschreibung</label>
+            <textarea
+              value={seo.metaDescription}
+              onChange={(e) => setSeo((s) => ({ ...s, metaDescription: e.target.value }))}
+              rows={3}
+              placeholder="HoppDrive – Günstige Kurz- & Langzeitvermietung in der Schweiz..."
+              className="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+            />
+            <p className="text-xs text-neutral-400 mt-1">Leer lassen, um die Standardbeschreibung zu verwenden.</p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 mb-1">Social-Preview-Bild (URL)</label>
+            <input
+              type="text"
+              value={seo.ogImageUrl}
+              onChange={(e) => setSeo((s) => ({ ...s, ogImageUrl: e.target.value }))}
+              placeholder="https://hoppdrive.ch/og-default.jpg"
+              className="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 font-mono"
+            />
+            <p className="text-xs text-neutral-400 mt-1">1200×630px empfohlen. Leer lassen, um das Standardbild zu verwenden.</p>
+          </div>
+        </div>
+      </section>
+
       {/* ─── Invoice / Zahlungsinfos Section ─────────────── */}
       <section className="bg-white rounded-xl shadow-sm border border-neutral-200 p-6 mt-8">
         <div className="flex items-center justify-between mb-6">
@@ -382,7 +608,7 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
           <div>
             <label className="block text-sm font-medium text-neutral-700 mb-1">MwSt-Nr. (UID)</label>
             <input
@@ -411,6 +637,19 @@ export default function SettingsPage() {
               onChange={(e) => setInvoiceSettings((s) => ({ ...s, bankName: e.target.value }))}
               placeholder="Raiffeisenbank Zürich"
               className="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 mb-1">MwSt-Satz (%)</label>
+            <input
+              type="number"
+              min={0}
+              max={100}
+              step={0.1}
+              value={invoiceSettings.vatRate}
+              onChange={(e) => setInvoiceSettings((s) => ({ ...s, vatRate: Number(e.target.value) || 0 }))}
+              placeholder="8.1"
+              className="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 font-mono"
             />
           </div>
         </div>

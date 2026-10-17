@@ -1,19 +1,17 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import Link from 'next/link';
 import { SlidersHorizontal } from 'lucide-react';
 import { VehicleCard, type VehicleCardData } from './VehicleCard';
+import { useSelectedVehicle } from './SelectedVehicleContext';
+import type { FleetContent } from '@/types/homepage-sections';
 
-export interface FleetContent {
-  label?: string;
-  heading?: string;
-  description?: string;
-}
+export type { FleetContent };
 
 interface FleetSectionProps {
   vehicles: VehicleCardData[];
   loading?: boolean;
-  onInquire: (vehicle: VehicleCardData) => void;
   content?: FleetContent;
 }
 
@@ -28,11 +26,13 @@ const FILTER_OPTIONS: { key: FilterKey; label: string }[] = [
   { key: 'electric', label: 'Elektro' },
 ];
 
-export function FleetSection({ vehicles, loading, onInquire, content }: FleetSectionProps) {
+export function FleetSection({ vehicles, loading, content }: FleetSectionProps) {
   const c = content || {};
   const label = c.label ?? 'Unsere Flotte';
   const heading = c.heading ?? 'Günstige Mietwagen für jeden Anlass';
   const description = c.description ?? 'Zuverlässige Kombis, Limousinen & SUVs von Škoda, VW, Toyota und mehr. Wählen Sie Ihr Fahrzeug und profitieren Sie von bis zu 40% Langzeitrabatt.';
+  const { selectVehicle } = useSelectedVehicle();
+  const onInquire = (vehicle: VehicleCardData) => selectVehicle(`${vehicle.brand} ${vehicle.model}`);
   const [activeFilter, setActiveFilter] = useState<FilterKey>('all');
 
   // Only show filter tabs that have at least one vehicle
@@ -116,6 +116,15 @@ export function FleetSection({ vehicles, loading, onInquire, content }: FleetSec
             ))}
           </div>
         )}
+
+        <div className="text-center mt-10">
+          <Link
+            href="/fahrzeuge"
+            className="inline-flex items-center gap-2 text-sm font-semibold text-brand-600 hover:text-brand-700 transition-colors"
+          >
+            Alle Fahrzeuge ansehen
+          </Link>
+        </div>
       </div>
     </section>
   );

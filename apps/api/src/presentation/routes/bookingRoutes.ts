@@ -1,8 +1,12 @@
 import { Router, Request, Response, NextFunction } from 'express';
+import crypto from 'crypto';
+import { v4 as uuid } from 'uuid';
 import type { Container } from '../../infrastructure/config/container';
-import { validate, createBookingSchema, finalizeContractSchema } from '../validators';
+import { validate, createBookingSchema, finalizeContractSchema, transitionBookingStatusSchema } from '../validators';
 import { createAuthMiddleware, type AuthenticatedRequest } from '../middleware/authMiddleware';
 import { createAuditMiddleware } from '../middleware/auditMiddleware';
+import { AuditLog } from '../../domain';
+import { CONTRACT_CLAUSES, renderClause } from '../../infrastructure/services/contractTemplate';
 import { BookingStatus } from '@prisma/client';
 
 export function bookingRoutes(container: Container): Router {
@@ -50,6 +54,28 @@ export function bookingRoutes(container: Container): Router {
     async (req: Request, res: Response, next: NextFunction) => {
       try {
         const booking = await container.createBooking.execute(req.body);
+
+        const customerEmail = req.body.customerEmail;
+        if (customerEmail) {
+          try {
+            const vehicle = await container.prisma.vehicle.findUnique({
+              where: { id: booking.vehicleId },
+              select: { brand: true, model: true },
+            });
+            await container.emailService.sendBookingConfirmation({
+              to: customerEmail,
+              customerName: booking.customerName,
+              vehicleName: vehicle ? `${vehicle.brand} ${vehicle.model}` : 'Ihr Fahrzeug',
+              startDate: booking.dateRange.startDate,
+              endDate: booking.dateRange.endDate,
+              totalPrice: booking.totalPrice.amount,
+              currency: booking.totalPrice.currency,
+            });
+          } catch (emailErr) {
+            console.error('[Booking] Failed to send booking confirmation email:', emailErr);
+          }
+        }
+
         res.status(201).json({ success: true, data: mapBooking(booking) });
       } catch (err) {
         next(err);
@@ -81,6 +107,37 @@ export function bookingRoutes(container: Container): Router {
           },
         });
 
+        res.json({ success: true, data: mapBooking(updated) });
+      } catch (err) {
+        next(err);
+      }
+    },
+  );
+
+  /**
+   * PATCH /api/bookings/:id/status – Transition reserved → active → completed,
+   * or cancel. Drives Booking.activate()/complete()/cancel(), which existed
+   * in the domain entity but had no use-case or route calling them before.
+   */
+  router.patch(
+    '/:id/status',
+    auth,
+    validate(transitionBookingStatusSchema),
+    audit('booking', 'update-status'),
+    async (req: Request, res: Response, next: NextFunction) => {
+      try {
+        await container.transitionBookingStatus.execute({
+          id: req.params.id,
+          status: req.body.status,
+        });
+
+        // Re-fetch the full row — the domain Booking entity returned by the
+        // use case doesn't carry customerEmail/contractStatus/signedAt/vehicle,
+        // and mapping it directly would show those as reset in the response.
+        const updated = await container.prisma.booking.findUnique({
+          where: { id: req.params.id },
+          include: { vehicle: true },
+        });
         res.json({ success: true, data: mapBooking(updated) });
       } catch (err) {
         next(err);
@@ -183,6 +240,53 @@ export function bookingRoutes(container: Container): Router {
     }
   });
 
+  /**
+   * GET /api/bookings/:id/contract-preview – Contract clauses rendered with
+   * real booking data, for the iPad signing view. Server-sourced so the
+   * on-screen text can never drift from what's actually in the signed PDF.
+   */
+  router.get('/:id/contract-preview', auth, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { id } = req.params;
+      const booking = await container.prisma.booking.findUnique({
+        where: { id },
+        include: { vehicle: true, location: true },
+      });
+      if (!booking) {
+        res.status(404).json({ success: false, error: 'Booking not found' });
+        return;
+      }
+
+      const companyName = container.pdfService.getCompanyName();
+      const clauses = CONTRACT_CLAUSES.map((c) => ({
+        id: c.id,
+        heading: c.heading,
+        body: renderClause(c.body, { companyName }),
+      }));
+
+      res.json({
+        success: true,
+        data: {
+          booking: {
+            id: booking.id,
+            customerName: booking.customerName,
+            customerEmail: booking.customerEmail,
+            vehicleBrand: booking.vehicle.brand,
+            vehicleModel: booking.vehicle.model,
+            startDate: booking.startDate,
+            endDate: booking.endDate,
+            totalPrice: Number(booking.totalPrice),
+            currency: booking.currency,
+            locationName: booking.location?.name ?? null,
+          },
+          clauses,
+        },
+      });
+    } catch (err) {
+      next(err);
+    }
+  });
+
   /** POST /api/bookings/:id/finalize-contract – Sign and generate contract */
   router.post(
     '/:id/finalize-contract',
@@ -247,6 +351,32 @@ export function bookingRoutes(container: Container): Router {
           locationName: updated.location?.name ?? null,
         });
 
+        // Persist the signed PDF as an immutable artifact — subsequent downloads
+        // stream this exact file rather than regenerating from (mutable) DB state.
+        const pdfSha256 = crypto.createHash('sha256').update(Buffer.from(pdfBytes)).digest('hex');
+        const contractPdfPath = await container.contractStorage.save(updated.id, pdfBytes);
+        await container.prisma.booking.update({
+          where: { id },
+          data: { contractPdfPath },
+        });
+
+        // Explicit audit entry capturing exactly which bytes were signed —
+        // the generic audit middleware always redacts the body.
+        try {
+          await container.auditLogRepo.save(
+            AuditLog.create({
+              id: uuid(),
+              adminId: req.adminId!,
+              action: 'sign_contract_persisted',
+              resource: 'booking',
+              resourceId: updated.id,
+              details: JSON.stringify({ pdfSha256, contractPdfPath, signedAt }),
+            }),
+          );
+        } catch (auditErr) {
+          console.error('[Booking] Failed to write contract audit entry:', auditErr);
+        }
+
         // Send email if customer email is available
         if (updated.customerEmail) {
           try {
@@ -295,6 +425,25 @@ export function bookingRoutes(container: Container): Router {
         return;
       }
 
+      const filename = `HoppDrive-Vertrag-${booking.id.substring(0, 8).toUpperCase()}.pdf`;
+
+      // Prefer the immutable artifact persisted at signing time — a re-download
+      // must return the exact document the customer saw, not one rebuilt from
+      // whatever the company's data happens to be now.
+      if (booking.contractPdfPath) {
+        try {
+          const persisted = await container.contractStorage.read(booking.contractPdfPath);
+          res.setHeader('Content-Type', 'application/pdf');
+          res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+          res.setHeader('Content-Length', persisted.length);
+          res.send(persisted);
+          return;
+        } catch (readErr) {
+          console.error('[Booking] Failed to read persisted contract, falling back to regeneration:', readErr);
+        }
+      }
+
+      // Fallback: bookings signed before contractPdfPath existed, or a missing file.
       // Fetch the authenticated admin's signature for the company side of contract
       const admin = await container.prisma.admin.findUnique({
         where: { id: req.adminId! },
@@ -321,7 +470,6 @@ export function bookingRoutes(container: Container): Router {
         locationName: booking.location?.name ?? null,
       });
 
-      const filename = `HoppDrive-Vertrag-${booking.id.substring(0, 8).toUpperCase()}.pdf`;
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
       res.setHeader('Content-Length', pdfBytes.length);

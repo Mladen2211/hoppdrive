@@ -3,7 +3,9 @@ import type { Container } from '../../infrastructure/config/container';
 import { createAuthMiddleware } from '../middleware/authMiddleware';
 import type { InvoiceLineItem } from '../../infrastructure/services/PdfService';
 
-const SWISS_VAT_RATE = 8.1; // Swiss standard MwSt rate
+// Fallback only — the real rate is configurable via SiteSetting "invoice_settings".vatRate
+// (Settings → Rechnungsinfos), used whenever a request doesn't explicitly override it.
+const DEFAULT_VAT_RATE = 8.1;
 
 export function invoiceRoutes(container: Container): Router {
   const router = Router();
@@ -70,7 +72,12 @@ export function invoiceRoutes(container: Container): Router {
       const dailyRate = Number(booking.totalPrice) / totalBookingDays;
       const subtotal = Math.round(dailyRate * invoiceDays * 100) / 100;
 
-      const vatRate = customVatRate ?? SWISS_VAT_RATE;
+      let vatRate = customVatRate;
+      if (vatRate === undefined || vatRate === null) {
+        const settingRow = await container.prisma.siteSetting.findUnique({ where: { key: 'invoice_settings' } });
+        const configuredRate = (settingRow?.value as any)?.vatRate;
+        vatRate = typeof configuredRate === 'number' ? configuredRate : DEFAULT_VAT_RATE;
+      }
       const vatAmount = Math.round(subtotal * vatRate) / 100;
       const total = Math.round((subtotal + vatAmount) * 100) / 100;
 
@@ -100,6 +107,22 @@ export function invoiceRoutes(container: Container): Router {
         },
         include: { booking: { include: { vehicle: true } } },
       });
+
+      // Email the invoice on issuance (conventional for Swiss invoicing).
+      // Failure here must never fail the invoice creation itself.
+      if (invoice.customerEmail) {
+        try {
+          const pdfBytes = await generateInvoicePdf(container, invoice);
+          await container.emailService.sendInvoiceEmail({
+            to: invoice.customerEmail,
+            customerName: invoice.customerName,
+            invoiceNumber: invoice.invoiceNumber,
+            pdfBytes,
+          });
+        } catch (emailErr) {
+          console.error('[Invoice] Failed to send invoice email:', emailErr);
+        }
+      }
 
       res.status(201).json({ success: true, data: mapInvoice(invoice) });
     } catch (err) {
@@ -202,56 +225,7 @@ export function invoiceRoutes(container: Container): Router {
         return;
       }
 
-      const periodDays = Math.max(1, Math.ceil(
-        (invoice.periodEnd.getTime() - invoice.periodStart.getTime()) / (1000 * 60 * 60 * 24),
-      ));
-      const subtotal = Number(invoice.subtotal);
-      const penaltyAmt = Number(invoice.penalty);
-
-      const items: InvoiceLineItem[] = [
-        {
-          description: `Fahrzeugmiete – ${(invoice.booking as any).vehicle.brand} ${(invoice.booking as any).vehicle.model} (${invoice.periodStart.toLocaleDateString('de-CH')} – ${invoice.periodEnd.toLocaleDateString('de-CH')})`,
-          quantity: periodDays,
-          unitPrice: subtotal / periodDays,
-          total: subtotal,
-        },
-      ];
-
-      if (penaltyAmt > 0) {
-        items.push({
-          description: 'Verzugsgebühr / Mahngebühr',
-          quantity: 1,
-          unitPrice: penaltyAmt,
-          total: penaltyAmt,
-        });
-      }
-
-      const settingRow = await container.prisma.siteSetting.findUnique({ where: { key: 'invoice_settings' } });
-      if (settingRow?.value) {
-        const s = settingRow.value as any;
-        container.pdfService.updateCompany({
-          uid: s.uid || undefined,
-          iban: s.iban || undefined,
-          bankName: s.bankName || undefined,
-        });
-      }
-
-      const pdfBytes = await container.pdfService.generateInvoice({
-        invoiceNumber: invoice.invoiceNumber,
-        issueDate: invoice.issueDate,
-        dueDate: invoice.dueDate,
-        customerName: invoice.customerName,
-        customerEmail: invoice.customerEmail,
-        customerAddress: invoice.customerAddress,
-        items,
-        subtotal,
-        vatRate: Number(invoice.vatRate),
-        vatAmount: Number(invoice.vatAmount),
-        total: Number(invoice.total),
-        currency: invoice.currency,
-        notes: invoice.notes,
-        bookingRef: invoice.booking.id.substring(0, 8).toUpperCase(),
-      });
+      const pdfBytes = await generateInvoicePdf(container, invoice);
 
       const filename = `HoppDrive-Rechnung-${invoice.invoiceNumber}.pdf`;
       res.setHeader('Content-Type', 'application/pdf');
@@ -269,6 +243,60 @@ export function invoiceRoutes(container: Container): Router {
 /* ══════════════════════════════════════════════════════════════
  *  Helpers
  * ══════════════════════════════════════════════════════════════ */
+
+/** Shared by the create route (for the issuance email) and the download route. */
+async function generateInvoicePdf(container: Container, invoice: any): Promise<Uint8Array> {
+  const periodDays = Math.max(1, Math.ceil(
+    (invoice.periodEnd.getTime() - invoice.periodStart.getTime()) / (1000 * 60 * 60 * 24),
+  ));
+  const subtotal = Number(invoice.subtotal);
+  const penaltyAmt = Number(invoice.penalty);
+
+  const items: InvoiceLineItem[] = [
+    {
+      description: `Fahrzeugmiete – ${invoice.booking.vehicle.brand} ${invoice.booking.vehicle.model} (${invoice.periodStart.toLocaleDateString('de-CH')} – ${invoice.periodEnd.toLocaleDateString('de-CH')})`,
+      quantity: periodDays,
+      unitPrice: subtotal / periodDays,
+      total: subtotal,
+    },
+  ];
+
+  if (penaltyAmt > 0) {
+    items.push({
+      description: 'Verzugsgebühr / Mahngebühr',
+      quantity: 1,
+      unitPrice: penaltyAmt,
+      total: penaltyAmt,
+    });
+  }
+
+  const settingRow = await container.prisma.siteSetting.findUnique({ where: { key: 'invoice_settings' } });
+  if (settingRow?.value) {
+    const s = settingRow.value as any;
+    container.pdfService.updateCompany({
+      uid: s.uid || undefined,
+      iban: s.iban || undefined,
+      bankName: s.bankName || undefined,
+    });
+  }
+
+  return container.pdfService.generateInvoice({
+    invoiceNumber: invoice.invoiceNumber,
+    issueDate: invoice.issueDate,
+    dueDate: invoice.dueDate,
+    customerName: invoice.customerName,
+    customerEmail: invoice.customerEmail,
+    customerAddress: invoice.customerAddress,
+    items,
+    subtotal,
+    vatRate: Number(invoice.vatRate),
+    vatAmount: Number(invoice.vatAmount),
+    total: Number(invoice.total),
+    currency: invoice.currency,
+    notes: invoice.notes,
+    bookingRef: invoice.booking.id.substring(0, 8).toUpperCase(),
+  });
+}
 
 async function nextInvoiceNumber(container: Container): Promise<string> {
   const year = new Date().getFullYear();

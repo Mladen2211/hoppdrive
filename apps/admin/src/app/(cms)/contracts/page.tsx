@@ -22,7 +22,9 @@ import {
   Loader2,
   RefreshCw,
   AlertTriangle,
+  Tablet,
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { api } from '@/lib/api';
 import dynamic from 'next/dynamic';
@@ -91,6 +93,7 @@ function toInputDate(iso: string) {
 }
 
 export default function ContractsPage() {
+  const router = useRouter();
   const { token } = useAdminAuth();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
@@ -112,6 +115,9 @@ export default function ContractsPage() {
   const [showSignature, setShowSignature] = useState(false);
   const [signingBooking, setSigningBooking] = useState<Booking | null>(null);
   const [signingLoading, setSigningLoading] = useState(false);
+
+  // Booking status transitions
+  const [statusLoading, setStatusLoading] = useState<string | null>(null);
 
   // Invoice creation per booking
   const [invoicePeriod, setInvoicePeriod] = useState<Record<string, { start: string; end: string }>>({});
@@ -323,6 +329,19 @@ export default function ContractsPage() {
     }
   }
 
+  async function handleTransitionStatus(bookingId: string, status: 'active' | 'completed' | 'cancelled') {
+    if (status === 'cancelled' && !confirm('Diese Buchung wirklich stornieren?')) return;
+    setStatusLoading(bookingId);
+    try {
+      const updated = await api.transitionBookingStatus(bookingId, status);
+      setBookings((prev) => prev.map((b) => (b.id === bookingId ? { ...b, status: updated.status } : b)));
+    } catch (err: any) {
+      alert(err.message || 'Status konnte nicht geändert werden.');
+    } finally {
+      setStatusLoading(null);
+    }
+  }
+
   async function handleSaveEmail(bookingId: string) {
     if (!editEmailValue.trim()) return;
     setSavingEmail(true);
@@ -481,13 +500,22 @@ export default function ContractsPage() {
                         </span>
                       )}
                       {contractStatus === 'PENDING' && !isCancelled && (
-                        <span
-                          onClick={(e) => { e.stopPropagation(); openSignaturePad(booking); }}
-                          className="p-2 rounded-lg text-brand-600 hover:bg-brand-50 transition-colors cursor-pointer"
-                          title="Vertrag unterschreiben"
-                        >
-                          <PenTool className="w-4 h-4" />
-                        </span>
+                        <>
+                          <span
+                            onClick={(e) => { e.stopPropagation(); router.push(`/contracts/${booking.id}/sign`); }}
+                            className="p-2 rounded-lg text-brand-600 hover:bg-brand-50 transition-colors cursor-pointer"
+                            title="Auf Gerät unterschreiben (Kunde)"
+                          >
+                            <Tablet className="w-4 h-4" />
+                          </span>
+                          <span
+                            onClick={(e) => { e.stopPropagation(); openSignaturePad(booking); }}
+                            className="p-2 rounded-lg text-brand-600 hover:bg-brand-50 transition-colors cursor-pointer"
+                            title="Schnell unterschreiben (hier im Panel)"
+                          >
+                            <PenTool className="w-4 h-4" />
+                          </span>
+                        </>
                       )}
                       {isExpanded ? (
                         <ChevronUp className="w-4 h-4 text-neutral-400" />
@@ -564,6 +592,35 @@ export default function ContractsPage() {
                               <span className="text-neutral-500">{booking.notes}</span>
                             </div>
                           )}
+                          {(booking.status === 'reserved' || booking.status === 'active') && (
+                            <div className="flex flex-wrap gap-1.5 pt-1">
+                              {booking.status === 'reserved' && (
+                                <button
+                                  onClick={() => handleTransitionStatus(booking.id, 'active')}
+                                  disabled={statusLoading === booking.id}
+                                  className="px-2.5 py-1 text-xs font-medium text-green-700 bg-green-50 hover:bg-green-100 rounded-lg border border-green-200 transition-colors disabled:opacity-50"
+                                >
+                                  Als abgeholt markieren
+                                </button>
+                              )}
+                              {booking.status === 'active' && (
+                                <button
+                                  onClick={() => handleTransitionStatus(booking.id, 'completed')}
+                                  disabled={statusLoading === booking.id}
+                                  className="px-2.5 py-1 text-xs font-medium text-neutral-700 bg-neutral-100 hover:bg-neutral-200 rounded-lg border border-neutral-200 transition-colors disabled:opacity-50"
+                                >
+                                  Als zurückgegeben markieren
+                                </button>
+                              )}
+                              <button
+                                onClick={() => handleTransitionStatus(booking.id, 'cancelled')}
+                                disabled={statusLoading === booking.id}
+                                className="px-2.5 py-1 text-xs font-medium text-red-700 bg-red-50 hover:bg-red-100 rounded-lg border border-red-200 transition-colors disabled:opacity-50"
+                              >
+                                Stornieren
+                              </button>
+                            </div>
+                          )}
                         </div>
 
                         {/* Contract info + actions */}
@@ -583,13 +640,24 @@ export default function ContractsPage() {
                           </p>
                           <div className="flex flex-wrap gap-2 pt-1">
                             {contractStatus === 'PENDING' && !isCancelled && (
-                              <button
-                                onClick={() => openSignaturePad(booking)}
-                                className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 rounded-lg transition-colors"
-                              >
-                                <PenTool className="w-4 h-4" />
-                                Unterschreiben
-                              </button>
+                              <>
+                                <button
+                                  onClick={() => router.push(`/contracts/${booking.id}/sign`)}
+                                  className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 rounded-lg transition-colors"
+                                  title="AGB, Vertrag und Unterschrift auf einem Gerät, das dem Kunden übergeben werden kann"
+                                >
+                                  <Tablet className="w-4 h-4" />
+                                  Auf Gerät unterschreiben
+                                </button>
+                                <button
+                                  onClick={() => openSignaturePad(booking)}
+                                  className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-brand-700 bg-brand-50 hover:bg-brand-100 rounded-lg transition-colors border border-brand-200"
+                                  title="Schnell hier im Panel unterschreiben, ohne AGB/Vertragsvorschau"
+                                >
+                                  <PenTool className="w-4 h-4" />
+                                  Schnell unterschreiben
+                                </button>
+                              </>
                             )}
                             {contractStatus === 'SIGNED' && (
                               <button

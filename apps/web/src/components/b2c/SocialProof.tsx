@@ -1,11 +1,10 @@
-'use client';
-
-import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { Star, Quote } from 'lucide-react';
-import { api } from '@/lib/api';
+import type { SocialProofContent } from '@/types/homepage-sections';
 
-interface Testimonial {
+export type { SocialProofContent };
+
+export interface Testimonial {
   id: string;
   name: string;
   location: string | null;
@@ -54,31 +53,17 @@ function StarRating({ rating }: { rating: number }) {
   );
 }
 
-export interface SocialProofContent {
-  label?: string;
-  heading?: string;
-  description?: string;
-}
-
 interface SocialProofProps {
   content?: SocialProofContent;
+  testimonials?: Testimonial[];
 }
 
-export function SocialProof({ content }: SocialProofProps) {
+export function SocialProof({ content, testimonials: testimonialsProp }: SocialProofProps) {
   const c = content || {};
   const label = c.label ?? 'Kundenstimmen';
   const heading = c.heading ?? 'Was unsere Kunden sagen';
   const description = c.description ?? 'Hunderte zufriedene Mieter vertrauen HoppDrive für günstige und flexible Mobilität.';
-  const [testimonials, setTestimonials] = useState<Testimonial[]>(FALLBACK_TESTIMONIALS);
-
-  useEffect(() => {
-    api
-      .getTestimonials()
-      .then((data) => {
-        if (data && data.length > 0) setTestimonials(data);
-      })
-      .catch((err) => console.error('[SocialProof] Failed to load testimonials:', err));
-  }, []);
+  const testimonials = testimonialsProp && testimonialsProp.length > 0 ? testimonialsProp : FALLBACK_TESTIMONIALS;
 
   return (
     <section className="py-20 bg-white">

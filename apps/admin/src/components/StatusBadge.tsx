@@ -8,6 +8,7 @@ const statusStyles: Record<string, string> = {
   reviewed: 'bg-yellow-100 text-yellow-700',
   responded: 'bg-purple-100 text-purple-700',
   converted: 'bg-green-100 text-green-700',
+  denied: 'bg-red-100 text-red-700',
   archived: 'bg-neutral-100 text-neutral-600',
   // Booking statuses
   reserved: 'bg-blue-100 text-blue-700',
@@ -26,6 +27,7 @@ const statusLabels: Record<string, string> = {
   reviewed: 'Geprüft',
   responded: 'Beantwortet',
   converted: 'Buchung erstellt',
+  denied: 'Abgelehnt',
   archived: 'Archiviert',
   // Booking statuses
   reserved: 'Reserviert',

@@ -21,6 +21,8 @@ import { searchRoutes } from './routes/searchRoutes';
 import { testimonialRoutes } from './routes/testimonialRoutes';
 import { faqRoutes } from './routes/faqRoutes';
 import { homepageSectionRoutes } from './routes/homepageSectionRoutes';
+import { legalRoutes } from './routes/legalRoutes';
+import { maintenanceRoutes } from './routes/maintenanceRoutes';
 import { errorHandler } from './middleware/errorHandler';
 
 export function createApp(container: Container): express.Application {
@@ -90,6 +92,8 @@ export function createApp(container: Container): express.Application {
   app.use('/api/testimonials', testimonialRoutes(container));
   app.use('/api/faq', faqRoutes(container));
   app.use('/api/homepage-sections', homepageSectionRoutes(container));
+  app.use('/api/legal', legalRoutes());
+  app.use('/api/maintenance', maintenanceRoutes(container));
 
   // ─── Global Error Handler ───────────────────────────────────
   app.use(errorHandler);

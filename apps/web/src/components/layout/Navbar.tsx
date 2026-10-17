@@ -61,8 +61,12 @@ export function Navbar() {
         </div>
 
         {/* Mobile Nav */}
-        {mobileOpen && (
-          <div className="md:hidden pb-6 space-y-4">
+        <div
+          className={`md:hidden overflow-hidden transition-[max-height,opacity] duration-200 ease-out ${
+            mobileOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+          }`}
+        >
+          <div className="pb-6 space-y-4">
             {NAV_LINKS.map((link) => (
               <Link
                 key={link.href}
@@ -81,7 +85,7 @@ export function Navbar() {
               Jetzt anfragen
             </Link>
           </div>
-        )}
+        </div>
       </div>
     </nav>
   );

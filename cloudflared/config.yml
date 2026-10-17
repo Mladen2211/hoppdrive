@@ -1,4 +1,16 @@
 ingress:
+  # Canonical production domains
+  - hostname: hoppdrive.ch
+    service: http://web:99
+  - hostname: www.hoppdrive.ch
+    service: http://web:99
+  - hostname: hoppdrive.com
+    service: http://web:99
+  - hostname: www.hoppdrive.com
+    service: http://web:99
+  - hostname: api.hoppdrive.ch
+    service: http://api:97
+  # Legacy tunnel hostnames (kept; served but noindexed by middleware.ts)
   - hostname: hoppdrive.mraguz.me
     service: http://web:99
   - hostname: hoppdrive-admin.mraguz.me

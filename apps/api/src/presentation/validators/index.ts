@@ -90,9 +90,27 @@ export const createBookingSchema = z.object({
   notes: z.string().optional(),
 });
 
+export const transitionBookingStatusSchema = z.object({
+  status: z.enum(['active', 'completed', 'cancelled']),
+});
+
+export const createMaintenanceSchema = z.object({
+  vehicleId: z.string().uuid(),
+  startDate: z.string().datetime(),
+  endDate: z.string().datetime(),
+  reason: z.enum(['repair', 'accident', 'other']).default('other'),
+  notes: z.string().optional(),
+});
+
 export const finalizeContractSchema = z.object({
   signature: z.string().min(1, 'Signature data is required'),
   customerEmail: z.string().email('Valid email is required').optional(),
+});
+
+export const pricingRuleSchema = z.object({
+  fromDay: z.number().int().min(1, 'fromDay must be at least 1'),
+  toDay: z.number().int().nullable(),
+  discountPercent: z.number().min(0).max(100, 'discountPercent must be 0-100'),
 });
 
 export const pricingQuerySchema = z.object({

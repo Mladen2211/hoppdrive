@@ -27,6 +27,9 @@ export class UpdateContactStatusUseCase {
       case 'converted':
         request.markConverted();
         break;
+      case 'denied':
+        request.deny();
+        break;
       case 'archived':
         request.archive();
         break;

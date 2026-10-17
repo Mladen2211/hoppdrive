@@ -1,12 +1,13 @@
 import type { Metadata } from 'next';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
+import { buildMetadata } from '@/lib/seo';
 
-export const metadata: Metadata = {
-  title: 'Datenschutzerklärung – HoppDrive Autovermietung Schweiz',
+export const metadata: Metadata = buildMetadata({
+  title: 'Datenschutz',
   description: 'Datenschutzerklärung und Datenschutzinformationen von HoppDrive gemäss DSG und DSGVO. Erfahren Sie, wie wir Ihre Daten schützen.',
-  robots: { index: true, follow: true },
-};
+  path: '/privacy',
+});
 
 export default function PrivacyPage() {
   return (

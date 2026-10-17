@@ -31,23 +31,24 @@ model Admin {
 // ─── Vehicle ───────────────────────────────────────────────────
 
 model Vehicle {
-  id              String         @id @default(uuid())
-  brand           String
-  model           String
-  type            VehicleType
-  year            Int
-  basePricePerDay Decimal        @map("base_price_per_day") @db.Decimal(10, 2)
-  currency        String         @default("CHF")
-  horsepower      Int
-  transmission    Transmission
-  seats           Int
-  fuelType        FuelType       @map("fuel_type")
-  range           String?
-  isAvailable     Boolean        @default(true) @map("is_available")
-  createdAt       DateTime       @default(now()) @map("created_at")
-  updatedAt       DateTime       @updatedAt @map("updated_at")
-  images          VehicleImage[]
-  bookings        Booking[]
+  id                 String               @id @default(uuid())
+  brand              String
+  model              String
+  type               VehicleType
+  year               Int
+  basePricePerDay    Decimal              @map("base_price_per_day") @db.Decimal(10, 2)
+  currency           String               @default("CHF")
+  horsepower         Int
+  transmission       Transmission
+  seats              Int
+  fuelType           FuelType             @map("fuel_type")
+  range              String?
+  isAvailable        Boolean              @default(true) @map("is_available")
+  createdAt          DateTime             @default(now()) @map("created_at")
+  updatedAt          DateTime             @updatedAt @map("updated_at")
+  images             VehicleImage[]
+  bookings           Booking[]
+  maintenancePeriods VehicleMaintenance[]
 
   @@map("vehicles")
 }
@@ -62,6 +63,31 @@ model VehicleImage {
   vehicle   Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
 
   @@map("vehicle_images")
+}
+
+// ─── Vehicle Maintenance / Decommission Periods ────────────────
+
+model VehicleMaintenance {
+  id        String            @id @default(uuid())
+  vehicleId String            @map("vehicle_id")
+  startDate DateTime          @map("start_date")
+  endDate   DateTime          @map("end_date")
+  reason    MaintenanceReason @default(other)
+  notes     String?
+  createdBy String?           @map("created_by")
+  createdAt DateTime          @default(now()) @map("created_at")
+  updatedAt DateTime          @updatedAt @map("updated_at")
+  vehicle   Vehicle           @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@index([vehicleId])
+  @@index([startDate, endDate])
+  @@map("vehicle_maintenance")
+}
+
+enum MaintenanceReason {
+  repair
+  accident
+  other
 }
 
 enum VehicleType {
@@ -89,19 +115,19 @@ enum FuelType {
 // ─── Contact Request ───────────────────────────────────────────
 
 model ContactRequest {
-  id                 String               @id @default(uuid())
-  fullName           String               @map("full_name")
-  email              String
-  phone              String
-  vehicleOfInterest  String?              @map("vehicle_of_interest")
-  message            String
-  desiredStartDate   DateTime?            @map("desired_start_date")
-  desiredEndDate     DateTime?            @map("desired_end_date")
-  privacyConsent     Boolean              @map("privacy_consent")
-  marketingConsent   Boolean              @default(false) @map("marketing_consent")
-  status             ContactRequestStatus @default(pending)
-  createdAt          DateTime             @default(now()) @map("created_at")
-  updatedAt          DateTime             @updatedAt @map("updated_at")
+  id                String               @id @default(uuid())
+  fullName          String               @map("full_name")
+  email             String
+  phone             String
+  vehicleOfInterest String?              @map("vehicle_of_interest")
+  message           String
+  desiredStartDate  DateTime?            @map("desired_start_date")
+  desiredEndDate    DateTime?            @map("desired_end_date")
+  privacyConsent    Boolean              @map("privacy_consent")
+  marketingConsent  Boolean              @default(false) @map("marketing_consent")
+  status            ContactRequestStatus @default(pending)
+  createdAt         DateTime             @default(now()) @map("created_at")
+  updatedAt         DateTime             @updatedAt @map("updated_at")
 
   @@map("contact_requests")
 }
@@ -111,32 +137,34 @@ enum ContactRequestStatus {
   reviewed
   responded
   converted
+  denied
   archived
 }
 
 // ─── Booking ───────────────────────────────────────────────────
 
 model Booking {
-  id             String         @id @default(uuid())
-  vehicleId      String         @map("vehicle_id")
-  customerName   String         @map("customer_name")
-  customerEmail  String?        @map("customer_email")
-  startDate      DateTime       @map("start_date")
-  endDate        DateTime       @map("end_date")
-  totalPrice     Decimal        @map("total_price") @db.Decimal(10, 2)
-  currency       String         @default("CHF")
-  status         BookingStatus  @default(reserved)
-  notes          String?
-  contractStatus ContractStatus @default(PENDING) @map("contract_status")
-  signatureData  String?        @map("signature_data") @db.Text
-  signedAt       DateTime?      @map("signed_at")
-  signeeIp       String?        @map("signee_ip")
-  locationId     String?        @map("location_id")
-  createdAt      DateTime       @default(now()) @map("created_at")
-  updatedAt      DateTime       @updatedAt @map("updated_at")
-  vehicle        Vehicle        @relation(fields: [vehicleId], references: [id])
-  location       Location?      @relation(fields: [locationId], references: [id], onDelete: SetNull)
-  invoices       Invoice[]
+  id              String         @id @default(uuid())
+  vehicleId       String         @map("vehicle_id")
+  customerName    String         @map("customer_name")
+  customerEmail   String?        @map("customer_email")
+  startDate       DateTime       @map("start_date")
+  endDate         DateTime       @map("end_date")
+  totalPrice      Decimal        @map("total_price") @db.Decimal(10, 2)
+  currency        String         @default("CHF")
+  status          BookingStatus  @default(reserved)
+  notes           String?
+  contractStatus  ContractStatus @default(PENDING) @map("contract_status")
+  signatureData   String?        @map("signature_data") @db.Text
+  signedAt        DateTime?      @map("signed_at")
+  signeeIp        String?        @map("signee_ip")
+  contractPdfPath String?        @map("contract_pdf_path")
+  locationId      String?        @map("location_id")
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
+  vehicle         Vehicle        @relation(fields: [vehicleId], references: [id])
+  location        Location?      @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  invoices        Invoice[]
 
   @@index([vehicleId])
   @@index([status])
@@ -220,15 +248,15 @@ model Location {
 // ─── Notification ──────────────────────────────────────────────
 
 model Notification {
-  id        String             @id @default(uuid())
-  adminId   String             @map("admin_id")
+  id        String           @id @default(uuid())
+  adminId   String           @map("admin_id")
   type      NotificationType
   title     String
   body      String
-  refId     String?            @map("ref_id")
-  readAt    DateTime?          @map("read_at")
-  createdAt DateTime           @default(now()) @map("created_at")
-  admin     Admin              @relation(fields: [adminId], references: [id])
+  refId     String?          @map("ref_id")
+  readAt    DateTime?        @map("read_at")
+  createdAt DateTime         @default(now()) @map("created_at")
+  admin     Admin            @relation(fields: [adminId], references: [id])
 
   @@index([adminId, readAt])
   @@index([createdAt])

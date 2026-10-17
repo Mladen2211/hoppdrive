@@ -1,10 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
-import { api } from '@/lib/api';
+import type { FaqContent } from '@/types/homepage-sections';
 
-interface FaqItemData {
+export type { FaqContent };
+
+export interface FaqItemData {
   id: string;
   question: string;
   answer: string;
@@ -78,32 +80,18 @@ function AccordionItem({ item, isOpen, onToggle }: { item: FaqItemData; isOpen: 
   );
 }
 
-export interface FaqContent {
-  label?: string;
-  heading?: string;
-  description?: string;
-}
-
 interface FaqSectionProps {
   content?: FaqContent;
+  items?: FaqItemData[];
 }
 
-export function FaqSection({ content }: FaqSectionProps) {
+export function FaqSection({ content, items }: FaqSectionProps) {
   const c = content || {};
   const label = c.label ?? 'Häufige Fragen';
   const heading = c.heading ?? 'Alles was Sie wissen müssen';
   const description = c.description ?? 'Finden Sie schnell Antworten auf die häufigsten Fragen rund um unsere Mietwagen.';
-  const [faqItems, setFaqItems] = useState<FaqItemData[]>(FALLBACK_FAQ);
+  const faqItems = items && items.length > 0 ? items : FALLBACK_FAQ;
   const [openIndex, setOpenIndex] = useState<number | null>(0);
-
-  useEffect(() => {
-    api
-      .getFaq()
-      .then((data) => {
-        if (data && data.length > 0) setFaqItems(data);
-      })
-      .catch((err) => console.error('[FaqSection] Failed to load FAQ:', err));
-  }, []);
 
   return (
     <section id="faq" className="py-20 bg-neutral-50 border-y border-neutral-200">

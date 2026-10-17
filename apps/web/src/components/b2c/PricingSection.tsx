@@ -1,19 +1,7 @@
 import { Shield, Wrench, Phone, FileText } from 'lucide-react';
+import type { PricingContent, PricingTier } from '@/types/homepage-sections';
 
-interface PricingTier {
-  number: string;
-  title: string;
-  description: string;
-  badge?: string;
-}
-
-export interface PricingContent {
-  label?: string;
-  heading?: string;
-  description?: string;
-  tiers?: PricingTier[];
-  includedItems?: string[];
-}
+export type { PricingContent, PricingTier };
 
 interface PricingSectionProps {
   config?: {

@@ -114,12 +114,29 @@ export const api = {
     client.patch(`/vehicles/${id}`, data).then(unwrap) as Promise<any>,
   deleteVehicle: (id: string) =>
     client.delete(`/vehicles/${id}`).then(unwrap) as Promise<any>,
+  uploadVehicleImage: (vehicleId: string, file: File) => {
+    const formData = new FormData();
+    formData.append('image', file);
+    // Let the browser set Content-Type (with the required multipart boundary) —
+    // the client's default 'application/json' header must be explicitly cleared.
+    return client
+      .post(`/vehicles/${vehicleId}/images`, formData, {
+        headers: { 'Content-Type': undefined },
+      })
+      .then(unwrap) as Promise<any>;
+  },
+  deleteVehicleImage: (vehicleId: string, imageId: string) =>
+    client.delete(`/vehicles/${vehicleId}/images/${imageId}`).then(unwrap) as Promise<any>,
 
   // ─── Inquiries / Contact ──────────────────────────────────
   getContactRequests: (params?: { page?: number; limit?: number }) =>
     client.get('/contact', { params }).then(unwrap) as Promise<{ items: any[]; total: number; page: number; totalPages: number }>,
   updateContactStatus: (id: string, status: string) =>
     client.patch(`/contact/${id}/status`, { status }).then(unwrap) as Promise<any>,
+  approveInquiry: (id: string, data: { vehicleId: string; totalPrice?: number }) =>
+    client.post(`/contact/${id}/approve`, data).then(unwrap) as Promise<any>,
+  denyInquiry: (id: string, data?: { reason?: string }) =>
+    client.post(`/contact/${id}/deny`, data || {}).then(unwrap) as Promise<any>,
 
   // ─── Bookings ──────────────────────────────────────────────
   getBookings: () =>
@@ -128,12 +145,16 @@ export const api = {
     client.post('/bookings', data).then(unwrap) as Promise<any>,
   updateBooking: (id: string, data: { customerEmail?: string; notes?: string }) =>
     client.patch(`/bookings/${id}`, data).then(unwrap) as Promise<any>,
+  transitionBookingStatus: (id: string, status: 'active' | 'completed' | 'cancelled') =>
+    client.patch(`/bookings/${id}/status`, { status }).then(unwrap) as Promise<any>,
   getBookingReport: (from: string, to: string) =>
     client.get('/bookings/report', { params: { from, to } }).then(unwrap) as Promise<any>,
   finalizeContract: (id: string, data: { signature: string; customerEmail?: string }) =>
     client.post(`/bookings/${id}/finalize-contract`, data).then(unwrap) as Promise<any>,
   downloadContract: (id: string) =>
     client.get(`/bookings/${id}/download-contract`, { responseType: 'blob' }).then((res) => res.data) as Promise<Blob>,
+  getContractPreview: (id: string) =>
+    client.get(`/bookings/${id}/contract-preview`).then(unwrap) as Promise<any>,
 
   // ─── Settings (CMS) ───────────────────────────────────────
   getSettings: () =>
@@ -142,6 +163,24 @@ export const api = {
     client.get(`/settings/${key}`).then(unwrap) as Promise<any>,
   updateSetting: (key: string, value: any) =>
     client.put(`/settings/${key}`, { value }).then(unwrap) as Promise<any>,
+
+  // ─── Pricing Rules (real discount tiers, not marketing copy) ──
+  getPricingRules: () =>
+    client.get('/pricing/rules').then(unwrap) as Promise<any[]>,
+  createPricingRule: (data: { fromDay: number; toDay: number | null; discountPercent: number }) =>
+    client.post('/pricing/rules', data).then(unwrap) as Promise<any>,
+  updatePricingRule: (id: string, data: { fromDay: number; toDay: number | null; discountPercent: number }) =>
+    client.patch(`/pricing/rules/${id}`, data).then(unwrap) as Promise<any>,
+  deletePricingRule: (id: string) =>
+    client.delete(`/pricing/rules/${id}`).then(unwrap) as Promise<any>,
+
+  // ─── Vehicle Maintenance / Decommission Periods ────────────
+  getMaintenance: (vehicleId?: string) =>
+    client.get('/maintenance', { params: vehicleId ? { vehicleId } : {} }).then(unwrap) as Promise<any[]>,
+  createMaintenance: (data: { vehicleId: string; startDate: string; endDate: string; reason: 'repair' | 'accident' | 'other'; notes?: string }) =>
+    client.post('/maintenance', data).then(unwrap) as Promise<any>,
+  deleteMaintenance: (id: string) =>
+    client.delete(`/maintenance/${id}`).then(unwrap) as Promise<any>,
 
   // ─── Locations (Standorte) ────────────────────────────────
   getLocations: () =>

@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { AdminAuthProvider, useAdminAuth } from '@/hooks/useAdminAuth';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { api } from '@/lib/api';
 
 const navItems = [
@@ -125,41 +126,43 @@ function SearchDropdown() {
         placeholder="Suche..."
         className="pl-9 pr-4 py-2 bg-slate-100/50 border border-transparent rounded-lg text-sm focus:outline-none focus:bg-white focus:ring-2 focus:ring-red-500/20 focus:border-red-400 w-64 transition-all placeholder:text-slate-400 shadow-sm"
       />
-      {open && (
-        <div className="absolute top-full left-0 mt-2 w-96 bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden z-50 max-h-96 overflow-y-auto">
-          {loading && (
-            <div className="px-4 py-3 text-sm text-slate-400">Suche…</div>
-          )}
-          {!loading && !hasResults && query.length >= 2 && (
-            <div className="px-4 py-3 text-sm text-slate-400">Keine Ergebnisse für &quot;{query}&quot;</div>
-          )}
-          {!loading && Object.entries(results).map(([category, items]) => {
-            if (!items?.length) return null;
-            return (
-              <div key={category}>
-                <div className="px-4 py-2 text-[11px] font-bold tracking-wider text-slate-400 uppercase bg-slate-50">
-                  {CATEGORY_LABELS[category] || category}
-                </div>
-                {items.map((item: any) => (
-                  <Link
-                    key={item.id}
-                    href={CATEGORY_ROUTES[category] || '/'}
-                    onClick={() => { setOpen(false); setQuery(''); }}
-                    className="flex items-center justify-between px-4 py-2.5 hover:bg-red-50/50 transition-colors border-b border-slate-100 last:border-0"
-                  >
-                    <span className="text-sm text-slate-900 truncate">{item.label}</span>
-                    {item.status && (
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 font-medium">
-                        {item.status}
-                      </span>
-                    )}
-                  </Link>
-                ))}
+      <div
+        className={`absolute top-full left-0 mt-2 w-96 bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden z-50 max-h-96 overflow-y-auto origin-top-left transition-[opacity,transform] duration-150 ease-out ${
+          open ? 'opacity-100 scale-100 visible' : 'opacity-0 scale-95 invisible pointer-events-none'
+        }`}
+      >
+        {loading && (
+          <div className="px-4 py-3 text-sm text-slate-400">Suche…</div>
+        )}
+        {!loading && !hasResults && query.length >= 2 && (
+          <div className="px-4 py-3 text-sm text-slate-400">Keine Ergebnisse für &quot;{query}&quot;</div>
+        )}
+        {!loading && Object.entries(results).map(([category, items]) => {
+          if (!items?.length) return null;
+          return (
+            <div key={category}>
+              <div className="px-4 py-2 text-[11px] font-bold tracking-wider text-slate-400 uppercase bg-slate-50">
+                {CATEGORY_LABELS[category] || category}
               </div>
-            );
-          })}
-        </div>
-      )}
+              {items.map((item: any) => (
+                <Link
+                  key={item.id}
+                  href={CATEGORY_ROUTES[category] || '/'}
+                  onClick={() => { setOpen(false); setQuery(''); }}
+                  className="flex items-center justify-between px-4 py-2.5 hover:bg-red-50/50 transition-colors border-b border-slate-100 last:border-0"
+                >
+                  <span className="text-sm text-slate-900 truncate">{item.label}</span>
+                  {item.status && (
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 font-medium">
+                      {item.status}
+                    </span>
+                  )}
+                </Link>
+              ))}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -233,47 +236,49 @@ function NotificationBell() {
         )}
       </button>
 
-      {open && (
-        <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden z-50">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
-            <span className="text-sm font-semibold text-slate-900">Benachrichtigungen</span>
-            {unreadCount > 0 && (
-              <button
-                onClick={handleMarkAllRead}
-                className="text-xs text-red-600 hover:text-red-700 font-medium"
-              >
-                Alle gelesen
-              </button>
-            )}
-          </div>
-          <div className="max-h-80 overflow-y-auto">
-            {notifications.length === 0 ? (
-              <div className="px-4 py-6 text-center text-sm text-slate-400">
-                Keine Benachrichtigungen
-              </div>
-            ) : (
-              notifications.map((n) => (
-                <button
-                  key={n.id}
-                  onClick={() => { if (!n.readAt) handleMarkRead(n.id); }}
-                  className={`w-full text-left px-4 py-3 border-b border-slate-50 hover:bg-slate-50 transition-colors ${!n.readAt ? 'bg-red-50/30' : ''}`}
-                >
-                  <div className="flex items-start gap-2">
-                    {!n.readAt && <div className="w-2 h-2 rounded-full bg-red-500 mt-1.5 shrink-0" />}
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-slate-900 truncate">{n.title}</p>
-                      <p className="text-xs text-slate-500 line-clamp-2">{n.body}</p>
-                      <p className="text-[10px] text-slate-400 mt-1">
-                        {new Date(n.createdAt).toLocaleDateString('de-CH')} – {new Date(n.createdAt).toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' })}
-                      </p>
-                    </div>
-                  </div>
-                </button>
-              ))
-            )}
-          </div>
+      <div
+        className={`absolute right-0 top-full mt-2 w-80 bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden z-50 origin-top-right transition-[opacity,transform] duration-150 ease-out ${
+          open ? 'opacity-100 scale-100 visible' : 'opacity-0 scale-95 invisible pointer-events-none'
+        }`}
+      >
+        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
+          <span className="text-sm font-semibold text-slate-900">Benachrichtigungen</span>
+          {unreadCount > 0 && (
+            <button
+              onClick={handleMarkAllRead}
+              className="text-xs text-red-600 hover:text-red-700 font-medium"
+            >
+              Alle gelesen
+            </button>
+          )}
         </div>
-      )}
+        <div className="max-h-80 overflow-y-auto">
+          {notifications.length === 0 ? (
+            <div className="px-4 py-6 text-center text-sm text-slate-400">
+              Keine Benachrichtigungen
+            </div>
+          ) : (
+            notifications.map((n) => (
+              <button
+                key={n.id}
+                onClick={() => { if (!n.readAt) handleMarkRead(n.id); }}
+                className={`w-full text-left px-4 py-3 border-b border-slate-50 hover:bg-slate-50 transition-colors ${!n.readAt ? 'bg-red-50/30' : ''}`}
+              >
+                <div className="flex items-start gap-2">
+                  {!n.readAt && <div className="w-2 h-2 rounded-full bg-red-500 mt-1.5 shrink-0" />}
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-slate-900 truncate">{n.title}</p>
+                    <p className="text-xs text-slate-500 line-clamp-2">{n.body}</p>
+                    <p className="text-[10px] text-slate-400 mt-1">
+                      {new Date(n.createdAt).toLocaleDateString('de-CH')} – {new Date(n.createdAt).toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  </div>
+                </div>
+              </button>
+            ))
+          )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -300,7 +305,7 @@ function AdminSidebar({
       className={`
         fixed md:relative inset-y-0 left-0 z-50
         bg-white/90 backdrop-blur-2xl border-r border-slate-200/60 shadow-[4px_0_24px_rgba(0,0,0,0.02)]
-        transition-all duration-[400ms] ease-[cubic-bezier(0.25,1,0.5,1)] flex flex-col
+        transition-[width,transform] duration-300 ease-collapse flex flex-col
         ${isMobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
         ${isExpanded ? 'w-72' : 'w-[84px]'}
       `}
@@ -380,7 +385,7 @@ function AdminSidebar({
                   strokeWidth={active ? 2.5 : 2}
                 />
                 <span
-                  className={`transition-all duration-300 whitespace-nowrap ${
+                  className={`transition-[width,margin,opacity,transform] duration-300 ease-collapse whitespace-nowrap ${
                     isExpanded
                       ? 'ml-3 w-auto opacity-100 translate-x-0'
                       : 'ml-0 w-0 opacity-0 -translate-x-4 hidden'
@@ -446,6 +451,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
 
   const [isExpanded, setIsExpanded] = useState(true);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const isDesktop = useMediaQuery('(min-width: 768px)');
 
   // Restore saved collapsed state
   useEffect(() => {
@@ -455,14 +461,10 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
     } catch { /* ignore localStorage errors */ }
   }, []);
 
-  // Close mobile sidebar on desktop resize
+  // Close mobile sidebar once the viewport crosses into desktop
   useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth >= 768) setIsMobileOpen(false);
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+    if (isDesktop) setIsMobileOpen(false);
+  }, [isDesktop]);
 
   // --- Public routes (login, reset) ---
   if (isPublicRoute) return <>{children}</>;

@@ -7,6 +7,7 @@ import {
   type IBookingRepository,
   type IVehicleRepository,
   type IPricingRuleRepository,
+  type IVehicleMaintenanceRepository,
 } from '../../../domain';
 
 interface CreateBookingInput {
@@ -24,6 +25,7 @@ export class CreateBookingUseCase {
     private bookingRepo: IBookingRepository,
     private vehicleRepo: IVehicleRepository,
     private pricingRuleRepo: IPricingRuleRepository,
+    private maintenanceRepo: IVehicleMaintenanceRepository,
   ) {}
 
   async execute(input: CreateBookingInput): Promise<Booking> {
@@ -50,6 +52,12 @@ export class CreateBookingUseCase {
     );
     if (overlap) {
       throw new Error('Vehicle is already booked for the selected dates');
+    }
+
+    // Check for overlapping maintenance/decommission periods
+    const maintenanceOverlap = await this.maintenanceRepo.findOverlapping(input.vehicleId, dateRange);
+    if (maintenanceOverlap.length > 0) {
+      throw new Error('Vehicle is under maintenance for the selected dates');
     }
 
     // Use admin-supplied price or calculate from pricing rules

@@ -1,4 +1,5 @@
 import { Search, CalendarCheck, CarFront } from 'lucide-react';
+import type { HowItWorksContent } from '@/types/homepage-sections';
 
 const STEP_ICONS = [Search, CalendarCheck, CarFront];
 
@@ -23,12 +24,7 @@ const DEFAULT_STEPS = [
   },
 ];
 
-export interface HowItWorksContent {
-  label?: string;
-  heading?: string;
-  description?: string;
-  steps?: { number?: string; title: string; description: string; time?: string }[];
-}
+export type { HowItWorksContent };
 
 interface HowItWorksProps {
   content?: HowItWorksContent;

@@ -101,7 +101,7 @@ export function CookieConsentProvider({ children }: { children: ReactNode }) {
  * Only inject GA4 after user explicitly opts in (FADP zero-cookie load).
  */
 function injectGA4() {
-  const measurementId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
+  const measurementId = process.env.NEXT_PUBLIC_GA4_ID;
   if (!measurementId || typeof window === 'undefined') return;
   if (document.getElementById('ga4-script')) return;
 

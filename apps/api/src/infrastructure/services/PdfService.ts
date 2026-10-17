@@ -1,4 +1,11 @@
+import path from 'path';
+import fs from 'fs/promises';
 import { PDFDocument, rgb, StandardFonts, PDFPage, PDFFont } from 'pdf-lib';
+import { CONTRACT_CLAUSES, renderClause } from './contractTemplate';
+
+// Checked into the repo at apps/api/assets/legal/agb.pdf — kept in sync with
+// apps/web/public/agb.pdf until legal supplies a single canonical source.
+const AGB_PDF_PATH = path.join(__dirname, '../../../assets/legal/agb.pdf');
 
 /* ================================================================
  * Shared types
@@ -96,6 +103,11 @@ export class PdfService {
     Object.assign(this.company, overrides);
   }
 
+  /** Used by the contract-preview endpoint to render clauses identically to the PDF. */
+  getCompanyName(): string {
+    return this.company.name;
+  }
+
   /* ──────────────────────────────────────────────────────────── *
    *  CONTRACT PDF                                                *
    * ──────────────────────────────────────────────────────────── */
@@ -110,7 +122,7 @@ export class PdfService {
     const gray = rgb(0.4, 0.4, 0.4);
     const lightGray = rgb(0.93, 0.93, 0.93);
 
-    const page = pdfDoc.addPage([595.28, 841.89]); // A4
+    let page = pdfDoc.addPage([595.28, 841.89]); // A4
     const { width, height } = page.getSize();
     let y = height - 60;
 
@@ -208,26 +220,30 @@ export class PdfService {
       }
     }
 
-    // ── Terms ─────────────────────────────────────
+    // ── Terms (structured, editable clause data — see contractTemplate.ts) ──
     y -= 30;
     page.drawText('Allgemeine Mietbedingungen', { x: 50, y, size: 11, font: helveticaBold, color: black });
     y -= 5;
     page.drawRectangle({ x: 50, y, width: width - 100, height: 1, color: brandRed });
     y -= 18;
-    const terms = [
-      'Der Mieter verpflichtet sich, das Fahrzeug sorgfältig zu behandeln und in gleichem Zustand zurückzugeben.',
-      'Bei Schäden oder Unfällen ist die Vermieterin unverzüglich zu benachrichtigen.',
-      'Das Fahrzeug darf nur vom Mieter oder einer bevollmächtigten Person gefahren werden.',
-      'Die Kaution wird nach Rückgabe und Überprüfung des Fahrzeugs zurückerstattet.',
-      'Gerichtsstand ist der Sitz der Vermieterin. Es gilt Schweizer Recht.',
-    ];
-    for (const term of terms) {
-      const lines = this.wrapText(`• ${term}`, helvetica, 8, width - 120);
-      for (const line of lines) {
-        page.drawText(line, { x: 55, y, size: 8, font: helvetica, color: gray });
-        y -= 13;
+
+    const MIN_Y = 220; // leaves room for the signature block below
+    for (const clause of CONTRACT_CLAUSES) {
+      const body = renderClause(clause.body, { companyName: this.company.name });
+      const bodyLines = this.wrapText(body, helvetica, 8, width - 120);
+
+      if (y - (14 + bodyLines.length * 12) < MIN_Y) {
+        page = pdfDoc.addPage([width, height]);
+        y = height - 60;
       }
-      y -= 2;
+
+      page.drawText(clause.heading, { x: 50, y, size: 9, font: helveticaBold, color: black });
+      y -= 12;
+      for (const line of bodyLines) {
+        page.drawText(line, { x: 55, y, size: 8, font: helvetica, color: gray });
+        y -= 12;
+      }
+      y -= 6;
     }
 
     // ── Signatures ────────────────────────────────
@@ -287,6 +303,16 @@ export class PdfService {
       `HoppDrive – ${this.company.name} | hoppdrive.ch`,
       { x: 50, y: 30, size: 7, font: helvetica, color: rgb(0.6, 0.6, 0.6) },
     );
+
+    // ── Attach the real AGB as trailing pages ──────
+    try {
+      const agbBytes = await fs.readFile(AGB_PDF_PATH);
+      const agbDoc = await PDFDocument.load(agbBytes);
+      const agbPages = await pdfDoc.copyPages(agbDoc, agbDoc.getPageIndices());
+      agbPages.forEach((p) => pdfDoc.addPage(p));
+    } catch (err) {
+      console.error('[PdfService] Failed to attach AGB to contract:', err);
+    }
 
     return pdfDoc.save();
   }

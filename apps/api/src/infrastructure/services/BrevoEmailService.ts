@@ -1,35 +1,54 @@
+import { BrevoClient } from '@getbrevo/brevo';
 import type { IEmailService } from '../../application/interfaces/IEmailService';
 
 /**
- * Brevo (formerly Sendinblue) email integration.
- * In production, use @getbrevo/brevo SDK.
- * This is a structured placeholder that logs the operations.
+ * Brevo (formerly Sendinblue) email integration, using the official
+ * @getbrevo/brevo SDK (v6 — a from-scratch rewrite; its API bears no
+ * resemblance to the older sib-api-v3-sdk-style calls, so don't copy
+ * examples from pre-v6 docs).
  */
 export class BrevoEmailService implements IEmailService {
+  private client: BrevoClient | null;
+
   constructor(
     private apiKey: string,
     private senderEmail: string,
     private senderName: string,
     private adminEmail: string,
-  ) {}
+  ) {
+    this.client = apiKey ? new BrevoClient({ apiKey }) : null;
+  }
 
-  async sendContactConfirmation(to: string, customerName: string): Promise<void> {
-    if (!this.apiKey) {
-      console.log(`[Email] SKIP (no API key) – Confirmation to ${to}`);
+  private async send(options: {
+    to: { email: string; name?: string }[];
+    subject: string;
+    htmlContent: string;
+    attachment?: { name: string; content: string }[];
+  }): Promise<void> {
+    if (!this.client) {
+      console.log(`[Email] SKIP (no API key) – "${options.subject}" to ${options.to.map((t) => t.email).join(', ')}`);
       return;
     }
 
-    // In production:
-    // const brevo = new SibApiV3Sdk.TransactionalEmailsApi();
-    // brevo.setApiKey(SibApiV3Sdk.TransactionalEmailsApiApiKeys.apiKey, this.apiKey);
-    // await brevo.sendTransacEmail({
-    //   sender: { email: this.senderEmail, name: this.senderName },
-    //   to: [{ email: to, name: customerName }],
-    //   subject: 'Your inquiry has been received – HoppDrive',
-    //   htmlContent: `<p>Dear ${customerName},</p><p>Thank you for your inquiry. We will get back to you within 24 hours.</p>`,
-    // });
+    await this.client.transactionalEmails.sendTransacEmail({
+      sender: { email: this.senderEmail, name: this.senderName },
+      to: options.to,
+      subject: options.subject,
+      htmlContent: options.htmlContent,
+      ...(options.attachment ? { attachment: options.attachment } : {}),
+    });
+  }
 
-    console.log(`[Email] Sent confirmation to ${to} (${customerName})`);
+  async sendContactConfirmation(to: string, customerName: string): Promise<void> {
+    await this.send({
+      to: [{ email: to, name: customerName }],
+      subject: 'Ihre Anfrage ist eingegangen – HoppDrive',
+      htmlContent: [
+        `<p>Guten Tag ${customerName},</p>`,
+        `<p>Vielen Dank für Ihre Anfrage. Wir melden uns innerhalb von 24 Stunden bei Ihnen.</p>`,
+        `<p>Freundliche Grüsse,<br/>Ihr HoppDrive Team</p>`,
+      ].join(''),
+    });
   }
 
   async sendAdminNotification(
@@ -37,20 +56,15 @@ export class BrevoEmailService implements IEmailService {
     customerName: string,
     message: string,
   ): Promise<void> {
-    if (!this.apiKey) {
-      console.log(`[Email] SKIP (no API key) – Admin notification for request ${contactRequestId}`);
-      return;
-    }
-
-    console.log(
-      `[Email] Sent admin notification to ${this.adminEmail} – New inquiry from ${customerName}: "${message.substring(0, 50)}..."`,
-    );
+    await this.send({
+      to: [{ email: this.adminEmail }],
+      subject: `Neue Anfrage von ${customerName}`,
+      htmlContent: `<p>Neue Anfrage (${contactRequestId}) von <strong>${customerName}</strong>:</p><p>${message}</p>`,
+    });
   }
 
   /**
-   * Send signed rental contract PDF via email.
-   * Ready for Brevo integration — currently logs the action.
-   * When Brevo is configured, uncomment the SDK call below.
+   * Send signed rental contract PDF (contract clauses + attached AGB) via email.
    */
   async sendContractEmail(options: {
     to: string;
@@ -59,37 +73,103 @@ export class BrevoEmailService implements IEmailService {
     pdfBytes: Uint8Array;
   }): Promise<void> {
     const { to, customerName, bookingId, pdfBytes } = options;
+    const ref = bookingId.substring(0, 8).toUpperCase();
 
-    if (!this.apiKey) {
-      console.log(
-        `[Email] SKIP (no API key) – Contract email to ${to} for booking ${bookingId} (${(pdfBytes.length / 1024).toFixed(1)} KB PDF)`,
-      );
-      return;
-    }
+    await this.send({
+      to: [{ email: to, name: customerName }],
+      subject: `Ihr HoppDrive Mietvertrag – ${ref}`,
+      htmlContent: [
+        `<p>Guten Tag ${customerName},</p>`,
+        `<p>Vielen Dank, dass Sie sich für HoppDrive entschieden haben.</p>`,
+        `<p>Anbei finden Sie Ihren unterschriebenen Mietvertrag inklusive AGB als PDF.</p>`,
+        `<p>Bei Fragen stehen wir Ihnen jederzeit zur Verfügung.</p>`,
+        `<p>Freundliche Grüsse,<br/>Ihr HoppDrive Team</p>`,
+      ].join(''),
+      attachment: [{
+        name: `HoppDrive_Mietvertrag_${ref}.pdf`,
+        content: Buffer.from(pdfBytes).toString('base64'),
+      }],
+    });
+  }
 
-    // ─── Brevo SDK integration (uncomment when API key is set) ──────
-    // const SibApiV3Sdk = require('@getbrevo/brevo');
-    // const apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
-    // apiInstance.setApiKey(SibApiV3Sdk.TransactionalEmailsApiApiKeys.apiKey, this.apiKey);
-    // await apiInstance.sendTransacEmail({
-    //   sender: { email: this.senderEmail, name: this.senderName },
-    //   to: [{ email: to, name: customerName }],
-    //   subject: `Ihr HoppDrive Mietvertrag – ${bookingId.substring(0, 8).toUpperCase()}`,
-    //   htmlContent: [
-    //     `<p>Guten Tag ${customerName},</p>`,
-    //     `<p>Vielen Dank, dass Sie sich für HoppDrive entschieden haben.</p>`,
-    //     `<p>Anbei finden Sie Ihren unterschriebenen Mietvertrag als PDF.</p>`,
-    //     `<p>Bei Fragen stehen wir Ihnen jederzeit zur Verfügung.</p>`,
-    //     `<p>Freundliche Grüsse,<br/>Ihr HoppDrive Team</p>`,
-    //   ].join(''),
-    //   attachment: [{
-    //     name: `HoppDrive_Mietvertrag_${bookingId.substring(0, 8).toUpperCase()}.pdf`,
-    //     content: Buffer.from(pdfBytes).toString('base64'),
-    //   }],
-    // });
+  async sendBookingConfirmation(options: {
+    to: string;
+    customerName: string;
+    vehicleName: string;
+    startDate: Date;
+    endDate: Date;
+    totalPrice: number;
+    currency: string;
+  }): Promise<void> {
+    const { to, customerName, vehicleName, startDate, endDate, totalPrice, currency } = options;
+    const fmt = (d: Date) => d.toLocaleDateString('de-CH');
 
-    console.log(
-      `[Email] Sent contract to ${to} (${customerName}) for booking ${bookingId} – ${(pdfBytes.length / 1024).toFixed(1)} KB PDF`,
-    );
+    await this.send({
+      to: [{ email: to, name: customerName }],
+      subject: `Ihre Buchungsbestätigung – ${vehicleName}`,
+      htmlContent: [
+        `<p>Guten Tag ${customerName},</p>`,
+        `<p>Ihre Reservierung für <strong>${vehicleName}</strong> vom ${fmt(startDate)} bis ${fmt(endDate)} wurde erfasst.</p>`,
+        `<p>Gesamtpreis: <strong>${currency} ${totalPrice.toFixed(2)}</strong></p>`,
+        `<p>Wir freuen uns auf Sie!</p>`,
+        `<p>Freundliche Grüsse,<br/>Ihr HoppDrive Team</p>`,
+      ].join(''),
+    });
+  }
+
+  async sendInvoiceEmail(options: {
+    to: string;
+    customerName: string;
+    invoiceNumber: string;
+    pdfBytes: Uint8Array;
+  }): Promise<void> {
+    const { to, customerName, invoiceNumber, pdfBytes } = options;
+
+    await this.send({
+      to: [{ email: to, name: customerName }],
+      subject: `Ihre Rechnung ${invoiceNumber} – HoppDrive`,
+      htmlContent: [
+        `<p>Guten Tag ${customerName},</p>`,
+        `<p>Anbei erhalten Sie Ihre Rechnung <strong>${invoiceNumber}</strong> als PDF.</p>`,
+        `<p>Freundliche Grüsse,<br/>Ihr HoppDrive Team</p>`,
+      ].join(''),
+      attachment: [{
+        name: `HoppDrive_Rechnung_${invoiceNumber}.pdf`,
+        content: Buffer.from(pdfBytes).toString('base64'),
+      }],
+    });
+  }
+
+  async sendDeclineEmail(options: {
+    to: string;
+    customerName: string;
+    reason?: string;
+  }): Promise<void> {
+    const { to, customerName, reason } = options;
+
+    await this.send({
+      to: [{ email: to, name: customerName }],
+      subject: 'Ihre Anfrage bei HoppDrive',
+      htmlContent: [
+        `<p>Guten Tag ${customerName},</p>`,
+        `<p>Leider können wir Ihre Anfrage derzeit nicht bestätigen.</p>`,
+        reason ? `<p>${reason}</p>` : '',
+        `<p>Gerne helfen wir Ihnen bei einer alternativen Buchung weiter.</p>`,
+        `<p>Freundliche Grüsse,<br/>Ihr HoppDrive Team</p>`,
+      ].join(''),
+    });
+  }
+
+  async sendPromotionalEmail(options: {
+    to: string;
+    customerName: string;
+    subject: string;
+    htmlContent: string;
+  }): Promise<void> {
+    await this.send({
+      to: [{ email: options.to, name: options.customerName }],
+      subject: options.subject,
+      htmlContent: options.htmlContent,
+    });
   }
 }

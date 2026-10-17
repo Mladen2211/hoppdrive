@@ -1,12 +1,13 @@
 import type { Metadata } from 'next';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
+import { buildMetadata } from '@/lib/seo';
 
-export const metadata: Metadata = {
-  title: 'Impressum – HoppDrive Günstige Autovermietung Schweiz',
+export const metadata: Metadata = buildMetadata({
+  title: 'Impressum',
   description: 'Impressum und Firmeninformationen von HoppDrive – Ihrer günstigen Autovermietung in der Schweiz.',
-  robots: { index: true, follow: true },
-};
+  path: '/impressum',
+});
 
 export default function ImpressumPage() {
   return (

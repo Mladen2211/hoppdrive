@@ -1,12 +1,13 @@
 import type { Metadata } from 'next';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
+import { buildMetadata } from '@/lib/seo';
 
-export const metadata: Metadata = {
-  title: 'AGB – Allgemeine Geschäftsbedingungen | HoppDrive Autovermietung Schweiz',
+export const metadata: Metadata = buildMetadata({
+  title: 'AGB',
   description: 'Allgemeine Geschäftsbedingungen (AGB) von HoppDrive – Ihrer günstigen Autovermietung in der Schweiz.',
-  robots: { index: true, follow: true },
-};
+  path: '/agb',
+});
 
 export default function AGBPage() {
   return (

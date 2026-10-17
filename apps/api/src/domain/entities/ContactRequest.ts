@@ -7,6 +7,7 @@ export type ContactRequestStatus =
   | 'reviewed'
   | 'responded'
   | 'converted'
+  | 'denied'
   | 'archived';
 
 export interface ContactRequestProps {
@@ -78,6 +79,11 @@ export class ContactRequest extends Entity {
 
   markConverted(): void {
     this.status = 'converted';
+    this.updatedAt = new Date();
+  }
+
+  deny(): void {
+    this.status = 'denied';
     this.updatedAt = new Date();
   }
 

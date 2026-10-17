@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useMemo, useCallback } from 'react';
-import { Search, ChevronLeft, ChevronRight, CalendarPlus, Loader2, Car } from 'lucide-react';
+import { Search, ChevronLeft, ChevronRight, CalendarPlus, Loader2, Car, Check, Ban } from 'lucide-react';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { StatusBadge } from '@/components/StatusBadge';
 import { api } from '@/lib/api';
@@ -20,15 +20,6 @@ interface Inquiry {
   marketingConsent: boolean;
   createdAt: string;
 }
-
-const STATUS_OPTIONS = ['pending', 'reviewed', 'responded', 'converted', 'archived'];
-const STATUS_LABELS: Record<string, string> = {
-  pending: 'Neu',
-  reviewed: 'Geprüft',
-  responded: 'Beantwortet',
-  converted: 'Buchung erstellt',
-  archived: 'Archiviert',
-};
 
 function fmtDate(d?: string) {
   if (!d) return '—';
@@ -49,6 +40,9 @@ export default function InquiriesPage() {
   const [convertMsg, setConvertMsg] = useState<{ id: string; ok: boolean; text: string } | null>(null);
   const [assignedVehicle, setAssignedVehicle] = useState<Record<string, string>>({});
   const [bookings, setBookings] = useState<any[]>([]);
+  const [denyingId, setDenyingId] = useState<string | null>(null);
+  const [denyReason, setDenyReason] = useState('');
+  const [denying, setDenying] = useState<string | null>(null);
 
   async function fetchInquiries(pageNum = 1, silent = false) {
     if (!token) return;
@@ -145,7 +139,7 @@ export default function InquiriesPage() {
   }
 
   /** Convert inquiry to a booking → auto-sets status to "converted" */
-  async function handleConvertToBooking(inq: Inquiry) {
+  async function handleApprove(inq: Inquiry) {
     if (!inq.desiredStartDate || !inq.desiredEndDate) {
       setConvertMsg({ id: inq.id, ok: false, text: 'Kein Start-/Enddatum in der Anfrage vorhanden.' });
       return;
@@ -177,14 +171,9 @@ export default function InquiriesPage() {
     setConverting(inq.id);
     setConvertMsg(null);
     try {
-      await api.createBooking({
-        vehicleId,
-        customerName: inq.fullName,
-        startDate: new Date(inq.desiredStartDate).toISOString(),
-        endDate: new Date(inq.desiredEndDate).toISOString(),
-        notes: `Aus Anfrage übernommen (${inq.email})`,
-      });
-      await api.updateContactStatus(inq.id, 'converted');
+      // Atomic on the server: creates the booking and marks the inquiry
+      // "converted" in a single transaction — no partial state possible.
+      await api.approveInquiry(inq.id, { vehicleId });
       setInquiries((prev) =>
         prev.map((i) => (i.id === inq.id ? { ...i, status: 'converted' } : i))
       );
@@ -193,6 +182,28 @@ export default function InquiriesPage() {
       setConvertMsg({ id: inq.id, ok: false, text: err.message || 'Fehler beim Erstellen der Buchung.' });
     } finally {
       setConverting(null);
+    }
+  }
+
+  function startDeny(id: string) {
+    setDenyingId(id);
+    setDenyReason('');
+    setConvertMsg(null);
+  }
+
+  async function handleDeny(inq: Inquiry) {
+    setDenying(inq.id);
+    try {
+      await api.denyInquiry(inq.id, { reason: denyReason.trim() || undefined });
+      setInquiries((prev) =>
+        prev.map((i) => (i.id === inq.id ? { ...i, status: 'denied' } : i))
+      );
+      setDenyingId(null);
+      setDenyReason('');
+    } catch (err: any) {
+      setConvertMsg({ id: inq.id, ok: false, text: err.message || 'Ablehnung konnte nicht gespeichert werden.' });
+    } finally {
+      setDenying(null);
     }
   }
 
@@ -309,29 +320,21 @@ export default function InquiriesPage() {
                                     Marketing: {inq.marketingConsent ? '✓ Ja' : '✗ Nein'}
                                   </p>
                                 </div>
-                                <div>
-                                  <p className="text-xs font-semibold text-neutral-500 uppercase mb-1">
-                                    Status ändern
-                                  </p>
-                                  <select
-                                    value={inq.status}
+                                {inq.status === 'pending' && (
+                                  <button
                                     disabled={updating === inq.id}
-                                    onChange={(e) =>
-                                      handleStatusChange(inq.id, e.target.value)
-                                    }
-                                    onClick={(e) => e.stopPropagation()}
-                                    className="border border-neutral-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 w-full"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleStatusChange(inq.id, 'reviewed');
+                                    }}
+                                    className="text-xs font-medium text-neutral-500 hover:text-neutral-700 underline decoration-dotted"
                                   >
-                                    {STATUS_OPTIONS.map((s) => (
-                                      <option key={s} value={s}>
-                                        {STATUS_LABELS[s] || s}
-                                      </option>
-                                    ))}
-                                  </select>
-                                </div>
+                                    Als geprüft markieren
+                                  </button>
+                                )}
 
-                                {/* Convert to Booking button */}
-                                {inq.status !== 'converted' && (
+                                {/* Approve / Deny */}
+                                {!['converted', 'denied', 'archived'].includes(inq.status) && (
                                   <div className="space-y-2">
                                     {/* Vehicle assignment */}
                                     <div>
@@ -374,21 +377,66 @@ export default function InquiriesPage() {
                                       )}
                                     </div>
 
-                                    <button
-                                      disabled={converting === inq.id}
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleConvertToBooking(inq);
-                                      }}
-                                      className="w-full flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-700 disabled:bg-brand-400 text-white text-sm font-medium py-2 px-3 rounded-lg transition-colors"
-                                    >
-                                      {converting === inq.id ? (
-                                        <Loader2 className="w-4 h-4 animate-spin" />
-                                      ) : (
-                                        <CalendarPlus className="w-4 h-4" />
-                                      )}
-                                      Buchung erstellen
-                                    </button>
+                                    <div className="flex gap-2">
+                                      <button
+                                        disabled={converting === inq.id}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleApprove(inq);
+                                        }}
+                                        className="flex-1 flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-700 disabled:bg-brand-400 text-white text-sm font-medium py-2 px-3 rounded-lg transition-colors"
+                                      >
+                                        {converting === inq.id ? (
+                                          <Loader2 className="w-4 h-4 animate-spin" />
+                                        ) : (
+                                          <Check className="w-4 h-4" />
+                                        )}
+                                        Genehmigen
+                                      </button>
+                                      <button
+                                        disabled={denying === inq.id}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          startDeny(inq.id);
+                                        }}
+                                        className="flex-1 flex items-center justify-center gap-2 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-sm font-medium py-2 px-3 rounded-lg transition-colors"
+                                      >
+                                        <Ban className="w-4 h-4" />
+                                        Ablehnen
+                                      </button>
+                                    </div>
+
+                                    {denyingId === inq.id && (
+                                      <div
+                                        className="p-2.5 bg-red-50 border border-red-200 rounded-lg space-y-2"
+                                        onClick={(e) => e.stopPropagation()}
+                                      >
+                                        <textarea
+                                          value={denyReason}
+                                          onChange={(e) => setDenyReason(e.target.value)}
+                                          placeholder="Grund für die Ablehnung (optional, wird dem Kunden per E-Mail mitgeteilt)"
+                                          rows={2}
+                                          className="w-full text-sm border border-red-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-red-400"
+                                        />
+                                        <div className="flex gap-2">
+                                          <button
+                                            disabled={denying === inq.id}
+                                            onClick={() => handleDeny(inq)}
+                                            className="flex-1 flex items-center justify-center gap-1.5 bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white text-xs font-medium py-1.5 rounded-lg transition-colors"
+                                          >
+                                            {denying === inq.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+                                            Ablehnung bestätigen
+                                          </button>
+                                          <button
+                                            onClick={() => setDenyingId(null)}
+                                            className="flex-1 bg-neutral-100 hover:bg-neutral-200 text-neutral-600 text-xs font-medium py-1.5 rounded-lg transition-colors"
+                                          >
+                                            Abbrechen
+                                          </button>
+                                        </div>
+                                      </div>
+                                    )}
+
                                     {convertMsg && convertMsg.id === inq.id && (
                                       <p
                                         className={`text-xs mt-1 ${
