@@ -1,52 +1,21 @@
+import { StatusPill, type StatusKind } from '@/components/ui';
+
 interface StatusBadgeProps {
   status: string;
 }
 
-const statusStyles: Record<string, string> = {
-  // Contact request statuses
-  pending: 'bg-blue-100 text-blue-700',
-  reviewed: 'bg-yellow-100 text-yellow-700',
-  responded: 'bg-purple-100 text-purple-700',
-  converted: 'bg-green-100 text-green-700',
-  denied: 'bg-red-100 text-red-700',
-  archived: 'bg-neutral-100 text-neutral-600',
-  // Booking statuses
-  reserved: 'bg-blue-100 text-blue-700',
-  active: 'bg-green-100 text-green-700',
-  completed: 'bg-neutral-100 text-neutral-700',
-  cancelled: 'bg-red-100 text-red-700',
-  // Contract statuses
-  PENDING: 'bg-amber-100 text-amber-700',
-  SIGNED: 'bg-green-100 text-green-700',
-  VOIDED: 'bg-red-100 text-red-700',
-};
+const CONTACT = ['pending', 'reviewed', 'responded', 'converted', 'denied', 'archived'];
+const BOOKING = ['reserved', 'active', 'completed', 'cancelled'];
 
-const statusLabels: Record<string, string> = {
-  // Contact request statuses
-  pending: 'Neu',
-  reviewed: 'Geprüft',
-  responded: 'Beantwortet',
-  converted: 'Buchung erstellt',
-  denied: 'Abgelehnt',
-  archived: 'Archiviert',
-  // Booking statuses
-  reserved: 'Reserviert',
-  active: 'Aktiv',
-  completed: 'Erledigt',
-  cancelled: 'Storniert',
-  // Contract statuses
-  PENDING: 'Ausstehend',
-  SIGNED: 'Signiert',
-  VOIDED: 'Storniert',
-};
-
+/**
+ * Legacy wrapper kept for existing imports; it only picks the right kind for <StatusPill>.
+ * Lower-case values are contact-request / booking statuses ('pending' = "Neu"), upper-case values
+ * are contract statuses (PENDING / SIGNED / VOIDED). New code should use <StatusPill kind=... />.
+ */
 export function StatusBadge({ status }: StatusBadgeProps) {
-  const style = statusStyles[status] || 'bg-neutral-100 text-neutral-600';
-  return (
-    <span
-      className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold ${style}`}
-    >
-      {statusLabels[status] || status}
-    </span>
-  );
+  let kind: StatusKind | undefined;
+  if (CONTACT.includes(status)) kind = 'contact';
+  else if (BOOKING.includes(status)) kind = 'booking';
+  else if (['PENDING', 'SIGNED', 'VOIDED'].includes(status)) kind = 'contract';
+  return <StatusPill kind={kind} status={status} />;
 }

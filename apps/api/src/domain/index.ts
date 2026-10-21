@@ -19,10 +19,26 @@ export { VehicleSpecs, type FuelType, type TransmissionType } from './value-obje
 export type { IVehicleRepository } from './repositories/IVehicleRepository';
 export type { IContactRequestRepository } from './repositories/IContactRequestRepository';
 export type { IAdminRepository } from './repositories/IAdminRepository';
-export type { IBookingRepository } from './repositories/IBookingRepository';
+export type { IBookingRepository, BookingExtras } from './repositories/IBookingRepository';
 export type { IPricingRuleRepository } from './repositories/IPricingRuleRepository';
 export type { IVehicleMaintenanceRepository } from './repositories/IVehicleMaintenanceRepository';
 export type { IAuditLogRepository } from './repositories/IAuditLogRepository';
+export type {
+  IPasswordResetTokenRepository,
+  PasswordResetTokenRecord,
+} from './repositories/IPasswordResetTokenRepository';
+export type { IReportingRepository } from './repositories/IReportingRepository';
 
 // ─── Domain Services ─────────────────────────────────────────
 export { PricingService, type PricingResult } from './services/PricingService';
+export {
+  type BookingSlice,
+  overlapMs,
+  proratedRevenue,
+  bookingDays,
+  round1,
+  round2,
+  percentChange,
+} from './services/RevenueCalculator';
+export * as TimeUtils from './services/TimeUtils';
+export { generateOpaqueToken, hashOpaqueToken } from './services/OpaqueToken';

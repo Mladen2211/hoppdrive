@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Anfragen Desktop</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./admin.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fira+Sans:wght@400;500;600;700&family=Fira+Sans+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>body{margin:0;background:#F2F2F2}</style>
+</helmet>
+<div class="ad shell">
+
+  <div style="background:#fff;border-right:1px solid var(--line)">
+    <dc-import name="AdminNav" current="Anfragen" hint-size="264px,100%"></dc-import>
+  </div>
+
+  <div style="min-width:0;display:flex;flex-direction:column">
+    <header class="top">
+      <label class="search"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM21 21l-4.3-4.3"/></svg><span style="position:absolute;left:-9999px">Suche</span><input type="search" placeholder="Name, E-Mail, Fahrzeug oder Vertrag suchen…"></label>
+      <div style="margin-left:auto;display:flex;gap:12px;align-items:center">
+        <a class="btn btn-p" href="Calendar-Desktop.dc.html"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Neue Buchung</a>
+        <button class="icon-btn" type="button" aria-label="Benachrichtigungen, 4 ungelesen"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><span class="dot">4</span></button>
+      </div>
+    </header>
+
+    <div class="drawer-wrap" style="flex:1">
+      <main class="main">
+        <div class="pg-h">
+          <div><h1 class="h1">Anfragen</h1><p>Eingänge aus dem Formular der Website</p></div>
+          <button class="btn btn-g" type="button"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>CSV exportieren</button>
+        </div>
+
+        <nav class="pipe" aria-label="Anfragen nach Stand">
+          <a href="#" aria-current="true"><span class="sm mut">Neu</span><b class="num">3</b></a>
+          <a href="#"><span class="sm mut">Geprüft</span><b class="num">2</b></a>
+          <a href="#"><span class="sm mut">Beantwortet</span><b class="num">4</b></a>
+          <a href="#"><span class="sm mut">Buchung erstellt</span><b class="num">11</b></a>
+        </nav>
+
+        <section class="panel" aria-labelledby="in-h">
+          <div class="panel-h">
+            <h2 class="h2" id="in-h">Alle Anfragen</h2>
+            <div class="tabs" role="tablist" aria-label="Filter">
+              <button class="tab" role="tab" aria-selected="true" type="button">Offen <small>5</small></button>
+              <button class="tab" role="tab" aria-selected="false" type="button">Alle <small>20</small></button>
+              <button class="tab" role="tab" aria-selected="false" type="button">Abgelehnt <small>2</small></button>
+            </div>
+          </div>
+          <div class="scroll">
+            <table class="tbl">
+              <thead><tr><th>Kunde</th><th>Fahrzeug und Zeitraum</th><th>Stand</th><th class="r"><span style="position:absolute;left:-9999px">Öffnen</span></th></tr></thead>
+              <tbody>
+                <sc-for list="{{rows}}" as="r" hint-placeholder-count="7">
+                  <tr class="{{r.sel}}">
+                    <td><div class="cell-2"><b>{{r.name}}</b><span>{{r.when}}</span></div></td>
+                    <td><div class="cell-2">{{r.car}}<span class="num">{{r.period}}</span></div></td>
+                    <td><span class="st {{r.cls}}">{{r.status}}</span></td>
+                    <td><div class="acts"><button class="ib" type="button" aria-label="Anfrage von {{r.name}} öffnen"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button></div></td>
+                  </tr>
+                </sc-for>
+              </tbody>
+            </table>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 20px;border-top:1px solid var(--line-s)">
+            <span class="sm mut">1–7 von 20</span>
+            <div style="display:flex;gap:6px"><button class="btn btn-g btn-s" type="button" disabled>Zurück</button><button class="btn btn-g btn-s" type="button">Weiter</button></div>
+          </div>
+        </section>
+      </main>
+
+      <aside class="drawer" aria-label="Anfrage Details">
+        <div class="drawer-h">
+          <div><h2 class="h2">Sarah Zürcher</h2><div style="margin-top:6px;display:flex;gap:8px;align-items:center"><span class="st s-amber">Neu</span><span class="sm mut">Eingang vor 2 Tagen</span></div></div>
+          <button class="ib" type="button" aria-label="Detail schliessen"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+        </div>
+        <div class="drawer-b">
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <a class="btn btn-g btn-s" href="#"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zM22 6l-10 7L2 6"/></svg>sarah.zuercher@beispiel.ch</a>
+            <a class="btn btn-g btn-s" href="#"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></svg>+41 79 555 03 47</a>
+          </div>
+
+          <dl style="display:grid;grid-template-columns:120px 1fr;gap:10px 12px">
+            <dt class="mut">Fahrzeug</dt><dd><b>Škoda Superb Combi</b></dd>
+            <dt class="mut">Zeitraum</dt><dd class="num" style="font-size:16px">07.12. – 20.12. (14 Tage)</dd>
+            <dt class="mut">Abholung</dt><dd>[Standort], vormittags</dd>
+          </dl>
+
+          <div>
+            <div class="lbl" style="margin-bottom:6px">Nachricht</div>
+            <p style="background:var(--paper);border-radius:12px;padding:12px 14px">Wir brauchen den Wagen für zwei Wochen über die Festtage, mit Platz für zwei Kindersitze. Ist eine Dachbox möglich?</p>
+          </div>
+
+          <div style="border:1.5px solid var(--line);border-radius:14px;padding:14px 16px">
+            <div style="display:flex;justify-content:space-between;align-items:baseline"><b>Richtpreis</b><b class="num" style="font-size:26px">CHF 995.40</b></div>
+            <div class="sm mut" style="margin-top:6px">7 Tage × 79.00 + 7 Tage × 63.20 (20 % ab Tag 8). Gestaffelt, wie die Preisberechnung der API.</div>
+          </div>
+
+          <div>
+            <div class="lbl" style="margin-bottom:8px">Verlauf</div>
+            <ul style="display:flex;flex-direction:column;gap:8px">
+              <li class="sm" style="display:flex;gap:10px"><span style="width:10px;height:10px;border-radius:50%;background:var(--warn);margin-top:5px;flex:none"></span>Anfrage eingegangen, 2 Tage her</li>
+              <li class="sm mut" style="display:flex;gap:10px"><span style="width:10px;height:10px;border-radius:50%;border:2px solid var(--line);margin-top:5px;flex:none"></span>Noch keine Antwort gesendet</li>
+            </ul>
+          </div>
+
+          <details open style="border:1.5px solid var(--line);border-radius:14px;padding:14px 16px">
+            <summary style="font-weight:600;cursor:pointer;min-height:28px">Ablehnen mit Begründung</summary>
+            <div class="fld" style="margin-top:10px"><label for="why">Grund (wird in der E-Mail genannt)</label><textarea class="in" id="why" rows="3">Im gewünschten Zeitraum ist das Fahrzeug leider vergeben.</textarea></div>
+            <div style="display:flex;gap:8px;margin-top:12px"><button class="btn btn-d btn-s" type="button">Anfrage ablehnen</button><button class="btn btn-g btn-s" type="button">Abbrechen</button></div>
+          </details>
+        </div>
+        <div class="drawer-f">
+          <button class="btn btn-p" type="button" style="flex:1">In Buchung umwandeln</button>
+          <button class="btn btn-o" type="button">Als beantwortet markieren</button>
+        </div>
+      </aside>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1250}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const r = (name, when, car, period, status, cls, sel) => ({ name, when, car, period, status, cls, sel: sel ? 'sel' : 'plain' });
+    return {
+      rows: [
+        r('Sarah Zürcher', 'Vor 2 Tagen', 'Škoda Superb Combi', '07.12. – 20.12.', 'Neu', 's-amber', true),
+        r('David Aebi', 'Vor 1 Tag', 'Hyundai Tucson', '28.11. – 30.11.', 'Neu', 's-amber'),
+        r('Mira Baumann', 'Heute, 08:12', 'Škoda Enyaq iV', '02.12. – 09.12.', 'Neu', 's-amber'),
+        r('Reto Gerber', 'Vor 3 Tagen', 'VW Passat Variant', '15.12. – 22.12.', 'Geprüft', 's-blue'),
+        r('Anja Steiner', 'Vor 4 Tagen', 'Škoda Kodiaq', '20.12. – 03.01.', 'Geprüft', 's-blue'),
+        r('Luca Moser', 'Vor 5 Tagen', 'Škoda Octavia', '01.12. – 05.12.', 'Beantwortet', 's-vio'),
+        r('Julia Weber', 'Vor 6 Tagen', 'Škoda Superb Combi', '10.12. – 12.12.', 'Beantwortet', 's-vio')
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,236 +1,309 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import type { Container } from '../../infrastructure/config/container';
 import { createAuthMiddleware } from '../middleware/authMiddleware';
-import type { InvoiceLineItem } from '../../infrastructure/services/PdfService';
+import { createPermissionMiddleware } from '../middleware/permissionMiddleware';
+import { createAuditMiddleware, setAuditDetails, vehicleLabel } from '../middleware/auditMiddleware';
+import { validate, createInvoiceSchema } from '../validators';
+import { invoiceInclude, mapInvoice, InvoiceService } from '../../infrastructure/services/InvoiceService';
 
-// Fallback only — the real rate is configurable via SiteSetting "invoice_settings".vatRate
-// (Settings → Rechnungsinfos), used whenever a request doesn't explicitly override it.
-const DEFAULT_VAT_RATE = 8.1;
+export { mapInvoice };
+
+/** ?qr=1 | true -> true, ?qr=0 | false -> false, absent -> undefined (the invoice's own withQrBill flag). */
+function qrFlag(value: unknown): boolean | undefined {
+  if (value === undefined) return undefined;
+  const v = String(value).toLowerCase();
+  if (v === '1' || v === 'true' || v === 'yes') return true;
+  if (v === '0' || v === 'false' || v === 'no') return false;
+  return undefined;
+}
 
 export function invoiceRoutes(container: Container): Router {
   const router = Router();
   const auth = createAuthMiddleware(container.tokenService);
+  const access = createPermissionMiddleware(container.prisma);
+  const audit = createAuditMiddleware(container.auditLogRepo);
+  // All invoice routes belong to "Verträge und Rechnungen" (GET = view, mutations = edit).
+  const contracts = access.requirePermission('contracts');
+  const invoices = container.invoiceService;
+
+  /** { invoiceNumber, customerName } of the invoice in :id, for the activity log. */
+  const describeInvoice = (extra?: (req: Request) => Record<string, unknown>) => async (req: Request) => {
+    const inv = await container.prisma.invoice.findUnique({
+      where: { id: req.params.id },
+      select: { invoiceNumber: true, customerName: true, type: true },
+    });
+    return { invoiceNumber: inv?.invoiceNumber, customerName: inv?.customerName, type: inv?.type, ...(extra ? extra(req) : {}) };
+  };
 
   /* ────────────────────────────────────────────────────────────
-   *  GET /api/invoices – List invoices, optionally by bookingId
+   *  GET /api/invoices – List invoices, optionally by bookingId / status / type
    * ──────────────────────────────────────────────────────────── */
-  router.get('/', auth, async (req: Request, res: Response, next: NextFunction) => {
+  router.get('/', auth, contracts, async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { status, bookingId } = req.query;
-      const where: any = {};
+      const { status, bookingId, type } = req.query;
+      const where: Record<string, unknown> = {};
       if (status) where.status = status;
       if (bookingId) where.bookingId = bookingId;
+      if (type) where.type = type;
 
-      const invoices = await container.prisma.invoice.findMany({
+      const rows = await container.prisma.invoice.findMany({
         where,
         orderBy: { createdAt: 'desc' },
-        include: { booking: { include: { vehicle: true } } },
+        include: invoiceInclude,
       });
 
-      res.json({ success: true, data: invoices.map(mapInvoice) });
+      res.json({ success: true, data: rows.map(mapInvoice) });
     } catch (err) {
       next(err);
     }
   });
 
   /* ────────────────────────────────────────────────────────────
-   *  POST /api/invoices – Create invoice for a booking + date range
-   *  Body: { bookingId, periodStart, periodEnd, notes?, vatRate?, dueDays? }
+   *  POST /api/invoices – Create an invoice
+   *
+   *  Rental (the original flow; `type` may be omitted or 'RENTAL'):
+   *    { bookingId, periodStart, periodEnd, notes?, vatRate?, dueDays?, withQrBill?, sendEmail? }
+   *    The booking price is prorated for the period and saved as one line item.
+   *    sendEmail defaults to TRUE (mailed on issuance when the booking has an e-mail address).
+   *  Damage / fine / other:
+   *    { type: 'DAMAGE'|'FINE'|'OTHER', bookingId?, debtor?: { name, email?, street?, zip?, city?, country? },
+   *      items: [{ description, quantity, unitPrice, vatRate?, feeId?, damageId?, fineId? }],
+   *      dueDays?, notes?, vatRate?, withQrBill?, sendEmail? }
+   *    The debtor defaults from the booking's driver details. Items without vatRate use the invoice settings
+   *    rate (pass-through items such as fines: vatRate 0). sendEmail defaults to false.
+   *  withQrBill: omitted = the "Mit QR-Rechnung" default of the invoice settings; true with incomplete creditor
+   *  data = 422 qr_bill_unavailable.
+   *  Response 201: the invoice plus emailSent / emailError ('no_recipient' | 'send_failed') when a mail was requested.
    * ──────────────────────────────────────────────────────────── */
-  router.post('/', auth, async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const { bookingId, periodStart, periodEnd, notes, vatRate: customVatRate, dueDays } = req.body;
+  router.post(
+    '/',
+    auth,
+    contracts,
+    validate(createInvoiceSchema),
+    audit('invoice', 'create', async (req) => {
+      const b = req.body ?? {};
+      const booking = b.bookingId
+        ? await container.prisma.booking.findUnique({
+            where: { id: b.bookingId },
+            select: { customerName: true, vehicle: { select: { brand: true, model: true } } },
+          })
+        : null;
+      return { type: b.type ?? 'RENTAL', bookingCustomer: booking?.customerName, vehicle: vehicleLabel(booking?.vehicle) };
+    }),
+    async (req: Request, res: Response, next: NextFunction) => {
+      try {
+        const b = req.body;
+        const result =
+          b.type === 'RENTAL'
+            ? await invoices.createRental({
+                bookingId: b.bookingId,
+                periodStart: b.periodStart,
+                periodEnd: b.periodEnd,
+                notes: b.notes,
+                vatRate: b.vatRate,
+                dueDays: b.dueDays,
+                withQrBill: b.withQrBill,
+                sendEmail: b.sendEmail,
+              })
+            : await invoices.createCustom(b);
 
-      if (!bookingId || !periodStart || !periodEnd) {
-        res.status(400).json({ success: false, error: 'bookingId, periodStart and periodEnd are required' });
-        return;
+        const { invoice, emailSent, emailError } = result;
+        const requested = b.type === 'RENTAL' ? b.sendEmail !== false : b.sendEmail === true;
+        setAuditDetails(res, { ...InvoiceService.auditSummary(invoice), emailed: emailSent }, invoice.id);
+        res.status(201).json({
+          success: true,
+          data: { ...mapInvoice(invoice), ...(requested ? { emailSent, ...(emailError ? { emailError } : {}) } : {}) },
+        });
+      } catch (err) {
+        next(err);
       }
-
-      const booking = await container.prisma.booking.findUnique({
-        where: { id: bookingId },
-        include: { vehicle: true },
-      }) as any;
-      if (!booking) {
-        res.status(404).json({ success: false, error: 'Booking not found' });
-        return;
-      }
-
-      const pStart = new Date(periodStart);
-      const pEnd = new Date(periodEnd);
-      if (pEnd <= pStart) {
-        res.status(400).json({ success: false, error: 'periodEnd must be after periodStart' });
-        return;
-      }
-
-      // Calculate days in the invoiced period
-      const totalBookingDays = Math.max(1, Math.ceil(
-        (new Date(booking.endDate).getTime() - new Date(booking.startDate).getTime()) / (1000 * 60 * 60 * 24),
-      ));
-      const invoiceDays = Math.max(1, Math.ceil(
-        (pEnd.getTime() - pStart.getTime()) / (1000 * 60 * 60 * 24),
-      ));
-      const dailyRate = Number(booking.totalPrice) / totalBookingDays;
-      const subtotal = Math.round(dailyRate * invoiceDays * 100) / 100;
-
-      let vatRate = customVatRate;
-      if (vatRate === undefined || vatRate === null) {
-        const settingRow = await container.prisma.siteSetting.findUnique({ where: { key: 'invoice_settings' } });
-        const configuredRate = (settingRow?.value as any)?.vatRate;
-        vatRate = typeof configuredRate === 'number' ? configuredRate : DEFAULT_VAT_RATE;
-      }
-      const vatAmount = Math.round(subtotal * vatRate) / 100;
-      const total = Math.round((subtotal + vatAmount) * 100) / 100;
-
-      const invoiceNumber = await nextInvoiceNumber(container);
-      const issueDate = new Date();
-      const dueDate = new Date();
-      dueDate.setDate(dueDate.getDate() + (dueDays ?? 30));
-
-      const invoice = await container.prisma.invoice.create({
-        data: {
-          invoiceNumber,
-          bookingId,
-          customerName: booking.customerName,
-          customerEmail: booking.customerEmail,
-          periodStart: pStart,
-          periodEnd: pEnd,
-          issueDate,
-          dueDate,
-          subtotal,
-          vatRate,
-          vatAmount,
-          total,
-          penalty: 0,
-          currency: booking.currency || 'CHF',
-          status: 'PENDING',
-          notes: notes || null,
-        },
-        include: { booking: { include: { vehicle: true } } },
-      });
-
-      // Email the invoice on issuance (conventional for Swiss invoicing).
-      // Failure here must never fail the invoice creation itself.
-      if (invoice.customerEmail) {
-        try {
-          const pdfBytes = await generateInvoicePdf(container, invoice);
-          await container.emailService.sendInvoiceEmail({
-            to: invoice.customerEmail,
-            customerName: invoice.customerName,
-            invoiceNumber: invoice.invoiceNumber,
-            pdfBytes,
-          });
-        } catch (emailErr) {
-          console.error('[Invoice] Failed to send invoice email:', emailErr);
-        }
-      }
-
-      res.status(201).json({ success: true, data: mapInvoice(invoice) });
-    } catch (err) {
-      next(err);
-    }
-  });
+    },
+  );
 
   /* ────────────────────────────────────────────────────────────
    *  PATCH /api/invoices/:id/status – Toggle PENDING / PAID
    * ──────────────────────────────────────────────────────────── */
-  router.patch('/:id/status', auth, async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const { status } = req.body;
-      if (!status || !['PENDING', 'PAID'].includes(status)) {
-        res.status(400).json({ success: false, error: 'status must be PENDING or PAID' });
-        return;
+  router.patch(
+    '/:id/status',
+    auth,
+    contracts,
+    audit('invoice', 'update-status', async (req) => ({
+      ...(await describeInvoice()(req)),
+      status: req.body?.status,
+    })),
+    async (req: Request, res: Response, next: NextFunction) => {
+      try {
+        const { status } = req.body;
+        if (!status || !['PENDING', 'PAID'].includes(status)) {
+          res.status(400).json({ success: false, error: 'status must be PENDING or PAID' });
+          return;
+        }
+
+        const invoice = await container.prisma.invoice.update({
+          where: { id: req.params.id },
+          data: { status },
+          include: invoiceInclude,
+        });
+
+        res.json({ success: true, data: mapInvoice(invoice) });
+      } catch (err) {
+        next(err);
       }
-
-      const invoice = await container.prisma.invoice.update({
-        where: { id: req.params.id },
-        data: { status },
-        include: { booking: { include: { vehicle: true } } },
-      });
-
-      res.json({ success: true, data: mapInvoice(invoice) });
-    } catch (err) {
-      next(err);
-    }
-  });
+    },
+  );
 
   /* ────────────────────────────────────────────────────────────
-   *  POST /api/invoices/:id/reissue – Reissue with penalty
-   *  Body: { penalty: number, notes? }
+   *  POST /api/invoices/:id/reissue – Reissue with penalty (Mahnung)
+   *  Body: { penalty: number, notes?, sendEmail?: boolean }
+   *  sendEmail=true mails the new invoice PDF to the customer as a payment reminder
+   *  (notes appear below the standard reminder text). The response is the new invoice
+   *  plus emailSent (and emailError: 'no_recipient' | 'send_failed' when it was requested
+   *  but not delivered). Without sendEmail nothing is mailed (previous behaviour).
    * ──────────────────────────────────────────────────────────── */
-  router.post('/:id/reissue', auth, async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const { penalty, notes } = req.body;
-      const penaltyAmount = Number(penalty) || 0;
-
-      const original = await container.prisma.invoice.findUnique({
+  router.post(
+    '/:id/reissue',
+    auth,
+    contracts,
+    audit('invoice', 'reissue', async (req) => {
+      const inv = await container.prisma.invoice.findUnique({
         where: { id: req.params.id },
-        include: { booking: { include: { vehicle: true } } },
+        select: { invoiceNumber: true, customerName: true },
       });
-      if (!original) {
-        res.status(404).json({ success: false, error: 'Invoice not found' });
-        return;
+      return {
+        parentInvoiceNumber: inv?.invoiceNumber,
+        customerName: inv?.customerName,
+        penalty: Number(req.body?.penalty) || 0,
+        sendEmail: req.body?.sendEmail === true,
+      };
+    }),
+    async (req: Request, res: Response, next: NextFunction) => {
+      try {
+        const { penalty, notes, sendEmail } = req.body;
+        const penaltyAmount = Number(penalty) || 0;
+
+        const original = await container.prisma.invoice.findUnique({
+          where: { id: req.params.id },
+          include: invoiceInclude,
+        });
+        if (!original) {
+          res.status(404).json({ success: false, error: 'Invoice not found' });
+          return;
+        }
+
+        const subtotal = Number(original.subtotal);
+        const vatRate = Number(original.vatRate);
+        // Invoices with line items keep their (per-line) VAT; legacy invoices recompute it from the single rate.
+        const vatAmount = original.items.length > 0 ? Number(original.vatAmount) : Math.round(subtotal * vatRate) / 100;
+        const total = Math.round((subtotal + vatAmount + penaltyAmount) * 100) / 100;
+
+        const issueDate = new Date();
+        const dueDate = new Date();
+        dueDate.setDate(dueDate.getDate() + 14); // 14-day deadline on reissue
+
+        const reissued = await container.prisma.invoice.create({
+            data: {
+              invoiceNumber: await container.invoiceService.nextInvoiceNumber(),
+              type: original.type,
+              bookingId: original.bookingId,
+              customerName: original.customerName,
+              customerEmail: original.customerEmail,
+              customerAddress: original.customerAddress,
+              customerStreet: original.customerStreet,
+              customerZip: original.customerZip,
+              customerCity: original.customerCity,
+              customerCountry: original.customerCountry,
+              withQrBill: original.withQrBill,
+              periodStart: original.periodStart,
+              periodEnd: original.periodEnd,
+              issueDate,
+              dueDate,
+              subtotal,
+              vatRate,
+              vatAmount,
+              penalty: penaltyAmount,
+              total,
+              currency: original.currency,
+              status: 'PENDING',
+              parentInvoiceId: original.id,
+              notes: notes || (penaltyAmount > 0 ? `Mahnung – Verzugsgebühr: ${original.currency} ${penaltyAmount.toFixed(2)}` : null),
+              // Invoices built from line items keep their lines on the reissue.
+              items: {
+                create: original.items.map((item) => ({
+                  description: item.description,
+                  quantity: item.quantity,
+                  unitPrice: item.unitPrice,
+                  vatRate: item.vatRate,
+                  total: item.total,
+                  sortOrder: item.sortOrder,
+                  feeId: item.feeId,
+                  damageId: item.damageId,
+                  fineId: item.fineId,
+                })),
+              },
+            },
+            include: invoiceInclude,
+        });
+        // A QR bill on the original continues on the reminder (new invoice number = new payment reference).
+        if (reissued.withQrBill) {
+          try {
+            await container.invoiceService.renderPdf(reissued); // derives and stores the reference
+          } catch (qrErr) {
+            console.error('[Invoice] QR bill unavailable for the reminder, continuing without it:', qrErr);
+            await container.prisma.invoice.update({ where: { id: reissued.id }, data: { withQrBill: false } });
+            reissued.withQrBill = false;
+          }
+        }
+
+        // Optional Mahnung mail. A delivery problem must not undo the created invoice; the
+        // caller learns about it through emailSent / emailError instead.
+        let emailSent = false;
+        let emailError: 'no_recipient' | 'send_failed' | undefined;
+        if (sendEmail === true) {
+          const outcome = await container.invoiceService.mail(reissued, {
+            reminder: {
+              originalInvoiceNumber: original.invoiceNumber,
+              note: typeof notes === 'string' && notes.trim() ? notes.trim() : undefined,
+            },
+          });
+          emailSent = outcome.emailSent;
+          emailError = outcome.emailError;
+        }
+
+        setAuditDetails(res, { invoiceNumber: reissued.invoiceNumber, emailed: emailSent }, reissued.id);
+        res.status(201).json({
+          success: true,
+          data: { ...mapInvoice(reissued), emailSent, ...(emailError ? { emailError } : {}) },
+        });
+      } catch (err) {
+        next(err);
       }
-
-      const subtotal = Number(original.subtotal);
-      const vatRate = Number(original.vatRate);
-      const vatAmount = Math.round(subtotal * vatRate) / 100;
-      const total = Math.round((subtotal + vatAmount + penaltyAmount) * 100) / 100;
-
-      const invoiceNumber = await nextInvoiceNumber(container);
-      const issueDate = new Date();
-      const dueDate = new Date();
-      dueDate.setDate(dueDate.getDate() + 14); // 14-day deadline on reissue
-
-      const reissued = await container.prisma.invoice.create({
-        data: {
-          invoiceNumber,
-          bookingId: original.bookingId,
-          customerName: original.customerName,
-          customerEmail: original.customerEmail,
-          customerAddress: original.customerAddress,
-          periodStart: original.periodStart,
-          periodEnd: original.periodEnd,
-          issueDate,
-          dueDate,
-          subtotal,
-          vatRate,
-          vatAmount,
-          penalty: penaltyAmount,
-          total,
-          currency: original.currency,
-          status: 'PENDING',
-          parentInvoiceId: original.id,
-          notes: notes || (penaltyAmount > 0 ? `Mahnung – Verzugsgebühr: ${original.currency} ${penaltyAmount.toFixed(2)}` : null),
-        },
-        include: { booking: { include: { vehicle: true } } },
-      });
-
-      res.status(201).json({ success: true, data: mapInvoice(reissued) });
-    } catch (err) {
-      next(err);
-    }
-  });
+    },
+  );
 
   /* ────────────────────────────────────────────────────────────
-   *  GET /api/invoices/:id/download – Download invoice PDF
+   *  GET /api/invoices/:id/download[?qr=1] – Download invoice PDF
+   *  qr=1 renders the Swiss QR payment slip on demand (whatever the invoice's withQrBill flag says), qr=0 omits it;
+   *  422 qr_bill_unavailable (+ missing: [...]) when the creditor data is incomplete.
    * ──────────────────────────────────────────────────────────── */
-  router.get('/:id/download', auth, async (req: Request, res: Response, next: NextFunction) => {
+  router.get('/:id/download', auth, contracts, async (req: Request, res: Response, next: NextFunction) => {
     try {
       const invoice = await container.prisma.invoice.findUnique({
         where: { id: req.params.id },
-        include: { booking: { include: { vehicle: true } } },
+        include: invoiceInclude,
       });
       if (!invoice) {
         res.status(404).json({ success: false, error: 'Invoice not found' });
         return;
       }
 
-      const pdfBytes = await generateInvoicePdf(container, invoice);
+      const qr = qrFlag(req.query.qr);
+      const pdfBytes = await invoices.renderPdf(invoice, { qr });
 
-      const filename = `HoppDrive-Rechnung-${invoice.invoiceNumber}.pdf`;
+      const filename = `HoppDrive-${qr ?? invoice.withQrBill ? 'QR-' : ''}Rechnung-${invoice.invoiceNumber}.pdf`;
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
       res.setHeader('Content-Length', pdfBytes.length);
+      res.setHeader('Cache-Control', 'private, no-store');
       res.send(Buffer.from(pdfBytes));
     } catch (err) {
       next(err);
@@ -238,116 +311,4 @@ export function invoiceRoutes(container: Container): Router {
   });
 
   return router;
-}
-
-/* ══════════════════════════════════════════════════════════════
- *  Helpers
- * ══════════════════════════════════════════════════════════════ */
-
-/** Shared by the create route (for the issuance email) and the download route. */
-async function generateInvoicePdf(container: Container, invoice: any): Promise<Uint8Array> {
-  const periodDays = Math.max(1, Math.ceil(
-    (invoice.periodEnd.getTime() - invoice.periodStart.getTime()) / (1000 * 60 * 60 * 24),
-  ));
-  const subtotal = Number(invoice.subtotal);
-  const penaltyAmt = Number(invoice.penalty);
-
-  const items: InvoiceLineItem[] = [
-    {
-      description: `Fahrzeugmiete – ${invoice.booking.vehicle.brand} ${invoice.booking.vehicle.model} (${invoice.periodStart.toLocaleDateString('de-CH')} – ${invoice.periodEnd.toLocaleDateString('de-CH')})`,
-      quantity: periodDays,
-      unitPrice: subtotal / periodDays,
-      total: subtotal,
-    },
-  ];
-
-  if (penaltyAmt > 0) {
-    items.push({
-      description: 'Verzugsgebühr / Mahngebühr',
-      quantity: 1,
-      unitPrice: penaltyAmt,
-      total: penaltyAmt,
-    });
-  }
-
-  const settingRow = await container.prisma.siteSetting.findUnique({ where: { key: 'invoice_settings' } });
-  if (settingRow?.value) {
-    const s = settingRow.value as any;
-    container.pdfService.updateCompany({
-      uid: s.uid || undefined,
-      iban: s.iban || undefined,
-      bankName: s.bankName || undefined,
-    });
-  }
-
-  return container.pdfService.generateInvoice({
-    invoiceNumber: invoice.invoiceNumber,
-    issueDate: invoice.issueDate,
-    dueDate: invoice.dueDate,
-    customerName: invoice.customerName,
-    customerEmail: invoice.customerEmail,
-    customerAddress: invoice.customerAddress,
-    items,
-    subtotal,
-    vatRate: Number(invoice.vatRate),
-    vatAmount: Number(invoice.vatAmount),
-    total: Number(invoice.total),
-    currency: invoice.currency,
-    notes: invoice.notes,
-    bookingRef: invoice.booking.id.substring(0, 8).toUpperCase(),
-  });
-}
-
-async function nextInvoiceNumber(container: Container): Promise<string> {
-  const year = new Date().getFullYear();
-  // Use a serializable transaction to prevent race conditions producing duplicate numbers
-  return container.prisma.$transaction(async (tx) => {
-    const lastInvoice = await tx.invoice.findFirst({
-      where: { invoiceNumber: { startsWith: `HD-${year}-` } },
-      orderBy: { invoiceNumber: 'desc' },
-      select: { invoiceNumber: true },
-    });
-    let seq = 1;
-    if (lastInvoice) {
-      const parts = lastInvoice.invoiceNumber.split('-');
-      seq = parseInt(parts[2], 10) + 1;
-    }
-    return `HD-${year}-${String(seq).padStart(5, '0')}`;
-  }, { isolationLevel: 'Serializable' });
-}
-
-function mapInvoice(inv: any) {
-  return {
-    id: inv.id,
-    invoiceNumber: inv.invoiceNumber,
-    bookingId: inv.bookingId,
-    customerName: inv.customerName,
-    customerEmail: inv.customerEmail,
-    customerAddress: inv.customerAddress,
-    periodStart: inv.periodStart,
-    periodEnd: inv.periodEnd,
-    issueDate: inv.issueDate,
-    dueDate: inv.dueDate,
-    subtotal: Number(inv.subtotal),
-    vatRate: Number(inv.vatRate),
-    vatAmount: Number(inv.vatAmount),
-    penalty: Number(inv.penalty),
-    total: Number(inv.total),
-    currency: inv.currency,
-    status: inv.status,
-    parentInvoiceId: inv.parentInvoiceId,
-    notes: inv.notes,
-    createdAt: inv.createdAt,
-    booking: inv.booking
-      ? {
-          id: inv.booking.id,
-          customerName: inv.booking.customerName,
-          startDate: inv.booking.startDate,
-          endDate: inv.booking.endDate,
-          vehicle: inv.booking.vehicle
-            ? { brand: inv.booking.vehicle.brand, model: inv.booking.vehicle.model }
-            : null,
-        }
-      : null,
-  };
 }

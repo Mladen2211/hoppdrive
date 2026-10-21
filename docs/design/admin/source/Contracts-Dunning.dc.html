@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Mahnung senden</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./admin.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fira+Sans:wght@400;500;600;700&family=Fira+Sans+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>body{margin:0;background:#5B5E61}</style>
+</helmet>
+<div class="ad" style="min-height:100%;background:#5B5E61;padding:48px;display:flex;justify-content:center;align-items:flex-start">
+<div class="modal" role="dialog" aria-modal="true" aria-labelledby="mh-h" style="width:560px;max-width:92%">
+    <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start">
+      <div><h2 class="h2" id="mh-h">Mahnung senden</h2><p class="mut" style="margin-top:4px">Rechnung R-2026-0039 an Thomas Keller</p></div>
+      <button class="ib" type="button" aria-label="Dialog schliessen"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div class="alert al-warn"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0zM12 9v4M12 17h.01"/></svg><span>Fällig seit 14 Tagen. Die Mahnung geht an <b>thomas.keller@beispiel.ch</b> und wird im Verlauf der Buchung vermerkt.</span></div>
+    <dl style="display:grid;grid-template-columns:1fr auto;gap:8px;border:1.5px solid var(--line);border-radius:12px;padding:14px 16px">
+      <dt class="mut">Mahnnummer</dt><dd class="num"><b>R-2026-0039-M1</b></dd>
+      <dt class="mut">Offener Betrag</dt><dd class="num"><b style="font-size:20px">CHF 577.20</b></dd>
+      <dt class="mut">Neue Zahlungsfrist</dt><dd class="num">10 Tage nach Versand</dd>
+    </dl>
+    <div class="fld"><label for="mn">Notiz an den Kunden (optional)</label><textarea class="in" id="mn" rows="3">Bitte überweisen Sie den Betrag bis zur neuen Frist. Bei Fragen melden wir uns gerne.</textarea><span class="hint">Die Notiz erscheint unter dem Standardtext der Mahnung.</span></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap">
+      <button class="btn btn-g" type="button">Abbrechen</button>
+      <button class="btn btn-p" type="button">Mahnung senden</button>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":720,"height":860}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

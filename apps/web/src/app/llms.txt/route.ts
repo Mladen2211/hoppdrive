@@ -1,32 +1,37 @@
 import { NextResponse } from 'next/server';
-import type { VehicleType } from '@hoppdrive/shared';
-import { getAllVehicles, getSetting, getFaqItems, type LocationConfigData } from '@/lib/server-api';
-import { SITE_URL, CATEGORIES, vehicleSlug, translateType } from '@/lib/seo';
+import { getTranslations } from 'next-intl/server';
+import { getAllVehicles, getCurrency, getSetting, getFaqItems, type LocationConfigData } from '@/lib/server-api';
+import { SITE_URL, CATEGORY_SLUGS, CATEGORY_TYPES, categoryLabel, vehicleSlug, translateType } from '@/lib/seo';
 import type { PricingContent } from '@/types/homepage-sections';
 
 export const revalidate = 3600;
 
+// llms.txt stays German on purpose (one machine-readable file for the whole site, German URLs),
+// so everything here is fetched and translated in the default locale.
+const LOCALE = 'de';
+
 // The static public/llms.txt file this route replaces was deleted — Next
 // would otherwise prefer the static file in public/ over this route handler.
 export async function GET() {
-  const [vehicles, pricing, faqItems, location] = await Promise.all([
-    getAllVehicles(),
-    getSetting<PricingContent>('pricing'),
-    getFaqItems(),
-    getSetting<LocationConfigData>('location'),
+  const [vehicles, currency, pricing, faqItems, location, tLabels, tCategory] = await Promise.all([
+    getAllVehicles(LOCALE),
+    getCurrency(),
+    getSetting<PricingContent>('pricing', LOCALE),
+    getFaqItems(LOCALE),
+    getSetting<LocationConfigData>('location', LOCALE),
+    getTranslations({ locale: LOCALE, namespace: 'labels' }),
+    getTranslations({ locale: LOCALE, namespace: 'category' }),
   ]);
 
   const minPrice = vehicles.length > 0 ? Math.min(...vehicles.map((v) => v.basePricePerDay)) : null;
-  const activeCategories = (Object.keys(CATEGORIES) as VehicleType[]).filter((type) =>
-    vehicles.some((v) => v.type === type)
-  );
+  const activeCategories = CATEGORY_TYPES.filter((type) => vehicles.some((v) => v.type === type));
 
   const lines: string[] = [];
 
   lines.push('# HoppDrive');
   lines.push('');
   lines.push(
-    `> Günstige Kurz- und Langzeit-Autovermietung in der Schweiz.${minPrice ? ` Mietwagen ab CHF ${minPrice} pro Tag` : ''}, inklusive Vollkaskoversicherung.`
+    `> Günstige Kurz- und Langzeit-Autovermietung in der Schweiz.${minPrice ? ` Mietwagen ab ${currency} ${minPrice} pro Tag` : ''}, inklusive Vollkaskoversicherung.`
   );
   lines.push('');
   lines.push(
@@ -60,7 +65,7 @@ export async function GET() {
     for (const v of vehicles) {
       const slug = vehicleSlug(v);
       lines.push(
-        `- [${v.brand} ${v.model} (${v.year})](${SITE_URL}/fahrzeuge/${slug}): ${translateType(v.type)}, ${v.specs.horsepower} PS, ${v.specs.seats} Sitze, ab CHF ${v.basePricePerDay}/Tag`
+        `- [${v.brand} ${v.model} (${v.year})](${SITE_URL}/fahrzeuge/${slug}): ${translateType(v.type, tLabels)}, ${v.specs.horsepower} PS, ${v.specs.seats} Sitze, ab ${currency} ${v.basePricePerDay}/Tag`
       );
     }
   }
@@ -71,8 +76,7 @@ export async function GET() {
     lines.push('## Kategorien');
     lines.push('');
     for (const type of activeCategories) {
-      const cat = CATEGORIES[type];
-      lines.push(`- [${cat.label} mieten](${SITE_URL}/mieten/${cat.slug})`);
+      lines.push(`- [${categoryLabel(type, tCategory)} mieten](${SITE_URL}/mieten/${CATEGORY_SLUGS[type]})`);
     }
     lines.push('');
   }

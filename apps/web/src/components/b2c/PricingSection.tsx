@@ -1,4 +1,15 @@
-import { Shield, Wrench, Phone, FileText } from 'lucide-react';
+'use client';
+
+import { Check } from 'lucide-react';
+import { useTranslations } from 'next-intl';
+import { useCallback, useState } from 'react';
+import { PriceCalculator } from '@/components/b2c/PriceCalculator';
+import { PriceLadder } from '@/components/b2c/PriceLadder';
+import { useSelectedVehicle } from '@/components/b2c/SelectedVehicleContext';
+import { Badge } from '@/components/ui';
+import type { Translate } from '@/i18n/types';
+import { useSiteFormatters } from '@/i18n/CurrencyProvider';
+import { tierLabel, type PricingTier as PricingRuleTier } from '@/lib/pricing';
 import type { PricingContent, PricingTier } from '@/types/homepage-sections';
 
 export type { PricingContent, PricingTier };
@@ -12,105 +23,86 @@ interface PricingSectionProps {
   content?: PricingContent;
 }
 
-const DEFAULT_TIERS: PricingTier[] = [
-  { number: '01', title: 'Tag 1 – 7', description: 'Standard-Tagestarif für kurzfristige Bedürfnisse.' },
-  { number: '02', title: 'Tag 8 – 30', description: 'Automatisch 20% Rabatt auf den Tagestarif bei verlängerter Miete.', badge: '20% RABATT' },
-  { number: '03', title: 'Ab 31 Tagen', description: 'Maximaler 40% Rabatt. Bestes Preis-Leistungs-Verhältnis für echte Langzeitmobilität.', badge: '40% RABATT' },
-];
-
-const DEFAULT_INCLUDED = ['Vollkasko-Versicherung', 'Wartung & Service', 'Pannenhilfe 24/7', 'Transparente Verträge'];
-const INCLUDED_ICONS = [Shield, Wrench, Phone, FileText];
+/**
+ * Copy for the tiers when the CMS has none: derived from the live day tiers, so
+ * it can never contradict the ladder (which comes from the API's pricing rules).
+ * `t` = translator of the `pricing` namespace.
+ */
+function defaultTierCopy(tiers: PricingRuleTier[], t: Translate): PricingTier[] {
+  return tiers.map((tier, index) => ({
+    number: String(index + 1).padStart(2, '0'),
+    title: tierLabel(tier, t),
+    description:
+      tier.discountPercent === 0
+        ? t('tierStandard')
+        : t('tierDiscount', { percent: tier.discountPercent }),
+    ...(tier.discountPercent > 0 ? { badge: t('tierBadge', { percent: tier.discountPercent }) } : {}),
+  }));
+}
 
 export function PricingSection({ config, content }: PricingSectionProps) {
+  const t = useTranslations('pricing');
+  const f = useSiteFormatters();
+  const { vehicles, tiers } = useSelectedVehicle();
+  const [ladderVehicleId, setLadderVehicleId] = useState<string | null>(null);
+  const onVehicleChange = useCallback((id: string | null) => setLadderVehicleId(id), []);
+
   if (config && config.visible === false) return null;
 
   const c = content || {};
-  const label = c.label ?? 'Preismodell';
-  const heading = c.heading ?? config?.title ?? 'So funktioniert unsere Preisgestaltung';
-  const description = c.description ?? 'Je länger Sie mieten, desto günstiger wird es. Alle Preise inklusive Vollkasko.';
-  const tiers = c.tiers?.length ? c.tiers : (config?.tiers?.length ? config.tiers : DEFAULT_TIERS);
-  const includedItems = c.includedItems?.length ? c.includedItems : DEFAULT_INCLUDED;
+  const exampleVehicle = vehicles.find((v) => v.id === ladderVehicleId) ?? vehicles[0] ?? null;
+  const label = c.label ?? t('label');
+  const heading = c.heading ?? config?.title ?? t('heading');
+  const description =
+    c.description ??
+    (exampleVehicle
+      ? t('descriptionVehicle', {
+          name: exampleVehicle.name,
+          price: f.money(exampleVehicle.basePricePerDay, { decimals: 0 }),
+        })
+      : t('description'));
+  // CMS copy for the tiers: section content first, then the legacy `pricing` setting, then the defaults.
+  const tierCopy = c.tiers?.length ? c.tiers : config?.tiers?.length ? config.tiers : defaultTierCopy(tiers, t);
+  const includedItems = c.includedItems?.length ? c.includedItems : (t.raw('included') as string[]);
 
   return (
-    <section id="pricing" className="py-24 bg-neutral-50 border-y border-neutral-200">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-16">
-          <span className="text-brand-600 font-semibold text-sm uppercase tracking-wider">
-            {label}
-          </span>
-          <h2 className="text-3xl md:text-4xl font-bold mt-3 mb-4">{heading}</h2>
-          <p className="text-neutral-500 max-w-2xl mx-auto text-lg">
-            {description}
-          </p>
-        </div>
+    <section id="pricing" className="sec">
+      <div className="wrap">
+        <div className="grid grid-cols-[minmax(0,1.1fr)_minmax(0,.9fr)] items-start gap-14 max-lg:grid-cols-1 max-lg:gap-8">
+          <div className="flex flex-col gap-[22px] max-md:gap-[18px]">
+            <p className="kick">{label}</p>
+            <h2 className="h2">{heading}</h2>
+            <p className="lead">{description}</p>
 
-        {/* Timeline-style steps */}
-        <div className="relative mb-16">
-          {/* Connector line (desktop) */}
-          <div className="hidden md:block absolute top-8 left-[calc(16.67%-12px)] right-[calc(16.67%-12px)] h-px bg-neutral-300" />
+            <PriceLadder tiers={tiers} basePricePerDay={exampleVehicle?.basePricePerDay ?? null} />
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-6">
-            {tiers.map((tier, idx) => {
-              const isLast = idx === tiers.length - 1;
-              const hasBadge = !!tier.badge;
+            {/* Tier copy maintained in the CMS (Startseite → Preismodell) */}
+            <ol className="grid grid-cols-3 gap-4 max-md:grid-cols-1">
+              {tierCopy.map((tier, index) => (
+                <li key={`${tier.title}-${index}`} className="flex flex-col gap-1">
+                  <span className="flex flex-wrap items-center gap-2 font-semibold">
+                    {tier.title}
+                    {tier.badge && <Badge tone={index === tierCopy.length - 1 ? 'ruby' : 'off'}>{tier.badge}</Badge>}
+                  </span>
+                  <span className="text-sm leading-[1.45] text-graphite">{tier.description}</span>
+                </li>
+              ))}
+            </ol>
 
-              return (
-                <div key={idx} className="flex flex-col items-center text-center">
-                  {/* Step circle */}
-                  <div
-                    className={`w-16 h-16 rounded-full flex items-center justify-center text-xl font-bold mb-5 relative z-10 ${
-                      isLast
-                        ? 'bg-brand-600 text-white ring-4 ring-brand-100'
-                        : hasBadge
-                          ? 'bg-brand-50 text-brand-700 ring-4 ring-brand-50/50'
-                          : 'bg-white text-neutral-700 ring-4 ring-neutral-100'
-                    }`}
-                  >
-                    {tier.number}
-                  </div>
-
-                  {/* Content card */}
-                  <div className="flex flex-col items-center">
-                    <h4 className="text-lg font-bold text-neutral-900 mb-1.5">{tier.title}</h4>
-
-                    {hasBadge && (
-                      <span
-                        className={`inline-block text-[11px] tracking-wide font-bold px-2.5 py-0.5 rounded-full mb-2 ${
-                          isLast
-                            ? 'bg-brand-600 text-white'
-                            : 'bg-brand-100 text-brand-700'
-                        }`}
-                      >
-                        {tier.badge}
-                      </span>
-                    )}
-
-                    <p className="text-neutral-500 text-sm leading-relaxed max-w-[260px]">
-                      {tier.description}
-                    </p>
-                  </div>
-                </div>
-              );
-            })}
+            <div className="flex flex-col gap-2.5 border-t border-line pt-5">
+              <h3 className="text-[15px] font-bold">{t('includedTitle')}</h3>
+              <ul className="flex flex-wrap gap-x-6 gap-y-2 text-[15px] font-medium">
+                {includedItems.map((text) => (
+                  <li key={text} className="flex items-center gap-2">
+                    <Check size={18} strokeWidth={2.4} className="flex-none text-ruby" aria-hidden="true" />
+                    {text}
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
-        </div>
 
-        {/* What's included */}
-        <div className="bg-white rounded-2xl border border-neutral-200 p-8 md:p-10">
-          <h3 className="text-lg font-bold text-center mb-6">Immer inklusive – ohne Aufpreis</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {includedItems.map((text, idx) => {
-              const Icon = INCLUDED_ICONS[idx % INCLUDED_ICONS.length];
-              return (
-                <div key={text} className="flex items-center gap-3">
-                  <div className="flex-shrink-0 w-10 h-10 bg-brand-50 rounded-xl flex items-center justify-center">
-                    <Icon className="w-5 h-5 text-brand-600" />
-                  </div>
-                  <span className="text-sm font-medium text-neutral-700">{text}</span>
-                </div>
-              );
-            })}
-          </div>
+          <PriceCalculator variant="card" onVehicleChange={onVehicleChange} className="lg:sticky lg:top-6" />
         </div>
       </div>
     </section>

@@ -1,8 +1,36 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { Plus, Pencil, Trash2, Eye, EyeOff, GripVertical, HelpCircle } from 'lucide-react';
+import { ChevronDown, CircleHelp, Plus, Trash2 } from 'lucide-react';
+import type { AppLocale, FaqTranslation, TranslatableLocale, Translations } from '@hoppdrive/shared';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Alert,
+  Button,
+  EmptyState,
+  Field,
+  Input,
+  Panel,
+  Select,
+  SkeletonRows,
+  Switch,
+  Textarea,
+  cn,
+  useConfirm,
+  useToast,
+} from '@/components/ui';
+import { ContentHeader } from '@/components/content/ContentHeader';
+import { LanguageNote, LanguageTabs } from '@/components/content/LanguageTabs';
+import { TranslatedField } from '@/components/content/TranslatedField';
+import { MoveButtons, SortGrip, useSortableList } from '@/components/content/useSortableList';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
+import { useCan } from '@/hooks/usePermission';
 import { api } from '@/lib/api';
+import { orUserError } from '@/lib/content-errors';
+import { assignSortOrders, moveItem } from '@/lib/content-homepage';
+import { errorText } from '@/lib/errors';
+import { TRANSLATABLE_LOCALES, cleanTranslations, stateOf, type TranslationState } from '@/lib/translations';
+import { useTranslations } from 'next-intl';
+import { tr } from '@/i18n/active';
 
 interface FaqItem {
   id: string;
@@ -11,241 +39,480 @@ interface FaqItem {
   category: string;
   isActive: boolean;
   sortOrder: number;
+  translations?: Translations<FaqTranslation> | null;
 }
 
 const CATEGORY_OPTIONS = [
-  { value: 'general', label: 'Allgemein' },
-  { value: 'pricing', label: 'Preise' },
-  { value: 'insurance', label: 'Versicherung' },
-  { value: 'rental', label: 'Mietbedingungen' },
-  { value: 'documents', label: 'Dokumente' },
-  { value: 'pickup', label: 'Abholung' },
+  { value: 'general', get label() { return tr('faq.allgemein'); } },
+  { value: 'pricing', get label() { return tr('faq.preise'); } },
+  { value: 'insurance', get label() { return tr('faq.versicherung'); } },
+  { value: 'rental', get label() { return tr('faq.mietbedingungen'); } },
+  { value: 'documents', get label() { return tr('faq.dokumente'); } },
+  { value: 'pickup', get label() { return tr('faq.abholung'); } },
 ];
 
+const categoryLabel = (value: string) => CATEGORY_OPTIONS.find((c) => c.value === value)?.label || value;
+
+const NEW_ID = 'new';
+
+interface Draft {
+  question: string;
+  answer: string;
+  category: string;
+  isActive: boolean;
+  translations: Translations<FaqTranslation>;
+}
+
+const draftOf = (item: FaqItem): Draft => ({
+  question: item.question,
+  answer: item.answer,
+  category: item.category || 'general',
+  isActive: item.isActive,
+  translations: item.translations ?? {},
+});
+
+const sameTranslations = (a: Translations<FaqTranslation> | null | undefined, b: Translations<FaqTranslation> | null | undefined) =>
+  JSON.stringify(cleanTranslations(a) ?? null) === JSON.stringify(cleanTranslations(b) ?? null);
+
+const isDirty = (draft: Draft, item: FaqItem | null) =>
+  item
+    ? draft.question !== item.question ||
+      draft.answer !== item.answer ||
+      draft.category !== (item.category || 'general') ||
+      !sameTranslations(draft.translations, item.translations)
+    : draft.question.trim() !== '' || draft.answer.trim() !== '' || cleanTranslations(draft.translations) !== null;
+
 export default function FaqPage() {
+  const t = useTranslations();
+  const { token } = useAdminAuth();
+  const { toast } = useToast();
+  const confirm = useConfirm();
+  const canEdit = useCan('content', 'edit');
+
   const [items, setItems] = useState<FaqItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false);
-  const [editing, setEditing] = useState<FaqItem | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [openId, setOpenId] = useState<string | null>(null);
+  const [draft, setDraft] = useState<Draft | null>(null);
+  const [errors, setErrors] = useState<{ question?: string; answer?: string }>({});
   const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [lang, setLang] = useState<AppLocale>('de');
+
+  // What the server has (refreshed by loads and successful saves, never by local drags).
+  const savedOrders = useRef<Map<string, number>>(new Map());
+
+  const sorted = useMemo(() => [...items].sort((a, b) => a.sortOrder - b.sortOrder), [items]);
+  const itemsRef = useRef(items);
+  itemsRef.current = items;
 
   const load = useCallback(async () => {
+    setLoadError(null);
     try {
-      const data = await api.getFaqItems();
+      const data: FaqItem[] = await api.getFaqItems();
+      savedOrders.current = new Map(data.map((i) => [i.id, i.sortOrder]));
       setItems(data);
-    } catch {
-      // ignore
+    } catch (err) {
+      setLoadError(errorText(err, tr('faq.dieFragenKonntenNicht')));
     } finally {
       setLoading(false);
     }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    if (token) void load();
+  }, [token, load]);
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('FAQ-Eintrag wirklich löschen?')) return;
-    try {
-      await api.deleteFaqItem(id);
-      setItems((prev) => prev.filter((i) => i.id !== id));
-    } catch {
-      alert('Fehler beim Löschen');
-    }
-  };
+  // ── Reordering: optimistic, then persist the sortOrder of every row whose number changed ──
+  const persistTimer = useRef<ReturnType<typeof setTimeout>>();
+  const persistChain = useRef<Promise<void>>(Promise.resolve());
 
-  const toggleActive = async (item: FaqItem) => {
-    try {
-      const updated = await api.updateFaqItem(item.id, { isActive: !item.isActive });
-      setItems((prev) => prev.map((i) => (i.id === item.id ? updated : i)));
-    } catch {
-      alert('Fehler beim Aktualisieren');
-    }
-  };
-
-  const handleSave = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setSaving(true);
-    const form = new FormData(e.currentTarget);
-    const data = {
-      question: form.get('question') as string,
-      answer: form.get('answer') as string,
-      category: form.get('category') as string,
-      isActive: form.get('isActive') === 'on',
-      sortOrder: parseInt(form.get('sortOrder') as string) || 0,
-    };
-
-    try {
-      if (editing) {
-        const updated = await api.updateFaqItem(editing.id, data);
-        setItems((prev) => prev.map((i) => (i.id === editing.id ? updated : i)));
-      } else {
-        const created = await api.createFaqItem(data);
-        setItems((prev) => [...prev, created]);
+  const flushOrder = useCallback(() => {
+    persistChain.current = persistChain.current.then(async () => {
+      const current = [...itemsRef.current].sort((a, b) => a.sortOrder - b.sortOrder);
+      const changed = current.filter((i) => savedOrders.current.get(i.id) !== i.sortOrder);
+      if (changed.length === 0) return;
+      try {
+        for (const item of changed) {
+          await api.updateFaqItem(item.id, { sortOrder: item.sortOrder });
+          savedOrders.current.set(item.id, item.sortOrder);
+        }
+        toast.success(tr('faq.reihenfolgeGespeichert'));
+      } catch (err) {
+        toast.error(tr('faq.reihenfolgeNichtGespeichert'), errorText(err));
+        await load(); // show what the server really has
       }
-      setShowModal(false);
-      setEditing(null);
-    } catch {
-      alert('Fehler beim Speichern');
+    });
+  }, [load, toast]);
+
+  // Leaving the page with a pending drag: save it now instead of dropping it.
+  const flushRef = useRef(flushOrder);
+  flushRef.current = flushOrder;
+  useEffect(
+    () => () => {
+      if (persistTimer.current) {
+        clearTimeout(persistTimer.current);
+        flushRef.current();
+      }
+    },
+    [],
+  );
+
+  const reorder = useCallback(
+    (from: number, to: number) => {
+      const order = moveItem(
+        [...itemsRef.current].sort((a, b) => a.sortOrder - b.sortOrder).map((i) => i.id),
+        from,
+        to,
+      );
+      const numbers = assignSortOrders(order, itemsRef.current);
+      setItems((prev) => prev.map((i) => ({ ...i, sortOrder: numbers[i.id] ?? i.sortOrder })));
+      if (persistTimer.current) clearTimeout(persistTimer.current);
+      persistTimer.current = setTimeout(() => {
+        persistTimer.current = undefined;
+        flushOrder();
+      }, 700);
+    },
+    [flushOrder],
+  );
+
+  const sort = useSortableList({
+    ids: sorted.map((i) => i.id),
+    onMove: reorder,
+    labelOf: (id) => sorted.find((i) => i.id === id)?.question ?? t('faq.frage'),
+  });
+
+  // ── Editing ────────────────────────────────────────────────
+  async function openRow(id: string, item: FaqItem | null) {
+    if (openId === id) {
+      await closeEditor();
+      return;
+    }
+    if (openId && draft && isDirty(draft, items.find((i) => i.id === openId) ?? null)) {
+      const ok = await confirm({
+        title: tr('common.aenderungenVerwerfen'),
+        description: tr('faq.dieGeoeffneteFrageHat'),
+        confirmLabel: tr('common.verwerfen'),
+        cancelLabel: tr('common.weiterBearbeiten'),
+      });
+      if (!ok) return;
+    }
+    setOpenId(id);
+    setDraft(item ? draftOf(item) : { question: '', answer: '', category: 'general', isActive: true, translations: {} });
+    setLang('de');
+    setErrors({});
+    setFormError(null);
+  }
+
+  async function closeEditor(force = false) {
+    if (!force && openId && draft && isDirty(draft, items.find((i) => i.id === openId) ?? null)) {
+      const ok = await confirm({
+        title: tr('common.aenderungenVerwerfen'),
+        description: tr('faq.ihreAenderungenAnDieser'),
+        confirmLabel: tr('common.verwerfen'),
+        cancelLabel: tr('common.weiterBearbeiten'),
+      });
+      if (!ok) return;
+    }
+    setOpenId(null);
+    setDraft(null);
+    setErrors({});
+    setFormError(null);
+  }
+
+  async function handleSave() {
+    if (!draft || !openId) return;
+    const next: typeof errors = {};
+    if (!draft.question.trim()) next.question = tr('faq.bitteGebenSieDie');
+    if (!draft.answer.trim()) next.answer = tr('faq.bitteGebenSieDie2');
+    setErrors(next);
+    if (Object.keys(next).length > 0) {
+      setLang('de'); // German is required: show the empty field
+      return;
+    }
+
+    setSaving(true);
+    setFormError(null);
+    const translations = cleanTranslations(draft.translations) as Translations<FaqTranslation> | null;
+    try {
+      if (openId === NEW_ID) {
+        const nextOrder = items.reduce((max, i) => Math.max(max, i.sortOrder ?? 0), 0) + 1;
+        const created = await api.createFaqItem({
+          question: draft.question.trim(),
+          answer: draft.answer.trim(),
+          category: draft.category,
+          isActive: draft.isActive,
+          sortOrder: nextOrder,
+          ...(translations ? { translations } : {}),
+        });
+        savedOrders.current.set(created.id, created.sortOrder);
+        setItems((prev) => [...prev, created]);
+        toast.success(tr('faq.frageHinzugefuegt'));
+      } else {
+        const updated = await api.updateFaqItem(openId, {
+          question: draft.question.trim(),
+          answer: draft.answer.trim(),
+          category: draft.category,
+          translations,
+        });
+        setItems((prev) => prev.map((i) => (i.id === openId ? { ...i, ...updated, translations, sortOrder: i.sortOrder } : i)));
+        toast.success(tr('faq.frageGespeichert'));
+      }
+      await closeEditor(true);
+    } catch (err) {
+      setFormError(errorText(err, tr('faq.dieFrageKonnteNicht')));
     } finally {
       setSaving(false);
     }
+  }
+
+  async function handleDelete(item: FaqItem) {
+    const ok = await confirm({
+      title: tr('faq.frageLoeschen'),
+      description: tr('faq.verschwindetVonDerWebsite', { question: item.question }),
+      confirmLabel: tr('faq.frageLoeschen2'),
+      icon: <Trash2 size={20} />,
+      onConfirm: () => orUserError(api.deleteFaqItem(item.id), tr('faq.dieFrageKonnteNicht2')),
+    });
+    if (!ok) return;
+    setItems((prev) => prev.filter((i) => i.id !== item.id));
+    savedOrders.current.delete(item.id);
+    if (openId === item.id) await closeEditor(true);
+    toast.success(tr('faq.frageGeloescht'));
+  }
+
+  async function toggleActive(item: FaqItem, next: boolean) {
+    setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, isActive: next } : i)));
+    try {
+      await api.updateFaqItem(item.id, { isActive: next });
+    } catch (err) {
+      setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, isActive: item.isActive } : i)));
+      toast.error(tr('common.sichtbarkeitNichtGeaendert'), errorText(err));
+    }
+  }
+
+  const addButton = canEdit ? (
+    <Button
+      variant="ghost"
+      size="sm"
+      onClick={() => void openRow(NEW_ID, null)}
+      disabled={openId === NEW_ID}
+      iconLeft={<Plus size={18} aria-hidden="true" />}
+    >
+      {t('faq.frageHinzufuegen')}
+    </Button>
+  ) : null;
+
+  function renderEditor(item: FaqItem | null) {
+    if (!draft) return null;
+    const isNew = item === null;
+    const states: Partial<Record<AppLocale, TranslationState>> = {};
+    for (const locale of TRANSLATABLE_LOCALES) {
+      const entry = draft.translations[locale];
+      states[locale] = stateOf([
+        { base: draft.question, value: entry?.question },
+        { base: draft.answer, value: entry?.answer },
+      ]);
+    }
+    const setTranslation = (locale: TranslatableLocale, patch: Partial<FaqTranslation>) =>
+      setDraft({ ...draft, translations: { ...draft.translations, [locale]: { ...draft.translations[locale], ...patch } } });
+    const blob = lang === 'de' ? undefined : draft.translations[lang as TranslatableLocale];
+    return (
+      <div className="flex flex-col gap-3 px-3.5 pb-4 pt-1 md:pl-[52px]">
+        {formError && <Alert tone="err">{formError}</Alert>}
+        <LanguageTabs value={lang} onChange={setLang} states={states} idPrefix={`faq-lang-${item?.id ?? NEW_ID}`} />
+        <LanguageNote locale={lang} className="-mt-1" />
+        {lang === 'de' ? (
+          <>
+            <Field label={t('faq.frage')} error={errors.question} required>
+              <Input
+                value={draft.question}
+                onChange={(e) => setDraft({ ...draft, question: e.target.value })}
+                data-autofocus
+              />
+            </Field>
+            <Field label={t('faq.antwort')} error={errors.answer} required>
+              <Textarea rows={4} value={draft.answer} onChange={(e) => setDraft({ ...draft, answer: e.target.value })} />
+            </Field>
+            <Field label={t('faq.kategorie')}>
+              <Select value={draft.category} onChange={(e) => setDraft({ ...draft, category: e.target.value })}>
+                {CATEGORY_OPTIONS.map((c) => (
+                  <option key={c.value} value={c.value}>
+                    {c.label}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+          </>
+        ) : (
+          <>
+            <TranslatedField
+              locale={lang}
+              label={t('faq.frage')}
+              base={draft.question}
+              value={blob?.question}
+              onChange={(v) => setTranslation(lang as TranslatableLocale, { question: v })}
+            />
+            <TranslatedField
+              locale={lang}
+              label={t('faq.antwort')}
+              base={draft.answer}
+              value={blob?.answer}
+              multiline
+              rows={4}
+              onChange={(v) => setTranslation(lang as TranslatableLocale, { answer: v })}
+            />
+          </>
+        )}
+        <div className="flex flex-wrap items-center gap-2">
+          <Button size="sm" loading={saving} onClick={() => void handleSave()}>
+            {t('common.speichern')}
+          </Button>
+          <Button variant="ghost" size="sm" disabled={saving} onClick={() => void closeEditor()}>
+            {t('common.abbrechen')}
+          </Button>
+          {!isNew && canEdit && (
+            <MoveButtons
+              label={item.question}
+              canUp={sorted.findIndex((i) => i.id === item.id) > 0}
+              canDown={sorted.findIndex((i) => i.id === item.id) < sorted.length - 1}
+              onUp={() => sort.move(item.id, -1)}
+              onDown={() => sort.move(item.id, 1)}
+              className="ml-auto"
+            />
+          )}
+          {!isNew && (
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={saving}
+              onClick={() => void handleDelete(item)}
+              iconLeft={<Trash2 size={16} aria-hidden="true" />}
+              className="border-edge-err text-err"
+            >
+              {t('common.loeschen')}
+            </Button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  const rowHeader = (item: FaqItem | null) => {
+    const id = item?.id ?? NEW_ID;
+    const open = openId === id;
+    const question = item ? item.question : draft?.question.trim() || t('faq.neueFrage');
+    const active = item ? item.isActive : draft?.isActive ?? true;
+    const panelId = `faq-editor-${id}`;
+    return (
+      <div className="flex min-h-[56px] items-center gap-2 px-3 py-1.5">
+        {item && canEdit ? (
+          <SortGrip label={question} {...sort.getHandleProps(id)} />
+        ) : (
+          <span className="w-8 flex-none" aria-hidden="true" />
+        )}
+        <button
+          type="button"
+          onClick={() => void openRow(id, item)}
+          aria-expanded={open}
+          aria-controls={panelId}
+          className={cn('flex min-h-[44px] min-w-0 flex-1 items-center gap-2 rounded-lg text-left', !active && 'text-graphite')}
+        >
+          <span className="min-w-0 flex-1">
+            <b className="block font-semibold leading-snug">{question}</b>
+            {item && <span className="sm mut block truncate">{categoryLabel(item.category)}</span>}
+          </span>
+          <ChevronDown size={20} aria-hidden="true" className={cn('flex-none text-graphite transition-transform motion-reduce:transition-none', open && 'rotate-180')} />
+        </button>
+        <Switch
+          checked={active}
+          disabled={!canEdit}
+          onChange={(next) => (item ? void toggleActive(item, next) : setDraft((d) => (d ? { ...d, isActive: next } : d)))}
+          aria-label={`${question}: ${active ? t('faq.aufDerWebsiteSichtbar') : 'ausgeblendet'}`}
+        />
+      </div>
+    );
   };
 
-  const getCategoryLabel = (value: string) =>
-    CATEGORY_OPTIONS.find((c) => c.value === value)?.label || value;
+  const rowClass = (open: boolean, dragging: boolean, drop?: string) =>
+    cn(
+      'relative rounded-12 border-[1.5px] bg-card',
+      open ? 'border-ruby' : 'border-line',
+      dragging && 'opacity-50',
+      drop === 'before' && 'before:absolute before:-top-[6px] before:left-0 before:right-0 before:h-1 before:rounded-sm before:bg-ruby',
+      drop === 'after' && 'after:absolute after:-bottom-[6px] after:left-0 after:right-0 after:h-1 after:rounded-sm after:bg-ruby',
+    );
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-neutral-900">FAQ</h1>
-          <p className="text-sm text-neutral-500 mt-1">Häufige Fragen für die Webseite verwalten</p>
-        </div>
-        <button
-          onClick={() => { setEditing(null); setShowModal(true); }}
-          className="flex items-center gap-2 bg-brand-600 text-white px-4 py-2.5 rounded-lg text-sm font-semibold hover:bg-brand-700 transition-colors"
+    <div className="flex flex-col gap-5 md:gap-6">
+      <ContentHeader active="faq" ownCount={loading || loadError ? null : items.length} />
+
+      {loadError && (
+        <Alert
+          tone="err"
+          title={t('faq.fragenKonntenNichtGeladen')}
+          action={
+            <Button variant="outline" size="sm" onClick={() => void load()}>
+              {t('common.erneutVersuchen')}
+            </Button>
+          }
         >
-          <Plus className="w-4 h-4" /> Hinzufügen
-        </button>
-      </div>
-
-      {loading ? (
-        <div className="space-y-3">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="h-20 bg-neutral-100 rounded-xl animate-pulse" />
-          ))}
-        </div>
-      ) : items.length === 0 ? (
-        <div className="text-center py-16 text-neutral-400">
-          Noch keine FAQ-Einträge vorhanden. Klicken Sie auf &ldquo;Hinzufügen&rdquo;, um einen zu erstellen.
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {items.sort((a, b) => a.sortOrder - b.sortOrder).map((item) => (
-            <div
-              key={item.id}
-              className={`bg-white border rounded-xl p-5 flex items-start gap-4 ${
-                item.isActive ? 'border-neutral-200' : 'border-neutral-200 opacity-50'
-              }`}
-            >
-              <GripVertical className="w-4 h-4 text-neutral-300 mt-1 flex-shrink-0" />
-              <HelpCircle className="w-4 h-4 text-brand-400 mt-1 flex-shrink-0" />
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="font-semibold text-sm">{item.question}</span>
-                  <span className="text-xs text-neutral-400 bg-neutral-100 px-2 py-0.5 rounded-full">
-                    {getCategoryLabel(item.category)}
-                  </span>
-                </div>
-                <p className="text-sm text-neutral-500 line-clamp-2">{item.answer}</p>
-              </div>
-              <div className="flex items-center gap-1 flex-shrink-0">
-                <button
-                  onClick={() => toggleActive(item)}
-                  className="p-2 hover:bg-neutral-100 rounded-lg transition-colors"
-                  title={item.isActive ? 'Deaktivieren' : 'Aktivieren'}
-                >
-                  {item.isActive ? <Eye className="w-4 h-4 text-green-600" /> : <EyeOff className="w-4 h-4 text-neutral-400" />}
-                </button>
-                <button
-                  onClick={() => { setEditing(item); setShowModal(true); }}
-                  className="p-2 hover:bg-neutral-100 rounded-lg transition-colors"
-                >
-                  <Pencil className="w-4 h-4 text-neutral-500" />
-                </button>
-                <button
-                  onClick={() => handleDelete(item.id)}
-                  className="p-2 hover:bg-red-50 rounded-lg transition-colors"
-                >
-                  <Trash2 className="w-4 h-4 text-red-500" />
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
+          {loadError}
+        </Alert>
       )}
 
-      {/* Modal */}
-      {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 p-6">
-            <h2 className="text-lg font-bold mb-4">
-              {editing ? 'FAQ bearbeiten' : 'Neuer FAQ-Eintrag'}
+      <Panel aria-labelledby="faq-h" className="max-w-[960px]">
+        <div className="panel-h">
+          <div className="min-w-0">
+            <h2 className="h2" id="faq-h">
+              {t('faq.haeufigeFragen')}
             </h2>
-            <form onSubmit={handleSave} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-1">Frage *</label>
-                <input
-                  required
-                  name="question"
-                  defaultValue={editing?.question || ''}
-                  className="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-                  placeholder="z.B. Was kostet die Miete bei HoppDrive?"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-1">Antwort *</label>
-                <textarea
-                  required
-                  name="answer"
-                  rows={4}
-                  defaultValue={editing?.answer || ''}
-                  className="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-                />
-              </div>
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-1">Kategorie</label>
-                  <select
-                    name="category"
-                    defaultValue={editing?.category || 'general'}
-                    className="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-                  >
-                    {CATEGORY_OPTIONS.map((opt) => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-1">Reihenfolge</label>
-                  <input
-                    name="sortOrder"
-                    type="number"
-                    defaultValue={editing?.sortOrder ?? 0}
-                    className="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-                  />
-                </div>
-                <div className="flex items-end">
-                  <label className="flex items-center gap-2 text-sm pb-2">
-                    <input
-                      name="isActive"
-                      type="checkbox"
-                      defaultChecked={editing?.isActive ?? true}
-                      className="rounded border-neutral-300 text-brand-600 focus:ring-brand-500"
-                    />
-                    Aktiv
-                  </label>
-                </div>
-              </div>
-              <div className="flex justify-end gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => { setShowModal(false); setEditing(null); }}
-                  className="px-4 py-2 text-sm font-medium text-neutral-600 hover:bg-neutral-100 rounded-lg transition-colors"
-                >
-                  Abbrechen
-                </button>
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="px-5 py-2 text-sm font-semibold text-white bg-brand-600 rounded-lg hover:bg-brand-700 disabled:opacity-50 transition-colors"
-                >
-                  {saving ? 'Speichern...' : 'Speichern'}
-                </button>
-              </div>
-            </form>
+            {canEdit && <p className="sm mut mt-0.5">{t('faq.perGriffZiehenOder')}</p>}
           </div>
+          {addButton}
         </div>
-      )}
+
+        {loading ? (
+          <div className="p-4">
+            <SkeletonRows rows={5} avatar={false} />
+          </div>
+        ) : sorted.length === 0 && openId !== NEW_ID && !loadError ? (
+          <EmptyState
+            icon={<CircleHelp size={32} />}
+            title={t('faq.nochKeineFragen')}
+            text={t('faq.haeufigeFragenErscheinenAuf')}
+            actions={addButton}
+          />
+        ) : (
+          <ul className="m-0 flex list-none flex-col gap-2 p-3.5 md:p-3.5">
+            {openId === NEW_ID && (
+              <li className={rowClass(true, false)} id={`faq-editor-${NEW_ID}`}>
+                {rowHeader(null)}
+                {renderEditor(null)}
+              </li>
+            )}
+            {sorted.map((item) => {
+              const open = openId === item.id;
+              const rowProps = sort.getRowProps(item.id);
+              return (
+                <li
+                  key={item.id}
+                  className={rowClass(open, sort.dragId === item.id, rowProps['data-drop'])}
+                  {...rowProps}
+                >
+                  {rowHeader(item)}
+                  {open && (
+                    <div id={`faq-editor-${item.id}`}>{renderEditor(item)}</div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+        <p className="sr-only" aria-live="polite">
+          {sort.announcement}
+        </p>
+      </Panel>
     </div>
   );
 }

@@ -1,0 +1,393 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Startseite Desktop</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./b2c.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fira+Sans:wght@400;500;600;700;800&family=Fira+Sans+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>body{margin:0;background:#F2F2F2}</style>
+</helmet>
+<div class="hd">
+
+  <!-- NAV -->
+  <header class="nav">
+    <div class="wrap nav-in">
+      <a href="#top" aria-label="HoppDrive Startseite"><img class="nav-logo" src="/_blob/c58998c5c84da27dee7cde4d98723e61" alt="HoppDrive"></a>
+      <nav class="nav-links" aria-label="Hauptnavigation">
+        <a href="#fleet">Unsere Flotte</a>
+        <a href="#pricing">Preismodell</a>
+        <a href="#faq">FAQ</a>
+        <a href="#location">Standort</a>
+      </nav>
+      <a class="btn btn-p" href="#contact-form">Anfrage senden</a>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="wrap">
+      <div class="hero-grid">
+        <div class="hero-copy">
+          <span class="kick">Kurz- &amp; Langzeitvermietung Schweiz</span>
+          <h1 class="disp">Günstig unterwegs, flexibel gemietet.</h1>
+          <p class="lead">Zuverlässige Fahrzeuge wie Škoda Superb, VW Passat &amp; mehr – ab CHF 59 pro Tag. Je länger Sie mieten, desto mehr sparen Sie. Vollkasko inklusive.</p>
+          <div class="hero-cta">
+            <a class="btn btn-p btn-lg" href="#fleet">Flotte entdecken
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></a>
+            <a class="btn btn-o btn-lg" href="#contact-form">Verfügbarkeit prüfen</a>
+          </div>
+          <ul class="proof">
+            <li><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Vollkasko inklusive</li>
+            <li><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Ab 1 Tag mietbar</li>
+            <li><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Bis 40 % Langzeitrabatt</li>
+          </ul>
+        </div>
+        <div class="stage">
+          <div class="cross" aria-hidden="true"></div>
+          <div class="tag"><span>Ab</span><b>CHF 59</b><span>pro Tag, Vollkasko inkl.</span></div>
+          <div class="road" aria-hidden="true"></div>
+          <img class="car" src="/_blob/24230269e1cfd4b39a93ad59bed30fba" alt="Beispielbild: Kombi von der Seite (Platzhalter für Fahrzeugfoto)">
+        </div>
+      </div>
+
+      <!-- quick inquiry bar -->
+      <form class="qbar" aria-label="Schnellanfrage">
+        <div class="fld">
+          <label for="q-car">Fahrzeug</label>
+          <select id="q-car" class="in"><option>Škoda Superb Combi · ab CHF 79</option><option>Kein bestimmtes Fahrzeug</option></select>
+        </div>
+        <div class="fld">
+          <label for="q-from">Von</label>
+          <input id="q-from" class="in" type="date" value="2026-11-23">
+        </div>
+        <div class="fld">
+          <label for="q-to">Bis</label>
+          <input id="q-to" class="in" type="date" value="2026-12-06">
+        </div>
+        <div class="fld">
+          <span class="lbl">Richtpreis · 14 Tage</span>
+          <div class="pp"><b class="num">CHF 995.40</b><span>Ø CHF 71.10 / Tag, Rabatt ab Tag 8</span></div>
+        </div>
+        <button class="btn btn-p btn-lg" type="button">Verfügbarkeit prüfen</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- FLEET -->
+  <section class="sec" id="fleet">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="kick">Unsere Flotte</span>
+        <h2 class="h2">12 Fahrzeuge, ab 1 Tag mietbar</h2>
+      </div>
+      <div class="chips" role="group" aria-label="Fahrzeugkategorie filtern" style="margin-bottom:32px">
+        <button class="chip" type="button" aria-pressed="true">Alle <small>12</small></button>
+        <button class="chip" type="button" aria-pressed="false">Kombi <small>6</small></button>
+        <button class="chip" type="button" aria-pressed="false">SUV <small>5</small></button>
+        <button class="chip" type="button" aria-pressed="false">Limousinen <small>1</small></button>
+        <button class="chip" type="button" aria-pressed="false">Elektro <small>1</small></button>
+        <button class="chip" type="button" aria-pressed="false">Hybrid <small>2</small></button>
+      </div>
+      <div class="vgrid">
+        <sc-for list="{{cars}}" as="v" hint-placeholder-count="8">
+          <article class="vcard">
+            <a href="Vehicle-Desktop.dc.html" style="text-decoration:none;color:inherit">
+              <div style="position:relative;aspect-ratio:4/3;display:flex;align-items:flex-end;justify-content:center;overflow:hidden;background:{{v.bg}}">
+                <span class="badge {{v.bcls}}" style="position:absolute;left:12px;top:12px">{{v.badge}}</span>
+                <span class="ph" style="position:absolute;right:10px;top:10px;font-size:11px;color:#55595C;background:rgba(255,255,255,.85);padding:2px 8px;border-radius:999px">Foto folgt</span>
+                <img src="{{v.img}}" alt="" style="width:88%;margin-bottom:10px">
+              </div>
+            </a>
+            <div class="vbody">
+              <h3 class="vname">{{v.name}}</h3>
+              <ul class="vspecs">
+                <li>{{v.ps}}</li><li>Automatik</li><li>{{v.seats}}</li><li>{{v.fuel}}</li>
+              </ul>
+              <div class="vprice"><span>Ab</span><b class="num">CHF {{v.price}}</b><span>/ Tag</span></div>
+              <p class="vsub">30 Tage zusammen: CHF {{v.month}}</p>
+              <div class="vact">
+                <a class="btn btn-o" href="Vehicle-Desktop.dc.html">Details</a>
+                <a class="btn btn-p" href="#contact-form">Anfragen</a>
+              </div>
+            </div>
+          </article>
+        </sc-for>
+      </div>
+      <div style="display:flex;justify-content:center;margin-top:40px">
+        <a class="btn btn-o btn-lg" href="Fleet-Desktop.dc.html">Alle 12 Fahrzeuge ansehen</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- WHY -->
+  <section class="sec bg-w">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="kick">Warum HoppDrive</span>
+        <h2 class="h2">Klare Preise, gepflegte Autos, ein Ansprechpartner</h2>
+      </div>
+      <div class="feat">
+        <div class="fi">
+          <div class="ic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+          <h3 class="h3">Unschlagbare Preise</h3>
+          <p class="mut">Ab CHF 59 pro Tag, und mit jeder Woche wird der Tagespreis günstiger.</p>
+        </div>
+        <div class="fi">
+          <div class="ic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg></div>
+          <h3 class="h3">Vollkasko inklusive</h3>
+          <p class="mut">Der Versicherungsschutz ist im Preis enthalten, ohne versteckte Zusatzkosten.</p>
+        </div>
+        <div class="fi">
+          <div class="ic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94z"/></svg></div>
+          <h3 class="h3">Bestens gewartet</h3>
+          <p class="mut">Jedes Fahrzeug wird regelmässig geprüft und gewartet, bevor es zu Ihnen kommt.</p>
+        </div>
+        <div class="fi">
+          <div class="ic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-5Zm0 0a9 9 0 1 1 18 0m0 0v5a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3Z"/><path d="M21 16v2a4 4 0 0 1-4 4h-5"/></svg></div>
+          <h3 class="h3">Persönlicher Service</h3>
+          <p class="mut">Sie sprechen von der Anfrage bis zur Rückgabe mit denselben Menschen.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRICING -->
+  <section class="sec" id="pricing">
+    <div class="wrap">
+      <div class="ladder">
+        <div style="display:flex;flex-direction:column;gap:22px">
+          <span class="kick">Preismodell</span>
+          <h2 class="h2">Je länger Sie mieten, desto weniger zahlen Sie pro Tag</h2>
+          <p class="lead">Der Rabatt gilt für jeden Tag ab der jeweiligen Stufe. Das Beispiel zeigt den Škoda Superb Combi mit CHF 79 Basispreis.</p>
+          <div class="steps" role="img" aria-label="Treppe: Tag 1 bis 7 voller Preis, Tag 8 bis 30 minus 20 Prozent, ab Tag 31 minus 40 Prozent">
+            <div class="step s1"><span>Tag 1 – 7</span><b class="num">CHF 79.00</b><span>Standardtarif</span></div>
+            <div class="step s2"><span>Tag 8 – 30</span><b class="num">CHF 63.20</b><span>20 % Rabatt</span></div>
+            <div class="step s3"><span>Ab Tag 31</span><b class="num">CHF 47.40</b><span>40 % Rabatt</span></div>
+          </div>
+        </div>
+        <div class="calc">
+          <h3 class="h3">Preis für Ihre Mietdauer</h3>
+          <div class="fld">
+            <label for="c-car">Fahrzeug</label>
+            <select id="c-car" class="in"><option>Škoda Superb Combi · CHF 79 / Tag</option></select>
+          </div>
+          <div class="fld">
+            <label for="c-days" style="display:flex;justify-content:space-between"><span>Mietdauer</span><b class="num" style="font-size:20px">14 Tage</b></label>
+            <input id="c-days" class="range" type="range" min="1" max="60" value="14">
+          </div>
+          <div class="tot"><span class="mut">Gesamtpreis</span><b class="num">CHF 995.40</b></div>
+          <p class="sm mut">Ø CHF 71.10 pro Tag. Richtpreis aus der Preisberechnung, verbindlich ist die Bestätigung per E-Mail.</p>
+          <a class="btn btn-p btn-b" href="#contact-form">Mit diesen Daten anfragen</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW -->
+  <section class="sec bg-w">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="kick">So funktioniert's</span>
+        <h2 class="h2">In drei Schritten losfahren</h2>
+      </div>
+      <div class="how">
+        <div class="hw"><div class="n">1</div><h3 class="h3">Fahrzeug wählen</h3><p class="mut">Durchstöbern Sie unsere Flotte und finden Sie das passende Auto für Ihre Bedürfnisse.</p></div>
+        <div class="hw"><div class="n">2</div><h3 class="h3">Unverbindlich anfragen</h3><p class="mut">Senden Sie uns eine kostenlose Anfrage mit Ihren Wunschdaten, wir antworten schnellstmöglich.</p></div>
+        <div class="hw"><div class="n">3</div><h3 class="h3">Losfahren</h3><p class="mut">Vertrag unterschreiben, Schlüssel erhalten, und schon sind Sie günstig und flexibel unterwegs.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SOCIAL PROOF -->
+  <section class="sec">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="kick">Kundenstimmen</span>
+        <h2 class="h2">Was Mieterinnen und Mieter sagen</h2>
+      </div>
+      <div class="tgrid">
+        <sc-for list="{{reviews}}" as="r" hint-placeholder-count="3">
+          <figure class="tc">
+            <div class="stars" role="img" aria-label="5 von 5 Sternen">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"/></svg>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"/></svg>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"/></svg>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"/></svg>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"/></svg>
+            </div>
+            <blockquote style="margin:0;font-size:18px;line-height:1.55">{{r.text}}</blockquote>
+            <figcaption style="display:flex;align-items:center;gap:12px;margin-top:auto">
+              <div class="av" aria-hidden="true">{{r.initial}}</div>
+              <div><b>{{r.name}}</b><div class="sm mut">{{r.city}}</div></div>
+            </figcaption>
+          </figure>
+        </sc-for>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section class="sec bg-w" id="faq">
+    <div class="wrap">
+      <div class="faq-grid">
+        <div style="display:flex;flex-direction:column;gap:20px;align-self:start">
+          <span class="kick">Häufige Fragen</span>
+          <h2 class="h2">Gut zu wissen, bevor Sie anfragen</h2>
+          <div class="help">
+            <b>Ihre Frage fehlt?</b>
+            <p class="mut">Schreiben Sie uns, wir antworten schnellstmöglich.</p>
+            <a class="btn btn-o" href="#contact-form">Frage stellen</a>
+          </div>
+        </div>
+        <div class="acc">
+          <details open>
+            <summary>Was kostet die Miete bei HoppDrive?<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary>
+            <p>Unsere Mietwagen starten ab CHF 59 pro Tag. Bei längerer Mietdauer profitieren Sie von automatischen Rabatten: 20% ab 8 Tagen und bis zu 40% ab 31 Tagen.</p>
+          </details>
+          <details>
+            <summary>Ist eine Versicherung inklusive?<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary>
+            <p>Ja, bei jeder Anmietung ist eine Vollkasko-Versicherung inklusive. Es gibt keine versteckten Zusatzkosten für den Versicherungsschutz.</p>
+          </details>
+          <details>
+            <summary>Wie lange kann ich ein Fahrzeug mieten?<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary>
+            <p>Sie können unsere Fahrzeuge ab 1 Tag bis zu mehreren Monaten mieten. Je länger die Mietdauer, desto günstiger der Tagespreis.</p>
+          </details>
+          <details>
+            <summary>Welche Dokumente brauche ich?<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary>
+            <p>Sie benötigen einen gültigen Führerschein und einen Identitätsausweis (Pass oder ID). Bei der Übergabe wird ein Mietvertrag vor Ort unterschrieben.</p>
+          </details>
+          <details>
+            <summary>Kann ich die Mietdauer verlängern?<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary>
+            <p>Ja, eine Verlängerung ist jederzeit möglich, einfach Kontakt aufnehmen. Der Preis passt sich automatisch an die neue Gesamtdauer an.</p>
+          </details>
+          <details>
+            <summary>Wo kann ich das Fahrzeug abholen?<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary>
+            <p>Die Fahrzeugübergabe findet an unserem Standort statt. Die genaue Adresse und Wegbeschreibung erhalten Sie nach der Buchungsbestätigung.</p>
+          </details>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LOCATION -->
+  <section class="sec" id="location">
+    <div class="wrap">
+      <div class="loc">
+        <div class="info" style="gap:26px">
+          <span class="kick">Standort</span>
+          <h2 class="h2">Hier finden Sie uns</h2>
+          <ul class="info">
+            <li><div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg></div><div><b>Abholung und Rückgabe</b><div class="mut">[Strasse Nr., PLZ Ort]</div></div></li>
+            <li><div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div><div><b>Öffnungszeiten</b><div class="mut">[Mo–Fr, Zeiten eintragen]</div></div></li>
+            <li><div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg></div><div><b>E-Mail</b><div class="mut">info@hoppdrive.ch</div></div></li>
+            <li><div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92Z"/></svg></div><div><b>Telefon</b><div class="mut">[+41 .. ... .. ..]</div></div></li>
+          </ul>
+          <a class="btn btn-o" href="#" style="align-self:flex-start">Route planen</a>
+        </div>
+        <div class="map" role="img" aria-label="Kartenplatzhalter mit Standortmarker">
+          <svg class="bg" viewBox="0 0 640 400" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+            <rect width="640" height="400" fill="#E6E9E4"/>
+            <path d="M-20 300 C120 260 220 340 360 300 S560 230 680 270 L680 330 C560 290 420 370 340 350 S120 310 -20 350Z" fill="#C9D9E3"/>
+            <rect x="40" y="40" width="130" height="90" rx="14" fill="#D5E2CF"/>
+            <rect x="470" y="60" width="120" height="80" rx="14" fill="#D5E2CF"/>
+            <g stroke="#fff" stroke-width="12" fill="none" stroke-linecap="round"><path d="M-10 190 L650 170"/><path d="M200 -10 L260 410"/><path d="M420 -10 L380 410"/></g>
+            <g stroke="#fff" stroke-width="6" fill="none" stroke-linecap="round"><path d="M-10 90 L650 70"/><path d="M80 -10 L120 410"/><path d="M540 -10 L580 410"/><path d="M-10 260 L650 250"/></g>
+          </svg>
+          <div class="pin"><i></i></div>
+          <div class="maplbl"><b>HoppDrive</b> · Kartenplatzhalter</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONTACT FORM -->
+  <section class="sec bg-w" id="contact-form">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="kick">Kostenlos &amp; unverbindlich</span>
+        <h2 class="h2">Anfrage senden</h2>
+        <p class="lead">Sagen Sie uns, was Sie brauchen. Wir melden uns mit Verfügbarkeit und Preis.</p>
+      </div>
+      <div class="formwrap">
+        <form class="card" aria-label="Mietanfrage">
+          <div class="fgrid">
+            <div class="fld"><label for="f-name">Name</label><input id="f-name" class="in" type="text" placeholder="Max Muster"></div>
+            <div class="fld"><label for="f-phone">Telefon</label><input id="f-phone" class="in" type="tel" placeholder="+41 79 123 45 67"></div>
+            <div class="fld full"><label for="f-mail">E-Mail</label><input id="f-mail" class="in" type="email" placeholder="max@beispiel.ch"></div>
+            <div class="fld full"><label for="f-car">Fahrzeug von Interesse</label><select id="f-car" class="in"><option>Škoda Superb Combi</option><option>Kein bestimmtes Fahrzeug</option></select></div>
+            <div class="fld"><label for="f-from">Gewünschter Beginn</label><input id="f-from" class="in" type="date" value="2026-11-23"></div>
+            <div class="fld"><label for="f-to">Gewünschtes Ende</label><input id="f-to" class="in" type="date" value="2026-12-06"></div>
+            <div class="fld full"><label for="f-msg">Nachricht</label><textarea id="f-msg" class="in" placeholder="Ich möchte ein Fahrzeug mieten ab..."></textarea></div>
+            <label class="chk full"><input type="checkbox"><span>Ich habe die <a href="Legal-Desktop.dc.html">Datenschutzerklärung</a> gelesen und stimme der Verarbeitung meiner Angaben zu.</span></label>
+            <label class="chk full"><input type="checkbox"><span>Ich bin damit einverstanden, Werbe-E-Mails über Sonderangebote und neue Fahrzeuge zu erhalten. <span class="mut">(optional)</span></span></label>
+            <div class="full"><button class="btn btn-p btn-lg btn-b" type="button">Anfrage senden</button></div>
+          </div>
+        </form>
+        <aside class="card after" style="display:flex;flex-direction:column;gap:20px">
+          <h3 class="h3">Wie es nach dem Absenden weitergeht</h3>
+          <ul style="display:flex;flex-direction:column;gap:18px">
+            <li><div class="n">1</div><div><b>Bestätigung per E-Mail</b><div class="sm mut">Sie erhalten sofort eine Kopie Ihrer Anfrage.</div></div></li>
+            <li><div class="n">2</div><div><b>Wir prüfen die Verfügbarkeit</b><div class="sm mut">Wir antworten schnellstmöglich mit Preis und Angebot.</div></div></li>
+            <li><div class="n">3</div><div><b>Übergabe vor Ort</b><div class="sm mut">Mietvertrag unterschreiben, Schlüssel erhalten.</div></div></li>
+          </ul>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="foot">
+    <div class="wrap">
+      <div class="foot-g">
+        <div style="display:flex;flex-direction:column;gap:14px;align-items:flex-start">
+          <img src="/_blob/a82670af88d63b848e66522df4cc6ce8" alt="HoppDrive" style="width:250px;height:auto;display:block">
+          <p class="mut" style="max-width:32ch">Günstig, flexibel, Vollkasko inklusive.</p>
+        </div>
+        <div><h4>Fahrzeuge</h4><ul><li><a href="Fleet-Desktop.dc.html">Alle Fahrzeuge</a></li><li><a href="Fleet-Desktop.dc.html">Kombi mieten</a></li><li><a href="Fleet-Desktop.dc.html">SUV mieten</a></li><li><a href="Fleet-Desktop.dc.html">Limousinen mieten</a></li></ul></div>
+        <div><h4>Rechtliches</h4><ul><li><a href="Legal-Desktop.dc.html">Impressum</a></li><li><a href="Legal-Desktop.dc.html">Datenschutz</a></li><li><a href="Legal-Desktop.dc.html">AGB</a></li></ul></div>
+        <div><h4>Kontakt</h4><ul><li><a href="#contact-form">info@hoppdrive.ch</a></li><li><a href="#location">Standort &amp; Öffnungszeiten</a></li></ul></div>
+      </div>
+      <div class="foot-bar"><span>© 2026 HoppDrive. Alle Rechte vorbehalten.</span><a href="#" aria-label="Admin-Anmeldung" style="display:inline-flex;align-items:center;gap:6px;color:inherit">Admin-Anmeldung</a></div>
+    </div>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":6700}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const sedan = '/_blob/73471dc831e127e26f5ecba3b8e32d1b';
+    const suv = '/_blob/154ed80a79c5e4a0801ef4bd139489ea';
+    const estate = '/_blob/24230269e1cfd4b39a93ad59bed30fba';
+    const grey = 'linear-gradient(180deg,#EDEDED 0%,#DCDCDC 100%)';
+    const rose = 'linear-gradient(180deg,#F1ECEC 0%,#E2D6D6 100%)';
+    const blue = 'linear-gradient(180deg,#E8EEF0 0%,#D2DCE0 100%)';
+    const ok = { badge: 'Verfügbar', bcls: 'b-ok' };
+    const off = { badge: 'Reserviert', bcls: 'b-off' };
+    return {
+      cars: [
+        { name: 'Škoda Superb Combi', ps: '150 PS', seats: '5 Sitze', fuel: 'Benzin', price: 79, month: '2’007', img: estate, bg: grey, ...ok },
+        { name: 'Škoda Octavia Combi', ps: '150 PS', seats: '5 Sitze', fuel: 'Benzin', price: 65, month: '1’651', img: estate, bg: grey, ...ok },
+        { name: 'Škoda Octavia', ps: '150 PS', seats: '5 Sitze', fuel: 'Benzin', price: 59, month: '1’499', img: sedan, bg: rose, ...ok },
+        { name: 'Škoda Karoq', ps: '150 PS', seats: '5 Sitze', fuel: 'Benzin', price: 69, month: '1’753', img: suv, bg: grey, ...off },
+        { name: 'Škoda Kodiaq', ps: '190 PS', seats: '7 Sitze', fuel: 'Diesel', price: 85, month: '2’159', img: suv, bg: grey, ...ok },
+        { name: 'Škoda Enyaq iV', ps: '204 PS', seats: '5 Sitze', fuel: 'Elektrisch · 540 km', price: 89, month: '2’261', img: suv, bg: blue, ...ok },
+        { name: 'VW Golf Variant', ps: '150 PS', seats: '5 Sitze', fuel: 'Benzin', price: 69, month: '1’753', img: estate, bg: grey, ...ok },
+        { name: 'VW Passat Variant', ps: '150 PS', seats: '5 Sitze', fuel: 'Diesel', price: 79, month: '2’007', img: estate, bg: rose, ...ok }
+      ],
+      reviews: [
+        { initial: 'M', name: 'Marco S.', city: 'Zürich', text: 'Sehr unkompliziert und günstig. Hatte den VW Passat für 3 Monate – besser als jeder Leasingvertrag.' },
+        { initial: 'L', name: 'Laura M.', city: 'Basel', text: 'Freundlicher Service und das Auto war top gepflegt. Vollkasko inklusive ist ein grosser Pluspunkt.' },
+        { initial: 'T', name: 'Thomas K.', city: 'Bern', text: 'Perfekt für meine Überbrückungszeit. Der Langzeitrabatt hat sich wirklich gelohnt – klare Empfehlung!' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

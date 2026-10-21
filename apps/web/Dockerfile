@@ -6,13 +6,16 @@ FROM base AS deps
 COPY package.json package-lock.json* ./
 COPY apps/web/package.json ./apps/web/
 COPY packages/shared/package.json ./packages/shared/
-RUN npm ci --workspace=apps/web --workspace=packages/shared --include-workspace-root
+COPY packages/tailwind-config/package.json ./packages/tailwind-config/
+RUN npm ci --workspace=apps/web --workspace=packages/shared --workspace=packages/tailwind-config --include-workspace-root
 
-# Build shared package
+# Build shared package + Tailwind preset (apps load the preset from its dist/)
 FROM deps AS build-shared
 COPY packages/shared ./packages/shared
+COPY packages/tailwind-config ./packages/tailwind-config
 COPY tsconfig.base.json ./
 RUN npm run build --workspace=packages/shared
+RUN npm run build --workspace=packages/tailwind-config
 
 # Build Next.js app
 FROM build-shared AS build

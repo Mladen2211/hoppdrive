@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import { AppError } from '../../application/errors';
 
 export function errorHandler(
   err: Error,
@@ -6,6 +7,19 @@ export function errorHandler(
   res: Response,
   _next: NextFunction,
 ): void {
+  // Errors with an explicit status/code (lockout, validation of passwords, guards, ...)
+  if (err instanceof AppError) {
+    if (err.status >= 500) console.error('[Error]', err.stack || err.message);
+    res.status(err.status).json({
+      success: false,
+      error: err.message,
+      ...(err.code ? { code: err.code } : {}),
+      ...(err.details ? { details: err.details } : {}),
+      ...(err.extra ?? {}),
+    });
+    return;
+  }
+
   console.error('[Error]', err.stack || err.message);
   // If the raw body was captured by the JSON parser, log it for debugging
   try {

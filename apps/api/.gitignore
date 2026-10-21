@@ -1,0 +1,3 @@
+# Private storage (contracts, damage photos, ...): never commit
+private/
+uploads/

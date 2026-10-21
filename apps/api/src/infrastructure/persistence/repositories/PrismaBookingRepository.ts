@@ -4,6 +4,7 @@ import {
   DateRange,
   Money,
   type IBookingRepository,
+  type BookingExtras,
   type BookingStatus,
 } from '../../../domain';
 
@@ -45,20 +46,45 @@ export class PrismaBookingRepository implements IBookingRepository {
     return { items: rows.map((r) => this.toDomain(r)), total };
   }
 
-  async save(booking: Booking, customerEmail?: string): Promise<Booking> {
-    const row = await this.prisma.booking.create({
-      data: {
-        id: booking.id,
-        vehicleId: booking.vehicleId,
-        customerName: booking.customerName,
-        customerEmail: customerEmail || null,
-        startDate: booking.dateRange.startDate,
-        endDate: booking.dateRange.endDate,
-        totalPrice: booking.totalPrice.amount,
-        currency: booking.totalPrice.currency,
-        status: booking.status,
-        notes: booking.notes,
-      },
+  async save(booking: Booking, extras: BookingExtras = {}): Promise<Booking> {
+    const row = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.booking.create({
+        data: {
+          id: booking.id,
+          vehicleId: booking.vehicleId,
+          customerName: booking.customerName,
+          customerEmail: extras.customerEmail || null,
+          customerPhone: extras.customerPhone || null,
+          customerLocale: extras.customerLocale || null,
+          locationId: extras.locationId || null,
+          driverStreet: extras.driverStreet || null,
+          driverZip: extras.driverZip || null,
+          driverCity: extras.driverCity || null,
+          driverCountry: extras.driverCountry || null,
+          driverBirthDate: extras.driverBirthDate ?? null,
+          driverLicenseNumber: extras.driverLicenseNumber || null,
+          driverLicenseCountry: extras.driverLicenseCountry || null,
+          startDate: booking.dateRange.startDate,
+          endDate: booking.dateRange.endDate,
+          totalPrice: booking.totalPrice.amount,
+          discountCodeId: extras.discount?.codeId ?? null,
+          discountAmount: extras.discount?.amount ?? 0,
+          currency: booking.totalPrice.currency,
+          status: booking.status,
+          notes: booking.notes,
+        },
+      });
+      if (extras.discount) {
+        await tx.discountRedemption.create({
+          data: {
+            codeId: extras.discount.codeId,
+            email: extras.discount.email.trim().toLowerCase(),
+            amount: extras.discount.amount,
+            bookingId: created.id,
+          },
+        });
+      }
+      return created;
     });
     return this.toDomain(row);
   }

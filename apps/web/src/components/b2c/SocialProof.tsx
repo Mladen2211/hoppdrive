@@ -1,5 +1,7 @@
 import Image from 'next/image';
-import { Star, Quote } from 'lucide-react';
+import { Star } from 'lucide-react';
+import { useTranslations } from 'next-intl';
+import { canOptimizeImage } from '@/lib/images';
 import type { SocialProofContent } from '@/types/homepage-sections';
 
 export type { SocialProofContent };
@@ -13,40 +15,16 @@ export interface Testimonial {
   avatarUrl: string | null;
 }
 
-const FALLBACK_TESTIMONIALS: Testimonial[] = [
-  {
-    id: '1',
-    name: 'Marco S.',
-    location: 'Zürich',
-    text: 'Sehr unkompliziert und günstig. Hatte den VW Passat für 3 Monate – besser als jeder Leasingvertrag.',
-    rating: 5,
-    avatarUrl: null,
-  },
-  {
-    id: '2',
-    name: 'Laura M.',
-    location: 'Basel',
-    text: 'Freundlicher Service und das Auto war top gepflegt. Vollkasko inklusive ist ein grosser Pluspunkt.',
-    rating: 5,
-    avatarUrl: null,
-  },
-  {
-    id: '3',
-    name: 'Thomas K.',
-    location: 'Bern',
-    text: 'Perfekt für meine Überbrückungszeit. Der Langzeitrabatt hat sich wirklich gelohnt – klare Empfehlung!',
-    rating: 5,
-    avatarUrl: null,
-  },
-];
-
-function StarRating({ rating }: { rating: number }) {
+function Stars({ rating, label }: { rating: number; label: (value: number) => string }) {
+  const value = Math.max(0, Math.min(5, Math.round(rating)));
   return (
-    <div className="flex gap-0.5">
+    <div className="flex gap-0.5 text-[#B8860B]" role="img" aria-label={label(value)}>
       {Array.from({ length: 5 }).map((_, i) => (
         <Star
           key={i}
-          className={`w-4 h-4 ${i < rating ? 'fill-amber-400 text-amber-400' : 'text-neutral-200'}`}
+          size={20}
+          aria-hidden="true"
+          className={i < value ? 'fill-current' : 'text-line'}
         />
       ))}
     </div>
@@ -59,62 +37,60 @@ interface SocialProofProps {
 }
 
 export function SocialProof({ content, testimonials: testimonialsProp }: SocialProofProps) {
+  const t = useTranslations('social');
   const c = content || {};
-  const label = c.label ?? 'Kundenstimmen';
-  const heading = c.heading ?? 'Was unsere Kunden sagen';
-  const description = c.description ?? 'Hunderte zufriedene Mieter vertrauen HoppDrive für günstige und flexible Mobilität.';
-  const testimonials = testimonialsProp && testimonialsProp.length > 0 ? testimonialsProp : FALLBACK_TESTIMONIALS;
+  const label = c.label ?? t('label');
+  const heading = c.heading ?? t('heading');
+
+  // Shown while the CMS has no testimonials (texts in messages/<locale>.json -> social.fallback).
+  const fallbackTestimonials: Testimonial[] = (['one', 'two', 'three'] as const).map((key, index) => ({
+    id: String(index + 1),
+    name: t(`fallback.${key}.name`),
+    location: t(`fallback.${key}.location`),
+    text: t(`fallback.${key}.text`),
+    rating: 5,
+    avatarUrl: null,
+  }));
+  const testimonials = testimonialsProp && testimonialsProp.length > 0 ? testimonialsProp : fallbackTestimonials;
 
   return (
-    <section className="py-20 bg-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-16">
-          <span className="text-brand-600 font-semibold text-sm uppercase tracking-wider">
-            {label}
-          </span>
-          <h2 className="text-3xl md:text-4xl font-bold mt-3 mb-4">
-            {heading}
-          </h2>
-          <p className="text-neutral-500 max-w-2xl mx-auto text-lg">
-            {description}
-          </p>
+    <section className="sec">
+      <div className="wrap">
+        <div className="sec-head">
+          <p className="kick">{label}</p>
+          <h2 className="h2">{heading}</h2>
+          {c.description && <p className="lead">{c.description}</p>}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {testimonials.slice(0, 3).map((t) => (
-            <div
-              key={t.id}
-              className="relative bg-neutral-50 rounded-2xl p-8 border border-neutral-100 hover:shadow-lg hover:border-brand-100 transition-all duration-300"
-            >
-              <Quote className="w-8 h-8 text-brand-100 mb-4" />
-              <p className="text-neutral-700 leading-relaxed mb-6 text-sm">
-                &ldquo;{t.text}&rdquo;
-              </p>
-              <div className="flex items-center gap-3">
-                {t.avatarUrl ? (
+        <div className="grid grid-cols-3 gap-6 max-lg:grid-cols-1">
+          {testimonials.slice(0, 3).map((item) => (
+            <figure key={item.id} className="m-0 flex flex-col gap-4 rounded-18 border border-line bg-white p-7 max-md:p-[22px]">
+              <Stars rating={item.rating} label={(value) => t('stars', { value })} />
+              <blockquote className="m-0 text-lg leading-[1.55] max-md:text-[17px]">{item.text}</blockquote>
+              <figcaption className="mt-auto flex items-center gap-3">
+                {item.avatarUrl ? (
                   <Image
-                    src={t.avatarUrl}
-                    alt={t.name}
-                    width={40}
-                    height={40}
-                    className="rounded-full object-cover"
+                    src={item.avatarUrl}
+                    alt=""
+                    width={44}
+                    height={44}
+                    unoptimized={!canOptimizeImage(item.avatarUrl)}
+                    className="h-11 w-11 flex-none rounded-full object-cover"
                   />
                 ) : (
-                  <div className="w-10 h-10 rounded-full bg-brand-100 flex items-center justify-center text-brand-600 font-bold text-sm">
-                    {t.name.charAt(0)}
+                  <div
+                    className="flex h-11 w-11 flex-none items-center justify-center rounded-full bg-ink font-semibold text-white"
+                    aria-hidden="true"
+                  >
+                    {item.name.charAt(0)}
                   </div>
                 )}
                 <div>
-                  <div className="font-semibold text-sm">{t.name}</div>
-                  {t.location && (
-                    <div className="text-xs text-neutral-400">{t.location}</div>
-                  )}
+                  <b>{item.name}</b>
+                  {item.location && <div className="text-sm leading-[1.45] text-graphite">{item.location}</div>}
                 </div>
-                <div className="ml-auto">
-                  <StarRating rating={t.rating} />
-                </div>
-              </div>
-            </div>
+              </figcaption>
+            </figure>
           ))}
         </div>
       </div>

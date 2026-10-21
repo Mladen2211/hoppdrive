@@ -29,4 +29,266 @@
   section[id] {
     scroll-margin-top: 6rem;
   }
+
+  /* Global focus ring (design system): 3 px blue, 2 px offset, on every
+     background including ruby. Elements that set their own focus style
+     (e.g. `focus:outline-none focus:ring-2`) keep it, because their
+     `:focus` selector is more specific. */
+  :focus-visible {
+    outline: 3px solid theme('colors.focus');
+    outline-offset: 2px;
+  }
+}
+
+/* ────────────────────────────────────────────────────────────────────
+   B2C design-system components (docs/design/b2c/source/b2c.css).
+   Class names match the design export so boards (*.dc.html) can be
+   rebuilt 1:1; React wrappers live in src/components/ui.
+   Utilities in markup still override these (components < utilities).
+   ──────────────────────────────────────────────────────────────────── */
+@layer components {
+  /* ── Layout + type ─────────────────────────────────────────────── */
+  .wrap {
+    @apply mx-auto max-w-[1280px] px-10 max-lg:px-8 max-md:px-5 3xl:max-w-[1680px];
+  }
+  .sec {
+    @apply py-24 max-lg:py-[72px] max-md:py-[52px];
+  }
+  .sec-head {
+    @apply mb-12 flex max-w-[720px] flex-col gap-3.5 max-md:mb-7;
+  }
+  .disp {
+    @apply text-[64px] font-extrabold leading-[1.02] tracking-[-0.025em] max-lg:text-[52px] max-md:text-[38px];
+  }
+  .h2 {
+    @apply text-[40px] font-bold leading-[1.1] tracking-[-0.018em] max-lg:text-[34px] max-md:text-[28px];
+  }
+  .h3 {
+    @apply text-[22px] font-bold leading-tight tracking-[-0.01em];
+  }
+  .lead {
+    @apply max-w-[56ch] text-[19px] leading-[1.55] text-graphite max-md:text-[17px];
+  }
+  .mut {
+    @apply text-graphite;
+  }
+  /* Prices and numbers: Fira Sans Condensed with tabular figures */
+  .num {
+    @apply font-cond tracking-normal tabular-nums;
+  }
+  /* Section label with the Swiss cross (reserved for section kickers) */
+  .kick {
+    @apply flex items-center gap-2.5 text-[15px] font-semibold text-ruby;
+  }
+  .kick::before {
+    content: '';
+    width: 18px;
+    height: 18px;
+    flex: none;
+    background:
+      linear-gradient(#A60E0E, #A60E0E) center / 100% 34% no-repeat,
+      linear-gradient(#A60E0E, #A60E0E) center / 34% 100% no-repeat;
+  }
+
+  /* ── Buttons (48 px, large 56 px) ──────────────────────────────── */
+  .btn {
+    @apply inline-flex min-h-[48px] cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-10 border-2 border-transparent px-[22px] text-base font-semibold leading-none no-underline transition-colors;
+  }
+  .btn-p {
+    @apply bg-ruby text-white hover:bg-ruby-dark;
+  }
+  .btn-o {
+    @apply border-ink bg-white text-ink hover:bg-paper;
+  }
+  .btn-g {
+    @apply border-line bg-transparent text-ink hover:bg-white;
+  }
+  .btn-lg {
+    @apply min-h-[56px] px-7 text-[17px];
+  }
+  .btn-b {
+    @apply w-full;
+  }
+  /* Disabled: grey fill, never just opacity. A loading button keeps its
+     colour (data-loading) so "Anfrage wird gesendet…" stays prominent. */
+  .btn:disabled,
+  .btn[aria-disabled='true']:not([data-loading]) {
+    @apply cursor-not-allowed border-transparent bg-line-soft text-[#6E7174] hover:bg-line-soft;
+  }
+  .btn[data-loading] {
+    @apply cursor-progress;
+  }
+  .ico-btn {
+    @apply inline-flex h-12 w-12 cursor-pointer items-center justify-center rounded-10 border-2 border-line bg-white text-ink hover:bg-paper;
+  }
+
+  /* ── Fields (52 px) ────────────────────────────────────────────── */
+  .fld {
+    @apply flex min-w-0 flex-col gap-1.5;
+  }
+  .fld-label,
+  .lbl {
+    @apply text-sm font-semibold text-ink;
+  }
+  .in {
+    @apply h-13 w-full rounded-10 border-[1.5px] border-field bg-white px-3.5 text-base text-ink placeholder:text-[#6E7174];
+  }
+  textarea.in {
+    @apply h-auto min-h-[120px] resize-y py-3;
+  }
+  select.in {
+    @apply cursor-pointer appearance-none pr-10;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%233E4144' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+  }
+  .in:focus-visible {
+    outline: 3px solid theme('colors.focus');
+    outline-offset: 1px;
+    border-color: theme('colors.focus');
+  }
+  .in-bad,
+  .in[aria-invalid='true'] {
+    @apply border-err bg-err-tint;
+  }
+  .in-ok {
+    @apply border-ok;
+  }
+  .in:disabled {
+    @apply cursor-not-allowed border-line bg-paper text-[#6E7174];
+  }
+  .hint {
+    @apply text-[13px] text-graphite;
+  }
+  .errm {
+    @apply flex items-center gap-1.5 text-[13px] font-medium text-err;
+  }
+  .chk {
+    @apply flex items-start gap-3 text-[15px];
+  }
+  .chk input[type='checkbox'] {
+    @apply m-0 h-6 w-6 flex-none cursor-pointer accent-ruby;
+  }
+  .range {
+    @apply h-9 w-full accent-ruby;
+  }
+
+  /* ── Filter chips (44 px) ──────────────────────────────────────── */
+  .chips {
+    @apply flex flex-wrap gap-2.5;
+  }
+  .chip {
+    @apply inline-flex min-h-[44px] cursor-pointer items-center gap-2 whitespace-nowrap rounded-full border-[1.5px] border-line bg-white px-[18px] text-[15px] font-medium text-ink;
+  }
+  .chip[aria-pressed='true'],
+  .chip[aria-current='page'] {
+    @apply border-ink bg-ink text-white;
+  }
+  .chip small {
+    @apply text-[13px] opacity-75;
+  }
+
+  /* ── Badges ────────────────────────────────────────────────────── */
+  .badge {
+    @apply inline-flex h-[26px] items-center gap-1.5 rounded-full px-2.5 text-[13px] font-semibold;
+  }
+  .b-ok {
+    @apply bg-ok-tint text-ok;
+  }
+  .b-warn {
+    @apply bg-warn-tint text-warn-b2c;
+  }
+  .b-off {
+    @apply bg-mute-tint text-mute-ink;
+  }
+  .b-ruby {
+    @apply bg-ruby text-white;
+  }
+  .b-ink {
+    @apply bg-ink text-white;
+  }
+
+  /* ── Price pill (Richtpreis) ───────────────────────────────────── */
+  .pp {
+    @apply flex min-h-[52px] flex-col justify-center rounded-10 bg-ruby-tint px-3.5 py-1.5 leading-[1.15];
+  }
+  .pp > b {
+    @apply font-cond text-[22px] font-bold leading-[1.1] text-ruby-dark;
+  }
+  .pp > span {
+    @apply text-xs text-graphite;
+  }
+
+  /* ── Cards, alerts, breadcrumbs ────────────────────────────────── */
+  .card {
+    @apply rounded-20 border border-line bg-white p-8 max-md:p-5;
+  }
+  .alert {
+    @apply flex items-start gap-3 rounded-xl px-4 py-3.5 text-[15px];
+  }
+  .al-ok {
+    @apply bg-ok-tint text-ok-ink;
+  }
+  .al-err {
+    @apply bg-err-tint text-err-ink;
+  }
+  .al-warn {
+    @apply bg-warn-tint text-warn-ink;
+  }
+  .al-info {
+    @apply bg-info-tint text-info-ink;
+  }
+  .crumbs {
+    @apply flex flex-wrap items-center gap-2 text-sm text-graphite;
+  }
+  .crumbs a {
+    @apply inline-flex min-h-[32px] items-center no-underline hover:text-ruby;
+  }
+
+  /* ── Skeleton ──────────────────────────────────────────────────── */
+  .skel {
+    @apply animate-shimmer rounded-lg;
+    background: linear-gradient(90deg, #e4e4e4 0%, #f1f1f1 50%, #e4e4e4 100%);
+    background-size: 200% 100%;
+  }
+
+  /* ── Switch (52 x 30 track; the React Switch adds the hit area) ── */
+  .sw {
+    @apply relative inline-block h-[30px] w-[52px] flex-none rounded-full bg-field transition-colors;
+  }
+  .sw::after {
+    content: '';
+    @apply absolute left-[3px] top-[3px] h-6 w-6 rounded-full bg-white transition-[left];
+  }
+  .sw-on,
+  .sw[aria-checked='true'],
+  [aria-checked='true'] > .sw {
+    @apply bg-ok;
+  }
+  .sw-on::after,
+  .sw[aria-checked='true']::after,
+  [aria-checked='true'] > .sw::after {
+    @apply left-[25px];
+  }
+}
+
+/* Reduced motion: every named animation/transition from the design system
+   is switched off. Kept outside `@layer` so it wins over the utilities.
+   (`animate-spin` stays: it signals "loading" rather than decorating.) */
+@media (prefers-reduced-motion: reduce) {
+  .skel,
+  [class*='animate-shimmer'],
+  [class*='animate-fade-in'],
+  [class*='animate-slide-up'],
+  [class*='animate-sheet-up'],
+  [class*='animate-slide-in-right'],
+  [class*='animate-pop'] {
+    /* !important: responsive variants (md:animate-pop) are emitted later */
+    animation: none !important;
+  }
+  .btn,
+  .sw,
+  .sw::after {
+    transition: none;
+  }
 }

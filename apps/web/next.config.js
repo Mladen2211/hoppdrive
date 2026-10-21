@@ -1,5 +1,9 @@
 /** @type {import('next').NextConfig} */
 
+// next-intl: wires the per-request i18n config (src/i18n/request.ts) into the build.
+const createNextIntlPlugin = require('next-intl/plugin');
+const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
+
 const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:97/api';
 
 // The API's origin without the `/api` suffix — e.g. uploads are served by
@@ -40,4 +44,4 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig;
+module.exports = withNextIntl(nextConfig);

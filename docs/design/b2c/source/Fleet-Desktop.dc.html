@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Alle Fahrzeuge Desktop</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./b2c.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fira+Sans:wght@400;500;600;700;800&family=Fira+Sans+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>body{margin:0;background:#F2F2F2}</style>
+</helmet>
+<div class="hd">
+
+  <header class="nav">
+    <div class="wrap nav-in">
+      <a href="Main.dc.html" aria-label="HoppDrive Startseite"><img class="nav-logo" src="/_blob/c58998c5c84da27dee7cde4d98723e61" alt="HoppDrive"></a>
+      <nav class="nav-links" aria-label="Hauptnavigation">
+        <a href="Main.dc.html">Unsere Flotte</a><a href="Main.dc.html">Preismodell</a><a href="Main.dc.html">FAQ</a><a href="Main.dc.html">Standort</a>
+      </nav>
+      <a class="btn btn-p" href="Main.dc.html">Anfrage senden</a>
+    </div>
+  </header>
+
+  <section style="padding:32px 0 8px">
+    <div class="wrap">
+      <nav class="crumbs" aria-label="Brotkrumen"><a href="Main.dc.html">Start</a><span aria-hidden="true">/</span><span aria-current="page">Alle Fahrzeuge</span></nav>
+      <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:32px;margin-top:16px;flex-wrap:wrap">
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <h1 class="disp" style="font-size:52px">Alle Fahrzeuge</h1>
+          <p class="lead" style="max-width:60ch">12 Fahrzeuge für Kurz- und Langzeitmiete. Je länger Sie mieten, desto günstiger der Tagespreis.</p>
+        </div>
+        <div class="chips" role="group" aria-label="Kategorie">
+          <a class="chip" href="Fleet-Desktop.dc.html" aria-pressed="true" style="text-decoration:none">Alle <small>12</small></a>
+          <a class="chip" href="Fleet-Desktop.dc.html" aria-pressed="false" style="text-decoration:none">Kombi <small>6</small></a>
+          <a class="chip" href="Fleet-Desktop.dc.html" aria-pressed="false" style="text-decoration:none">SUV <small>5</small></a>
+          <a class="chip" href="Fleet-Desktop.dc.html" aria-pressed="false" style="text-decoration:none">Limousinen <small>1</small></a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section style="padding:32px 0 88px">
+    <div class="wrap">
+      <div style="display:grid;grid-template-columns:280px minmax(0,1fr);gap:32px;align-items:start">
+
+        <aside class="card" style="padding:24px;display:flex;flex-direction:column;gap:24px;position:sticky;top:24px" aria-label="Filter">
+          <div style="display:flex;justify-content:space-between;align-items:center"><h2 class="h3">Filter</h2><a href="#" style="font-size:14px;font-weight:600;color:var(--ruby-d)">Zurücksetzen</a></div>
+          <fieldset style="border:0;padding:0;margin:0;display:flex;flex-direction:column;gap:6px">
+            <legend class="lbl" style="padding:0;margin-bottom:8px">Antrieb</legend>
+            <label class="chk" style="min-height:44px;align-items:center"><input type="checkbox" checked><span>Benzin <span class="mut">(7)</span></span></label>
+            <label class="chk" style="min-height:44px;align-items:center"><input type="checkbox"><span>Diesel <span class="mut">(2)</span></span></label>
+            <label class="chk" style="min-height:44px;align-items:center"><input type="checkbox"><span>Hybrid <span class="mut">(2)</span></span></label>
+            <label class="chk" style="min-height:44px;align-items:center"><input type="checkbox"><span>Elektrisch <span class="mut">(1)</span></span></label>
+          </fieldset>
+          <div class="fld">
+            <label for="fl-seats">Sitzplätze</label>
+            <select id="fl-seats" class="in"><option>Egal</option><option>5 oder mehr</option><option>7</option></select>
+          </div>
+          <div class="fld">
+            <label for="fl-price" style="display:flex;justify-content:space-between"><span>Max. Preis pro Tag</span><b class="num" style="font-size:18px">CHF 89</b></label>
+            <input id="fl-price" class="range" type="range" min="59" max="89" value="89">
+            <div class="hint" style="display:flex;justify-content:space-between"><span>CHF 59</span><span>CHF 89</span></div>
+          </div>
+          <label class="chk" style="min-height:44px;align-items:center;justify-content:space-between;flex-direction:row-reverse"><span style="flex:1">Nur verfügbare Fahrzeuge</span><span class="sw on" aria-hidden="true"></span></label>
+        </aside>
+
+        <div style="display:flex;flex-direction:column;gap:20px;min-width:0">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap">
+            <p aria-live="polite"><b>9</b> von 12 Fahrzeugen</p>
+            <div class="fld" style="flex-direction:row;align-items:center;gap:10px"><label for="sort">Sortieren</label><select id="sort" class="in" style="height:44px;width:auto"><option>Preis aufsteigend</option><option>Preis absteigend</option><option>Name A–Z</option></select></div>
+          </div>
+          <div class="vgrid c3" style="grid-template-columns:repeat(3,minmax(0,1fr))">
+            <sc-for list="{{cars}}" as="v" hint-placeholder-count="9">
+              <article class="vcard">
+                <a href="Vehicle-Desktop.dc.html" style="text-decoration:none;color:inherit">
+                  <div style="position:relative;aspect-ratio:4/3;display:flex;align-items:flex-end;justify-content:center;overflow:hidden;background:{{v.bg}}">
+                    <span class="badge {{v.bcls}}" style="position:absolute;left:12px;top:12px">{{v.badge}}</span>
+                    <span style="position:absolute;right:10px;top:10px;font-size:11px;color:#55595C;background:rgba(255,255,255,.85);padding:2px 8px;border-radius:999px">Foto folgt</span>
+                    <img src="{{v.img}}" alt="" style="width:88%;margin-bottom:10px">
+                  </div>
+                </a>
+                <div class="vbody">
+                  <h3 class="vname">{{v.name}}</h3>
+                  <ul class="vspecs"><li>{{v.ps}}</li><li>Automatik</li><li>{{v.seats}}</li><li>{{v.fuel}}</li></ul>
+                  <div class="vprice"><span>Ab</span><b class="num">CHF {{v.price}}</b><span>/ Tag</span></div>
+                  <p class="vsub">30 Tage zusammen: CHF {{v.month}}</p>
+                  <div class="vact"><a class="btn btn-o" href="Vehicle-Desktop.dc.html">Details</a><a class="btn btn-p" href="Main.dc.html">Anfragen</a></div>
+                </div>
+              </article>
+            </sc-for>
+          </div>
+          <div style="display:flex;justify-content:center;padding-top:12px"><button class="btn btn-o btn-lg" type="button">Weitere 3 Fahrzeuge laden</button></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <div class="wrap">
+      <div class="foot-g">
+        <div style="display:flex;flex-direction:column;gap:14px;align-items:flex-start"><img src="/_blob/a82670af88d63b848e66522df4cc6ce8" alt="HoppDrive" style="width:250px;height:auto;display:block"><p class="mut" style="max-width:32ch">Günstig, flexibel, Vollkasko inklusive.</p></div>
+        <div><h4>Fahrzeuge</h4><ul><li><a href="Fleet-Desktop.dc.html">Alle Fahrzeuge</a></li><li><a href="Fleet-Desktop.dc.html">Kombi mieten</a></li><li><a href="Fleet-Desktop.dc.html">SUV mieten</a></li><li><a href="Fleet-Desktop.dc.html">Limousinen mieten</a></li></ul></div>
+        <div><h4>Rechtliches</h4><ul><li><a href="Legal-Desktop.dc.html">Impressum</a></li><li><a href="Legal-Desktop.dc.html">Datenschutz</a></li><li><a href="Legal-Desktop.dc.html">AGB</a></li></ul></div>
+        <div><h4>Kontakt</h4><ul><li><a href="Main.dc.html">info@hoppdrive.ch</a></li><li><a href="Main.dc.html">Standort &amp; Öffnungszeiten</a></li></ul></div>
+      </div>
+      <div class="foot-bar"><span>© 2026 HoppDrive. Alle Rechte vorbehalten.</span><a href="#" aria-label="Admin-Anmeldung" style="color:inherit">Admin-Anmeldung</a></div>
+    </div>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":2400}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const sedan = '/_blob/73471dc831e127e26f5ecba3b8e32d1b';
+    const suv = '/_blob/154ed80a79c5e4a0801ef4bd139489ea';
+    const estate = '/_blob/24230269e1cfd4b39a93ad59bed30fba';
+    const grey = 'linear-gradient(180deg,#EDEDED 0%,#DCDCDC 100%)';
+    const rose = 'linear-gradient(180deg,#F1ECEC 0%,#E2D6D6 100%)';
+    const blue = 'linear-gradient(180deg,#E8EEF0 0%,#D2DCE0 100%)';
+    const ok = { badge: 'Verfügbar', bcls: 'b-ok' };
+    const off = { badge: 'Reserviert', bcls: 'b-off' };
+    return {
+      cars: [
+        { name: 'Škoda Octavia', ps: '150 PS', seats: '5 Sitze', fuel: 'Benzin', price: 59, month: '1’499', img: sedan, bg: rose, ...ok },
+        { name: 'SEAT Leon Sportstourer', ps: '150 PS', seats: '5 Sitze', fuel: 'Benzin', price: 59, month: '1’499', img: estate, bg: grey, ...ok },
+        { name: 'Škoda Octavia Combi', ps: '150 PS', seats: '5 Sitze', fuel: 'Benzin', price: 65, month: '1’651', img: estate, bg: grey, ...ok },
+        { name: 'Škoda Karoq', ps: '150 PS', seats: '5 Sitze', fuel: 'Benzin', price: 69, month: '1’753', img: suv, bg: grey, ...off },
+        { name: 'VW Golf Variant', ps: '150 PS', seats: '5 Sitze', fuel: 'Benzin', price: 69, month: '1’753', img: estate, bg: grey, ...ok },
+        { name: 'Toyota Corolla Touring Sports', ps: '140 PS', seats: '5 Sitze', fuel: 'Hybrid', price: 69, month: '1’753', img: estate, bg: blue, ...ok },
+        { name: 'Hyundai Tucson', ps: '150 PS', seats: '5 Sitze', fuel: 'Hybrid', price: 75, month: '1’905', img: suv, bg: blue, ...ok },
+        { name: 'Škoda Superb Combi', ps: '150 PS', seats: '5 Sitze', fuel: 'Benzin', price: 79, month: '2’007', img: estate, bg: grey, ...ok },
+        { name: 'VW Tiguan', ps: '150 PS', seats: '5 Sitze', fuel: 'Benzin', price: 79, month: '2’007', img: suv, bg: grey, ...ok }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

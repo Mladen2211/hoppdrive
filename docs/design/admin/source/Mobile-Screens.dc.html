@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Admin Mobil 390</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./admin.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fira+Sans:wght@400;500;600;700&family=Fira+Sans+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#E9E9E9}
+.ph-row{display:grid;grid-template-columns:repeat(6,390px);gap:56px;width:2620px}
+.ph{width:390px;height:1000px;background:var(--paper);border:1px solid var(--line);display:flex;flex-direction:column;overflow:hidden;position:relative}
+.ph-b{flex:1;overflow:hidden;padding:16px;display:flex;flex-direction:column;gap:14px;min-height:0}
+.ph-b>*{flex:none}
+.ph-b.fade{-webkit-mask-image:linear-gradient(#000 calc(100% - 110px),transparent calc(100% - 24px));mask-image:linear-gradient(#000 calc(100% - 110px),transparent calc(100% - 24px))}
+.k48{min-height:48px}
+.ib48{width:48px;height:48px;border-radius:12px;border:1.5px solid var(--line);background:#fff;color:var(--ink);display:inline-flex;align-items:center;justify-content:center;flex:none}
+.hscroll{display:flex;gap:8px;overflow:hidden;margin:0 -16px;padding:0 16px}
+.hscroll .chip{min-height:44px}
+.pc .prog span{font-size:0;gap:0}
+.pc .prog span i{font-size:12px;width:24px;height:24px}
+.pc .prog hr{min-width:10px}
+.fab{position:absolute;right:16px;bottom:88px;width:56px;height:56px;border-radius:16px;background:var(--ruby);color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 20px rgba(166,14,14,.35)}
+.ag{border-left:4px solid var(--cool)}
+.ag.go{border-left-color:var(--info)}.ag.back{border-left-color:var(--ok)}.ag.wa{border-left-color:#8A8D90}.ag.q{border-left-color:#C9962E}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:22px 22px 0 0;box-shadow:0 -12px 40px rgba(44,46,48,.28);display:flex;flex-direction:column}
+.grab{width:44px;height:5px;border-radius:3px;background:#C9CBCD;margin:10px auto 4px}
+</style>
+</helmet>
+<div class="ad">
+<div class="ph-row">
+
+  <!-- 1 Übersicht -->
+  <section class="ph" aria-label="Übersicht">
+    <header class="m-top"><img src="/_blob/3c8c22cf0c301f831c336e6bf36e584f" alt="HoppDrive Admin"><button class="icon-btn" type="button" aria-label="Benachrichtigungen, 4 ungelesen" style="margin-left:auto;width:48px;height:48px"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><span class="dot">4</span></button></header>
+    <div class="ph-b">
+      <h1 class="h1" style="font-size:24px">Übersicht</h1>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <sc-for list="{{kpis}}" as="k" hint-placeholder-count="4">
+          <div class="m-card" style="gap:4px;padding:12px"><span class="sm mut">{{k.l}}</span><b class="num" style="font-size:{{k.fs}};line-height:1.1">{{k.v}}</b><span class="sm {{k.cl}}" style="font-weight:600">{{k.s}}</span></div>
+        </sc-for>
+      </div>
+      <div class="m-card" style="padding:0">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line-s)"><b class="h3">Heute zu tun</b><span class="st s-amber">4 offen</span></div>
+        <a href="#" style="display:flex;align-items:center;gap:12px;min-height:56px;padding:6px 14px;text-decoration:none;border-bottom:1px solid var(--line-s)"><span class="tl-ic" style="width:36px;height:36px;border-radius:10px;background:var(--info-t);color:var(--info);display:flex;align-items:center;justify-content:center"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span><span style="flex:1"><b>3 neue Anfragen</b><br><span class="sm mut">Älteste seit 2 Tagen</span></span><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></a>
+        <a href="#" style="display:flex;align-items:center;gap:12px;min-height:56px;padding:6px 14px;text-decoration:none;border-bottom:1px solid var(--line-s)"><span style="width:36px;height:36px;border-radius:10px;background:var(--warn-t);color:var(--warn);display:flex;align-items:center;justify-content:center"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6"/></svg></span><span style="flex:1"><b>2 Verträge laufen aus</b><br><span class="sm mut">Innerhalb von 7 Tagen</span></span><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></a>
+        <a href="#" style="display:flex;align-items:center;gap:12px;min-height:56px;padding:6px 14px;text-decoration:none"><span style="width:36px;height:36px;border-radius:10px;background:var(--err-t);color:#8F1C15;display:flex;align-items:center;justify-content:center"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0zM12 9v4M12 17h.01"/></svg></span><span style="flex:1"><b>1 Rechnung offen</b><br><span class="sm mut">14 Tage unbezahlt</span></span><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></a>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center"><b class="h3">Aktuelle Buchungen</b><a href="#" style="font-weight:600;color:var(--ruby-d);min-height:44px;display:inline-flex;align-items:center">Alle</a></div>
+      <sc-for list="{{books}}" as="b" hint-placeholder-count="3">
+        <div class="m-card" style="gap:6px"><div style="display:flex;justify-content:space-between;gap:8px"><b>{{b.n}}</b><span class="st {{b.cls}}">{{b.s}}</span></div><div class="sm mut">{{b.car}}</div><div class="num sm">{{b.p}}</div></div>
+      </sc-for>
+    </div>
+    <nav class="bnav" aria-label="Hauptnavigation"><sc-for list="{{nav1}}" as="n" hint-placeholder-count="5"><a href="#" aria-current="{{n.cur}}"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="{{n.d}}"/></svg>{{n.l}}<sc-if value="{{n.c}}" hint-placeholder-val="{{ false }}"><span class="cnt">{{n.c}}</span></sc-if></a></sc-for></nav>
+  </section>
+
+  <!-- 2 Anfragen -->
+  <section class="ph" aria-label="Anfragen">
+    <header class="m-top"><b class="h2">Anfragen</b><button class="icon-btn" type="button" aria-label="Suchen" style="margin-left:auto;width:48px;height:48px"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM21 21l-4.3-4.3"/></svg></button></header>
+    <div class="ph-b">
+      <div class="hscroll" role="group" aria-label="Stand">
+        <button class="chip" type="button" aria-pressed="true">Neu 3</button><button class="chip" type="button" aria-pressed="false">Geprüft 2</button><button class="chip" type="button" aria-pressed="false">Beantwortet 4</button><button class="chip" type="button" aria-pressed="false">Gebucht 11</button>
+      </div>
+      <sc-for list="{{inq}}" as="q" hint-placeholder-count="5">
+        <div class="m-card" style="gap:8px">
+          <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><div><b style="font-size:16px">{{q.n}}</b><div class="sm mut">{{q.w}}</div></div><span class="st {{q.cls}}">{{q.s}}</span></div>
+          <div>{{q.car}}</div><div class="num mut">{{q.p}}</div>
+          <button class="btn btn-o btn-b k48" type="button">Öffnen</button>
+        </div>
+      </sc-for>
+    </div>
+    <nav class="bnav" aria-label="Hauptnavigation"><sc-for list="{{nav2}}" as="n" hint-placeholder-count="5"><a href="#" aria-current="{{n.cur}}"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="{{n.d}}"/></svg>{{n.l}}<sc-if value="{{n.c}}" hint-placeholder-val="{{ false }}"><span class="cnt">{{n.c}}</span></sc-if></a></sc-for></nav>
+  </section>
+
+  <!-- 3 Detail-Sheet -->
+  <section class="ph" aria-label="Anfrage Detail">
+    <header class="m-top"><b class="h2">Anfragen</b></header>
+    <div class="ph-b" aria-hidden="true">
+      <div class="m-card"><div style="display:flex;justify-content:space-between"><b>Sarah Zürcher</b><span class="st s-amber">Neu</span></div><div>Škoda Superb Combi</div></div>
+      <div class="m-card"><div style="display:flex;justify-content:space-between"><b>David Aebi</b><span class="st s-amber">Neu</span></div><div>Hyundai Tucson</div></div>
+      <div class="m-card"><div style="display:flex;justify-content:space-between"><b>Mira Baumann</b><span class="st s-amber">Neu</span></div><div>Škoda Enyaq iV</div></div>
+    </div>
+    <div class="scrim" style="position:absolute;inset:0"></div>
+    <div class="sheet" role="dialog" aria-modal="true" aria-label="Anfrage von Sarah Zürcher" style="max-height:900px">
+      <div class="grab"></div>
+      <div style="padding:8px 16px 0;display:flex;justify-content:space-between;align-items:flex-start;gap:10px"><div><h2 class="h2">Sarah Zürcher</h2><div style="display:flex;gap:8px;align-items:center;margin-top:4px"><span class="st s-amber">Neu</span><span class="sm mut">Vor 2 Tagen</span></div></div><button class="ib48" type="button" aria-label="Schliessen" style="border-color:transparent"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
+      <div style="padding:14px 16px;display:flex;flex-direction:column;gap:14px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><a class="btn btn-g k48" href="#"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></svg>Anrufen</a><a class="btn btn-g k48" href="#"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zM22 6l-10 7L2 6"/></svg>E-Mail</a></div>
+        <dl style="display:grid;grid-template-columns:96px 1fr;gap:8px 10px;margin:0"><dt class="mut">Fahrzeug</dt><dd style="margin:0"><b>Škoda Superb Combi</b></dd><dt class="mut">Zeitraum</dt><dd style="margin:0" class="num">07.12. – 20.12. (14 Tage)</dd><dt class="mut">Abholung</dt><dd style="margin:0">[Standort]</dd></dl>
+        <p style="background:var(--paper);border-radius:12px;padding:12px 14px;font-size:14px">Wir brauchen den Wagen für zwei Wochen über die Festtage, mit Platz für zwei Kindersitze. Ist eine Dachbox möglich?</p>
+        <div style="border:1.5px solid var(--line);border-radius:14px;padding:12px 14px;display:flex;justify-content:space-between;align-items:baseline"><b>Richtpreis</b><b class="num" style="font-size:24px">CHF 995.40</b></div>
+      </div>
+      <div style="padding:12px 16px 20px;border-top:1px solid var(--line-s);display:flex;flex-direction:column;gap:10px">
+        <button class="btn btn-p btn-b" type="button" style="min-height:52px">In Buchung umwandeln</button>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><button class="btn btn-o k48" type="button">Beantwortet</button><button class="btn btn-g k48" type="button" style="color:var(--err);border-color:#E3B1AD">Ablehnen</button></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4 Verträge -->
+  <section class="ph" aria-label="Verträge">
+    <header class="m-top"><b class="h2">Verträge</b></header>
+    <div class="ph-b">
+      <div class="tabs" role="tablist" aria-label="Ansicht" style="width:100%"><button class="tab" role="tab" aria-selected="true" type="button" style="flex:1;justify-content:center;min-height:44px">Buchungen</button><button class="tab" role="tab" aria-selected="false" type="button" style="flex:1;justify-content:center;min-height:44px">Rechnungen</button></div>
+      <sc-for list="{{con}}" as="c" hint-placeholder-count="3">
+        <div class="m-card pc" style="gap:10px">
+          <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><div><b style="font-size:16px">{{c.n}}</b><div class="sm mut">{{c.car}}</div></div><span class="st {{c.cls}}">{{c.s}}</span></div>
+          <div style="display:flex;justify-content:space-between;align-items:baseline"><span class="num mut">{{c.p}}</span><b class="num" style="font-size:18px">{{c.sum}}</b></div>
+          <div class="prog" role="img" aria-label="{{c.alt}}"><span class="{{c.p1}}"><i>{{c.m1}}</i>Vertrag</span><hr class="{{c.h1}}"><span class="{{c.p2}}"><i>{{c.m2}}</i>Signiert</span><hr class="{{c.h2}}"><span class="{{c.p3}}"><i>{{c.m3}}</i>Rechnung</span><hr class="{{c.h3}}"><span class="{{c.p4}}"><i>{{c.m4}}</i>Bezahlt</span></div>
+          <div class="sm"><b>Als Nächstes:</b> {{c.next}}</div>
+          <div style="display:flex;gap:8px"><button class="btn btn-o k48" type="button" style="flex:1">{{c.act}}</button><button class="ib48" type="button" aria-label="Vertrag herunterladen"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></button><button class="ib48" type="button" aria-label="Weitere Aktionen"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12h.01M19 12h.01M5 12h.01"/></svg></button></div>
+        </div>
+      </sc-for>
+    </div>
+    <nav class="bnav" aria-label="Hauptnavigation"><sc-for list="{{nav4}}" as="n" hint-placeholder-count="5"><a href="#" aria-current="{{n.cur}}"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="{{n.d}}"/></svg>{{n.l}}<sc-if value="{{n.c}}" hint-placeholder-val="{{ false }}"><span class="cnt">{{n.c}}</span></sc-if></a></sc-for></nav>
+  </section>
+
+  <!-- 5 Kalender Agenda -->
+  <section class="ph" aria-label="Kalender">
+    <header class="m-top"><b class="h2">Kalender</b></header>
+    <div class="ph-b fade">
+      <div style="display:flex;align-items:center;justify-content:space-between"><button class="ib48" type="button" aria-label="Vorheriger Monat"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg></button><b class="h2">Dezember 2026</b><button class="ib48" type="button" aria-label="Nächster Monat"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button></div>
+      <div class="tabs" role="tablist" aria-label="Ansicht" style="width:100%"><button class="tab" role="tab" aria-selected="true" type="button" style="flex:1;justify-content:center;min-height:44px">Agenda</button><button class="tab" role="tab" aria-selected="false" type="button" style="flex:1;justify-content:center;min-height:44px">Fahrzeuge</button></div>
+      <sc-for list="{{agenda}}" as="a" hint-placeholder-count="10">
+        <div>
+          <sc-if value="{{a.head}}" hint-placeholder-val="{{ false }}"><div class="lbl" style="padding:6px 0 2px">{{a.head}}</div></sc-if>
+          <sc-if value="{{a.t}}" hint-placeholder-val="{{ true }}"><div class="m-card ag {{a.k}}" style="gap:2px;padding:10px 14px"><div class="sm" style="font-weight:600;color:var(--gr)">{{a.t}}</div><b>{{a.who}}</b><div class="sm mut">{{a.car}}</div></div></sc-if>
+        </div>
+      </sc-for>
+    </div>
+    <span class="fab" aria-label="Neue Buchung" role="img"><svg class="i lg" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span>
+    <nav class="bnav" aria-label="Hauptnavigation"><sc-for list="{{nav5}}" as="n" hint-placeholder-count="5"><a href="#" aria-current="{{n.cur}}"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="{{n.d}}"/></svg>{{n.l}}<sc-if value="{{n.c}}" hint-placeholder-val="{{ false }}"><span class="cnt">{{n.c}}</span></sc-if></a></sc-for></nav>
+  </section>
+
+  <!-- 6 Flotte (unter Mehr) -->
+  <section class="ph" aria-label="Flotte">
+    <header class="m-top"><button class="ib48" type="button" aria-label="Zurück" style="margin-left:-8px;border-color:transparent"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg></button><b class="h2">Flotte</b></header>
+    <div class="ph-b fade">
+      <label class="search" style="max-width:none;height:48px"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM21 21l-4.3-4.3"/></svg><span style="position:absolute;left:-9999px">Fahrzeug suchen</span><input type="search" placeholder="Fahrzeug suchen"></label>
+      <div class="hscroll" role="group" aria-label="Stand"><button class="chip" type="button" aria-pressed="true">Alle 12</button><button class="chip" type="button" aria-pressed="false">Verfügbar 7</button><button class="chip" type="button" aria-pressed="false">Vermietet 4</button><button class="chip" type="button" aria-pressed="false">Wartung 1</button></div>
+      <sc-for list="{{fleet}}" as="f" hint-placeholder-count="5">
+        <div class="m-card" style="gap:10px">
+          <div style="display:flex;gap:12px;align-items:center"><span style="width:76px;height:50px;border-radius:8px;background:#E9E9E9;display:flex;align-items:center;justify-content:center;flex:none"><img src="{{f.img}}" alt="" style="width:90%"></span><div style="min-width:0;flex:1"><b>{{f.n}}</b><div class="sm mut">{{f.m}}</div></div><b class="num" style="font-size:16px;white-space:nowrap">{{f.pr}}</b></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;min-height:48px"><span class="st {{f.cls}}">{{f.s}}</span><span style="display:flex;align-items:center;gap:10px"><span class="sm mut">Auf Website</span><span class="sw {{f.on}}" role="img" aria-label="{{f.onl}}"></span></span></div>
+        </div>
+      </sc-for>
+    </div>
+    <span class="fab" aria-label="Fahrzeug hinzufügen" role="img"><svg class="i lg" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span>
+    <nav class="bnav" aria-label="Hauptnavigation"><sc-for list="{{nav6}}" as="n" hint-placeholder-count="5"><a href="#" aria-current="{{n.cur}}"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="{{n.d}}"/></svg>{{n.l}}<sc-if value="{{n.c}}" hint-placeholder-val="{{ false }}"><span class="cnt">{{n.c}}</span></sc-if></a></sc-for></nav>
+  </section>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2620,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const ICON = {
+      ov: 'M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z',
+      in: 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z',
+      co: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M8 13h8M8 17h8M8 9h2',
+      ca: 'M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z',
+      mo: 'M12 12h.01M19 12h.01M5 12h.01'
+    };
+    const nav = (cur) => [['Übersicht', 'ov', ''], ['Anfragen', 'in', '3'], ['Verträge', 'co', '2'], ['Kalender', 'ca', ''], ['Mehr', 'mo', '']]
+      .map(x => ({ l: x[0], d: ICON[x[1]], c: x[2], cur: x[0] === cur ? 'page' : 'false' }));
+    const S = ['', 'done', 'now'];
+    const con = (n, car, p, s, cls, sum, steps, next, act) => {
+      const lab = ['Vertrag', 'Signiert', 'Rechnung', 'Bezahlt'];
+      return { n, car, p, s, cls, sum, next, act,
+        alt: steps.map((v, i) => lab[i] + (v === 1 ? ' erledigt' : v === 2 ? ' als Nächstes' : ' offen')).join(', '),
+        p1: S[steps[0]], p2: S[steps[1]], p3: S[steps[2]], p4: S[steps[3]],
+        m1: steps[0] === 1 ? '✓' : '', m2: steps[1] === 1 ? '✓' : '', m3: steps[2] === 1 ? '✓' : '', m4: steps[3] === 1 ? '✓' : '',
+        h1: steps[0] === 1 ? 'done' : '', h2: steps[1] === 1 ? 'done' : '', h3: steps[2] === 1 ? 'done' : '' };
+    };
+    const IMG = { suv: '/_blob/154ed80a79c5e4a0801ef4bd139489ea', est: '/_blob/24230269e1cfd4b39a93ad59bed30fba', sed: '/_blob/73471dc831e127e26f5ecba3b8e32d1b' };
+    const fl = (n, m, pr, s, cls, img, vis) => ({ n, m, pr, s, cls, img, on: vis ? 'on' : '', onl: vis ? 'Sichtbar' : 'Ausgeblendet' });
+    const ag = (head, t, who, car, k) => ({ head, t, who, car, k: k || '' });
+    return {
+      kpis: [
+        { l: 'Fahrzeuge', v: '12', fs: '30px', s: 'Keine Änderung', cl: 'mut' },
+        { l: 'Neue Anfragen', v: '5', fs: '30px', s: '5 diese Woche', cl: '' },
+        { l: 'Aktive Buchungen', v: '7', fs: '30px', s: 'Keine Änderung', cl: 'mut' },
+        { l: 'Umsatz Monat', v: 'CHF 14’820', fs: '22px', s: '+8 % zum Vormonat', cl: '' }
+      ],
+      books: [
+        { n: 'Laura Meier', car: 'Škoda Superb Combi', p: '23.11. – 06.12.', s: 'Aktiv', cls: 's-green' },
+        { n: 'Marco Brunner', car: 'VW Passat Variant', p: '01.12. – 31.12.', s: 'Reserviert', cls: 's-blue' },
+        { n: 'Nadia Frei', car: 'Škoda Enyaq iV', p: '10.11. – 10.02.', s: 'Aktiv', cls: 's-green' }
+      ],
+      inq: [
+        { n: 'Sarah Zürcher', w: 'Vor 2 Tagen', car: 'Škoda Superb Combi', p: '07.12. – 20.12.', s: 'Neu', cls: 's-amber' },
+        { n: 'David Aebi', w: 'Vor 1 Tag', car: 'Hyundai Tucson', p: '28.11. – 30.11.', s: 'Neu', cls: 's-amber' },
+        { n: 'Mira Baumann', w: 'Heute, 08:12', car: 'Škoda Enyaq iV', p: '02.12. – 09.12.', s: 'Neu', cls: 's-amber' },
+        { n: 'Reto Gerber', w: 'Vor 3 Tagen', car: 'VW Passat Variant', p: '15.12. – 22.12.', s: 'Geprüft', cls: 's-blue' }
+      ],
+      con: [
+        con('Laura Meier', 'Škoda Superb Combi', '23.11. – 06.12.', 'Aktiv', 's-green', 'CHF 995.40', [1, 1, 1, 2], 'Zahlung prüfen', 'Als bezahlt markieren'),
+        con('Marco Brunner', 'VW Passat Variant', '01.12. – 31.12.', 'Reserviert', 's-blue', 'CHF 1’794.00', [1, 1, 2, 0], 'Rechnung senden', 'Rechnung senden'),
+        con('Elena Rossi', 'Škoda Kodiaq', '05.12. – 12.12.', 'Reserviert', 's-blue', 'CHF 694.20', [1, 2, 0, 0], 'Unterschrift abwarten', 'Link kopieren')
+      ],
+      agenda: [
+        ag('Di 01.12.', 'Abholung', 'Marco Brunner', 'VW Passat Variant', 'go'), ag('', 'Abholung', 'Luca Moser', 'Škoda Octavia', 'go'),
+        ag('Do 03.12.', 'Wartung', 'Škoda Kodiaq', 'Werkstatt [Name]', 'wa'),
+        ag('Sa 05.12.', 'Abholung', 'Elena Rossi', 'Škoda Kodiaq', 'go'), ag('', 'Rückgabe', 'Luca Moser', 'Škoda Octavia', 'back'),
+        ag('So 06.12.', 'Rückgabe', 'Laura Meier', 'Škoda Superb Combi', 'back'),
+        ag('Mo 07.12.', 'Offene Anfrage', 'Sarah Zürcher', 'Škoda Superb Combi', 'q')
+      ],
+      fleet: [
+        fl('Škoda Superb Combi', 'Kombi · Diesel', 'CHF 79.00', 'Vermietet', 's-green', IMG.est, true),
+        fl('VW Passat Variant', 'Kombi · Benzin', 'CHF 69.00', 'Reserviert', 's-blue', IMG.est, true),
+        fl('Škoda Enyaq iV', 'SUV · Elektro', 'CHF 99.00', 'Vermietet', 's-green', IMG.suv, true),
+        fl('Škoda Kodiaq', 'SUV · Diesel', 'CHF 89.00', 'Wartung', 's-amber', IMG.suv, true),
+        fl('Škoda Scala', 'Limousine · Benzin', 'CHF 52.00', 'Verfügbar', 's-gray', IMG.sed, false)
+      ],
+      nav1: nav('Übersicht'), nav2: nav('Anfragen'), nav4: nav('Verträge'), nav5: nav('Kalender'), nav6: nav('Mehr')
+    };
+  }
+}
+</script>
+</body>
+</html>

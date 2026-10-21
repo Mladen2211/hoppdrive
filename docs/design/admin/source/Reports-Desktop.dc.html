@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Berichte Desktop</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./admin.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fira+Sans:wght@400;500;600;700&family=Fira+Sans+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F2F2F2}
+.chart{position:relative;height:280px;margin-left:56px}
+.gl{position:absolute;left:0;right:0;border-top:1px solid var(--line-s)}
+.gl span{position:absolute;left:-56px;top:-10px;width:48px;text-align:right;font-size:12px;color:var(--gr)}
+.cols{position:absolute;inset:0;display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:8px}
+.col{display:flex;align-items:flex-end;justify-content:center;gap:3px;position:relative}
+.bar{width:38%;max-width:22px;border-radius:4px 4px 0 0;min-height:2px}
+.bar.cur{background:var(--ruby)}
+.bar.prev{background:#C4C7C9}
+.xl{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:8px;margin:8px 0 0 56px}
+.xl span{text-align:center;font-size:12px;color:var(--gr)}
+.hb{height:10px;border-radius:999px;background:var(--line-s);overflow:hidden}
+.hb i{display:block;height:100%;background:var(--ruby);border-radius:999px}
+.diff{font-size:13px;font-weight:600;color:var(--ok)}
+</style>
+</helmet>
+<div class="ad shell">
+
+  <div style="background:#fff;border-right:1px solid var(--line)">
+    <dc-import name="AdminNav" current="Berichte" hint-size="264px,100%"></dc-import>
+  </div>
+
+  <div style="min-width:0;display:flex;flex-direction:column">
+    <header class="top">
+      <label class="search"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM21 21l-4.3-4.3"/></svg><span style="position:absolute;left:-9999px">Suche</span><input type="search" placeholder="Name, E-Mail, Fahrzeug oder Vertrag suchen…"></label>
+      <div style="margin-left:auto;display:flex;gap:12px;align-items:center">
+        <a class="btn btn-p" href="Calendar-Desktop.dc.html"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Neue Buchung</a>
+        <button class="icon-btn" type="button" aria-label="Benachrichtigungen, 4 ungelesen"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><span class="dot">4</span></button>
+      </div>
+    </header>
+
+    <main class="main">
+      <div class="pg-h">
+        <div><h1 class="h1">Berichte</h1><p>Umsatz und Auslastung, mit Vergleich zum Vorjahr</p></div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+          <div class="tabs" role="tablist" aria-label="Zeitraum">
+            <button class="tab" role="tab" aria-selected="false" type="button">Woche</button>
+            <button class="tab" role="tab" aria-selected="false" type="button">Monat</button>
+            <button class="tab" role="tab" aria-selected="false" type="button">Quartal</button>
+            <button class="tab" role="tab" aria-selected="true" type="button">Jahr</button>
+            <button class="tab" role="tab" aria-selected="false" type="button">Eigener Zeitraum</button>
+          </div>
+          <button class="btn btn-o" type="button"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>CSV exportieren</button>
+        </div>
+      </div>
+
+      <section class="kpis" aria-label="Kennzahlen 2026">
+        <div class="kpi"><div class="l"><span>Umsatz Jan–Nov</span></div><b class="num">CHF 125’220</b><span class="diff">+24 % zu 2025</span></div>
+        <div class="kpi"><div class="l"><span>Buchungen</span></div><b class="num">86</b><span class="diff">+16 % zu 2025</span></div>
+        <div class="kpi"><div class="l"><span>Ø Mietdauer</span></div><b class="num">11.2 Tage</b><span class="diff">+1.4 Tage</span></div>
+        <div class="kpi"><div class="l"><span>Auslastung</span></div><b class="num">68 %</b><span class="diff">+6 Prozentpunkte</span></div>
+      </section>
+
+      <div style="display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:24px;align-items:start">
+        <section class="panel" aria-labelledby="ch-h">
+          <div class="panel-h">
+            <h2 class="h2" id="ch-h">Umsatz pro Monat</h2>
+            <ul class="sm" style="display:flex;gap:16px">
+              <li style="display:flex;gap:6px;align-items:center"><span style="width:12px;height:12px;border-radius:3px;background:var(--ruby)"></span>2026</li>
+              <li style="display:flex;gap:6px;align-items:center"><span style="width:12px;height:12px;border-radius:3px;background:#C4C7C9"></span>2025</li>
+            </ul>
+          </div>
+          <div class="panel-b">
+            <div class="chart" role="img" aria-label="Umsatz pro Monat 2026 im Vergleich zu 2025. Höchster Monat: August mit 16’200 Franken. November: 14’820 Franken, 20 Prozent über dem Vorjahr.">
+              <div class="gl" style="top:0"><span>CHF 20’000</span></div>
+              <div class="gl" style="top:25%"><span>15’000</span></div>
+              <div class="gl" style="top:50%"><span>10’000</span></div>
+              <div class="gl" style="top:75%"><span>5’000</span></div>
+              <div class="gl" style="top:100%;border-top-color:var(--cool)"><span>0</span></div>
+              <div class="cols">
+                <sc-for list="{{months}}" as="m" hint-placeholder-count="12">
+                  <div class="col"><div class="bar prev" style="height:{{m.hp}}"></div><div class="bar cur" style="height:{{m.hc}}"></div></div>
+                </sc-for>
+              </div>
+            </div>
+            <div class="xl">
+              <sc-for list="{{months}}" as="m" hint-placeholder-count="12"><span>{{m.l}}</span></sc-for>
+            </div>
+            <p class="hint" style="margin-top:14px">Dezember steht noch aus. Beispieldaten für die Darstellung.</p>
+          </div>
+        </section>
+
+        <section class="panel" aria-labelledby="ct-h">
+          <div class="panel-h"><h2 class="h2" id="ct-h">Umsatz nach Kategorie</h2></div>
+          <ul class="panel-b" style="display:flex;flex-direction:column;gap:18px">
+            <sc-for list="{{cats}}" as="c" hint-placeholder-count="3">
+              <li>
+                <div style="display:flex;justify-content:space-between;margin-bottom:6px"><b>{{c.n}}</b><span class="num"><b>{{c.v}}</b> <span class="mut">{{c.p}}</span></span></div>
+                <div class="hb" role="img" aria-label="{{c.n}} {{c.p}}"><i style="width:{{c.w}}"></i></div>
+              </li>
+            </sc-for>
+          </ul>
+          <div style="border-top:1px solid var(--line-s);padding:16px 20px">
+            <div class="lbl" style="margin-bottom:8px">Export</div>
+            <div class="chips">
+              <button class="chip" type="button" aria-pressed="true">Buchungen</button>
+              <button class="chip" type="button" aria-pressed="true">Rechnungen</button>
+              <button class="chip" type="button" aria-pressed="false">Umsatz</button>
+            </div>
+            <div class="hint" style="margin-top:8px">Die CSV enthält den gewählten Zeitraum und lässt sich in der Buchhaltung öffnen.</div>
+          </div>
+        </section>
+      </div>
+
+      <section class="panel" aria-labelledby="tp-h">
+        <div class="panel-h"><h2 class="h2" id="tp-h">Fahrzeuge nach Umsatz</h2><span class="sm mut">Jan–Nov 2026</span></div>
+        <div class="scroll">
+          <table class="tbl">
+            <thead><tr><th>Fahrzeug</th><th class="r">Buchungen</th><th class="r">Miettage</th><th style="width:260px">Auslastung</th><th class="r">Umsatz</th></tr></thead>
+            <tbody>
+              <sc-for list="{{top}}" as="t" hint-placeholder-count="5">
+                <tr>
+                  <td><b>{{t.n}}</b></td>
+                  <td class="r num">{{t.b}}</td>
+                  <td class="r num">{{t.d}}</td>
+                  <td><div style="display:flex;align-items:center;gap:10px"><div class="hb" style="flex:1" role="img" aria-label="Auslastung {{t.u}}"><i style="width:{{t.u}}"></i></div><span class="num" style="width:42px;text-align:right">{{t.u}}</span></div></td>
+                  <td class="r num" style="font-size:16px"><b>{{t.s}}</b></td>
+                </tr>
+              </sc-for>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1200}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const L = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
+    const cur = [6200, 5400, 7800, 9100, 10400, 12900, 15600, 16200, 13100, 13700, 14820, 0];
+    const prev = [4800, 4100, 6000, 7200, 8600, 10100, 12800, 13500, 11200, 10300, 12400, 10900];
+    const pct = (v) => (v / 20000 * 100).toFixed(1) + '%';
+    return {
+      months: L.map((l, i) => ({ l, hc: pct(cur[i]), hp: pct(prev[i]) })),
+      cats: [
+        { n: 'SUV', v: 'CHF 57’600', p: '46 %', w: '46%' },
+        { n: 'Kombi', v: 'CHF 38’800', p: '31 %', w: '31%' },
+        { n: 'Limousine', v: 'CHF 28’800', p: '23 %', w: '23%' }
+      ],
+      top: [
+        { n: 'Škoda Enyaq iV', b: 11, d: 241, u: '73%', s: 'CHF 21’640' },
+        { n: 'Škoda Superb Combi', b: 14, d: 228, u: '69%', s: 'CHF 17’110' },
+        { n: 'Škoda Kodiaq', b: 12, d: 219, u: '66%', s: 'CHF 16’480' },
+        { n: 'VW Passat Variant', b: 10, d: 214, u: '64%', s: 'CHF 14’250' },
+        { n: 'Hyundai Tucson', b: 9, d: 196, u: '59%', s: 'CHF 12’030' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

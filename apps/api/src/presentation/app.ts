@@ -23,6 +23,16 @@ import { faqRoutes } from './routes/faqRoutes';
 import { homepageSectionRoutes } from './routes/homepageSectionRoutes';
 import { legalRoutes } from './routes/legalRoutes';
 import { maintenanceRoutes } from './routes/maintenanceRoutes';
+import { adminRoutes } from './routes/adminRoutes';
+import { auditLogRoutes } from './routes/auditLogRoutes';
+import { reportRoutes } from './routes/reportRoutes';
+import { emailRoutes } from './routes/emailRoutes';
+import { discountCodeRoutes } from './routes/discountCodeRoutes';
+import { marketingRoutes } from './routes/marketingRoutes';
+import { damageRoutes } from './routes/damageRoutes';
+import { feeRoutes } from './routes/feeRoutes';
+import { fineRoutes } from './routes/fineRoutes';
+import { contractTemplateRoutes } from './routes/contractTemplateRoutes';
 import { errorHandler } from './middleware/errorHandler';
 
 export function createApp(container: Container): express.Application {
@@ -57,6 +67,12 @@ export function createApp(container: Container): express.Application {
 
   // ─── Static Files (Uploads) ─────────────────────────────────
   const uploadDir = process.env.UPLOAD_DIR || path.join(process.cwd(), 'uploads');
+  // Contracts contain personal data and live in the PRIVATE storage (authenticated routes only).
+  // Older versions wrote them below UPLOAD_DIR/contracts: never serve that folder, even if a file is
+  // still sitting there (the startup migration moves them away).
+  app.use('/uploads/contracts', (_req, res) => {
+    res.status(404).json({ success: false, error: 'Not found' });
+  });
   app.use('/uploads', express.static(uploadDir, {
     maxAge: '365d',
     immutable: true,
@@ -77,6 +93,8 @@ export function createApp(container: Container): express.Application {
   });
 
   // ─── API Routes ─────────────────────────────────────────────
+  // Absolute sub-paths (/vehicles/:id/damages, /damages/*, /bookings/:id/inspections, /inspections/*): mounted first.
+  app.use('/api', damageRoutes(container));
   app.use('/api/vehicles', vehicleRoutes(container));
   app.use('/api/contact', contactRoutes(container));
   app.use('/api/auth', authRoutes(container));
@@ -92,8 +110,19 @@ export function createApp(container: Container): express.Application {
   app.use('/api/testimonials', testimonialRoutes(container));
   app.use('/api/faq', faqRoutes(container));
   app.use('/api/homepage-sections', homepageSectionRoutes(container));
-  app.use('/api/legal', legalRoutes());
+  app.use('/api/legal', legalRoutes(container));
   app.use('/api/maintenance', maintenanceRoutes(container));
+  app.use('/api/admins', adminRoutes(container));
+  app.use('/api/audit-logs', auditLogRoutes(container));
+  app.use('/api/reports', reportRoutes(container));
+  app.use('/api/email', emailRoutes(container));
+  app.use('/api/fees', feeRoutes(container));
+  app.use('/api/fines', fineRoutes(container));
+  app.use('/api/contract-templates', contractTemplateRoutes(container));
+  app.use('/api/discount-codes', discountCodeRoutes(container));
+  const marketing = marketingRoutes(container);
+  app.use('/api/customers', marketing.customers);
+  app.use('/api/marketing', marketing.marketing);
 
   // ─── Global Error Handler ───────────────────────────────────
   app.use(errorHandler);

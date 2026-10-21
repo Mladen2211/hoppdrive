@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Startseite Ultra-wide</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./b2c.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fira+Sans:wght@400;500;600;700;800&family=Fira+Sans+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>body{margin:0;background:#F2F2F2}</style>
+</helmet>
+<div class="hd">
+
+  <header class="nav">
+    <div class="wrap nav-in" style="max-width:1680px">
+      <a href="#top" aria-label="HoppDrive Startseite"><img class="nav-logo" src="/_blob/c58998c5c84da27dee7cde4d98723e61" alt="HoppDrive" style="height:38px"></a>
+      <nav class="nav-links" aria-label="Hauptnavigation">
+        <a href="#fleet">Unsere Flotte</a><a href="#pricing">Preismodell</a><a href="#faq">FAQ</a><a href="#location">Standort</a>
+      </nav>
+      <a class="btn btn-p" href="#contact-form">Anfrage senden</a>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="wrap" style="max-width:1680px">
+      <div class="hero-grid" style="grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:80px">
+        <div class="hero-copy" style="gap:30px">
+          <span class="kick">Kurz- &amp; Langzeitvermietung Schweiz</span>
+          <h1 class="disp" style="font-size:84px">Günstig unterwegs, flexibel gemietet.</h1>
+          <p class="lead" style="font-size:22px;max-width:52ch">Zuverlässige Fahrzeuge wie Škoda Superb, VW Passat &amp; mehr – ab CHF 59 pro Tag. Je länger Sie mieten, desto mehr sparen Sie. Vollkasko inklusive.</p>
+          <div class="hero-cta">
+            <a class="btn btn-p btn-lg" href="#fleet">Flotte entdecken</a>
+            <a class="btn btn-o btn-lg" href="#contact-form">Verfügbarkeit prüfen</a>
+          </div>
+          <ul class="proof">
+            <li><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Vollkasko inklusive</li>
+            <li><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Ab 1 Tag mietbar</li>
+            <li><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Bis 40 % Langzeitrabatt</li>
+          </ul>
+        </div>
+        <div class="stage" style="min-height:560px">
+          <div class="cross" aria-hidden="true" style="width:420px;height:420px;right:-90px;top:-90px"></div>
+          <div class="tag" style="left:32px;top:32px"><span>Ab</span><b>CHF 59</b><span>pro Tag, Vollkasko inkl.</span></div>
+          <div class="road" aria-hidden="true" style="bottom:56px"></div>
+          <img class="car" src="/_blob/24230269e1cfd4b39a93ad59bed30fba" alt="Beispielbild: Kombi von der Seite (Platzhalter für Fahrzeugfoto)" style="width:86%;margin-bottom:16px">
+        </div>
+      </div>
+      <form class="qbar" aria-label="Schnellanfrage" style="grid-template-columns:1.6fr 1fr 1fr 1.1fr auto">
+        <div class="fld"><label for="q-car">Fahrzeug</label><select id="q-car" class="in"><option>Škoda Superb Combi · ab CHF 79</option><option>Kein bestimmtes Fahrzeug</option></select></div>
+        <div class="fld"><label for="q-from">Von</label><input id="q-from" class="in" type="date" value="2026-11-23"></div>
+        <div class="fld"><label for="q-to">Bis</label><input id="q-to" class="in" type="date" value="2026-12-06"></div>
+        <div class="fld"><span class="lbl">Richtpreis · 14 Tage</span><div class="pp"><b class="num">CHF 995.40</b><span>Ø CHF 71.10 / Tag, Rabatt ab Tag 8</span></div></div>
+        <button class="btn btn-p btn-lg" type="button">Verfügbarkeit prüfen</button>
+      </form>
+    </div>
+  </section>
+
+  <section class="sec" id="fleet">
+    <div class="wrap" style="max-width:1680px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:32px;flex-wrap:wrap;margin-bottom:36px">
+        <div class="sec-head" style="margin:0"><span class="kick">Unsere Flotte</span><h2 class="h2">12 Fahrzeuge, ab 1 Tag mietbar</h2></div>
+        <div class="chips" role="group" aria-label="Fahrzeugkategorie filtern">
+          <button class="chip" type="button" aria-pressed="true">Alle <small>12</small></button>
+          <button class="chip" type="button" aria-pressed="false">Kombi <small>6</small></button>
+          <button class="chip" type="button" aria-pressed="false">SUV <small>5</small></button>
+          <button class="chip" type="button" aria-pressed="false">Limousinen <small>1</small></button>
+          <button class="chip" type="button" aria-pressed="false">Elektro <small>1</small></button>
+          <button class="chip" type="button" aria-pressed="false">Hybrid <small>2</small></button>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:40px;align-items:start">
+        <div class="vgrid" style="grid-template-columns:repeat(4,minmax(0,1fr))">
+          <sc-for list="{{cars}}" as="v" hint-placeholder-count="12">
+            <article class="vcard">
+              <a href="Vehicle-Desktop.dc.html" style="text-decoration:none;color:inherit">
+                <div style="position:relative;aspect-ratio:4/3;display:flex;align-items:flex-end;justify-content:center;overflow:hidden;background:{{v.bg}}">
+                  <span class="badge {{v.bcls}}" style="position:absolute;left:12px;top:12px">{{v.badge}}</span>
+                  <span style="position:absolute;right:10px;top:10px;font-size:11px;color:#55595C;background:rgba(255,255,255,.85);padding:2px 8px;border-radius:999px">Foto folgt</span>
+                  <img src="{{v.img}}" alt="" style="width:88%;margin-bottom:10px">
+                </div>
+              </a>
+              <div class="vbody">
+                <h3 class="vname">{{v.name}}</h3>
+                <ul class="vspecs"><li>{{v.ps}}</li><li>Automatik</li><li>{{v.seats}}</li><li>{{v.fuel}}</li></ul>
+                <div class="vprice"><span>Ab</span><b class="num">CHF {{v.price}}</b><span>/ Tag</span></div>
+                <div class="vact"><a class="btn btn-o" href="Vehicle-Desktop.dc.html">Details</a><a class="btn btn-p" href="#contact-form">Anfragen</a></div>
+              </div>
+            </article>
+          </sc-for>
+        </div>
+        <aside class="card" style="position:sticky;top:24px;display:flex;flex-direction:column;gap:18px;padding:28px" aria-label="Preis und Anfrage">
+          <h3 class="h3">Preis für Ihre Mietdauer</h3>
+          <div class="fld"><label for="u-car">Fahrzeug</label><select id="u-car" class="in"><option>Škoda Superb Combi · CHF 79 / Tag</option></select></div>
+          <div class="fld"><label for="u-days" style="display:flex;justify-content:space-between"><span>Mietdauer</span><b class="num" style="font-size:20px">14 Tage</b></label><input id="u-days" class="range" type="range" min="1" max="60" value="14"></div>
+          <div class="tot" style="display:flex;justify-content:space-between;align-items:baseline;border-top:1px solid var(--line);padding-top:16px"><span class="mut">Gesamtpreis</span><b class="num" style="font:700 40px/1 var(--cond);color:var(--ruby-d)">CHF 995.40</b></div>
+          <p class="sm mut">Ø CHF 71.10 pro Tag. Richtpreis, verbindlich ist die Bestätigung per E-Mail.</p>
+          <a class="btn btn-p btn-lg btn-b" href="#contact-form">Mit diesen Daten anfragen</a>
+          <ul class="proof" style="flex-direction:column;gap:8px;padding-top:4px;font-size:15px">
+            <li><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Kostenlos &amp; unverbindlich</li>
+            <li><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Vollkasko inklusive</li>
+          </ul>
+        </aside>
+      </div>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":2900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const sedan = '/_blob/73471dc831e127e26f5ecba3b8e32d1b';
+    const suv = '/_blob/154ed80a79c5e4a0801ef4bd139489ea';
+    const estate = '/_blob/24230269e1cfd4b39a93ad59bed30fba';
+    const grey = 'linear-gradient(180deg,#EDEDED 0%,#DCDCDC 100%)';
+    const rose = 'linear-gradient(180deg,#F1ECEC 0%,#E2D6D6 100%)';
+    const blue = 'linear-gradient(180deg,#E8EEF0 0%,#D2DCE0 100%)';
+    const ok = { badge: 'Verfügbar', bcls: 'b-ok' };
+    const off = { badge: 'Reserviert', bcls: 'b-off' };
+    return {
+      cars: [
+        { name: 'Škoda Superb Combi', ps: '150 PS', seats: '5 Sitze', fuel: 'Benzin', price: 79, img: estate, bg: grey, ...ok },
+        { name: 'Škoda Octavia Combi', ps: '150 PS', seats: '5 Sitze', fuel: 'Benzin', price: 65, img: estate, bg: grey, ...ok },
+        { name: 'Škoda Octavia', ps: '150 PS', seats: '5 Sitze', fuel: 'Benzin', price: 59, img: sedan, bg: rose, ...ok },
+        { name: 'Škoda Karoq', ps: '150 PS', seats: '5 Sitze', fuel: 'Benzin', price: 69, img: suv, bg: grey, ...off },
+        { name: 'Škoda Kodiaq', ps: '190 PS', seats: '7 Sitze', fuel: 'Diesel', price: 85, img: suv, bg: grey, ...ok },
+        { name: 'Škoda Enyaq iV', ps: '204 PS', seats: '5 Sitze', fuel: 'Elektrisch · 540 km', price: 89, img: suv, bg: blue, ...ok },
+        { name: 'VW Golf Variant', ps: '150 PS', seats: '5 Sitze', fuel: 'Benzin', price: 69, img: estate, bg: grey, ...ok },
+        { name: 'VW Passat Variant', ps: '150 PS', seats: '5 Sitze', fuel: 'Diesel', price: 79, img: estate, bg: rose, ...ok },
+        { name: 'VW Tiguan', ps: '150 PS', seats: '5 Sitze', fuel: 'Benzin', price: 79, img: suv, bg: grey, ...ok },
+        { name: 'SEAT Leon Sportstourer', ps: '150 PS', seats: '5 Sitze', fuel: 'Benzin', price: 59, img: estate, bg: grey, ...ok },
+        { name: 'Hyundai Tucson', ps: '150 PS', seats: '5 Sitze', fuel: 'Hybrid', price: 75, img: suv, bg: blue, ...ok },
+        { name: 'Toyota Corolla Touring Sports', ps: '140 PS', seats: '5 Sitze', fuel: 'Hybrid', price: 69, img: estate, bg: blue, ...ok }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

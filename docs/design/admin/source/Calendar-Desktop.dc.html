@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Kalender Desktop</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./admin.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fira+Sans:wght@400;500;600;700&family=Fira+Sans+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F2F2F2}
+.gb{position:absolute;top:10px;height:36px;border-radius:8px;padding:0 8px;display:block;line-height:33px;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border:1.5px solid transparent}
+.gb-ok{background:var(--ok-t);color:#124D31;border-color:#9CCDB4}
+.gb-blue{background:var(--info-t);color:#123F8C;border-color:#A9C2EC}
+.gb-amb{background:var(--warn-t);color:#5E3700;border:1.5px dashed #C9962E}
+.gb-gray{background:repeating-linear-gradient(135deg,#ECECEC 0 6px,#DEDEDE 6px 12px);color:#4F5254;border-color:#C5C5C5}
+.gcols{background-image:repeating-linear-gradient(90deg,transparent 0,transparent calc(100%/31 - 1px),var(--line-s) calc(100%/31 - 1px),var(--line-s) calc(100%/31))}
+.mcell{min-height:104px;border-right:1px solid var(--line-s);border-bottom:1px solid var(--line-s);padding:8px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.mcell.out{background:var(--row);color:#8A8D90}
+.mcell .d{font:600 14px var(--cond)}
+.ev{font-size:12px;font-weight:600;border-radius:6px;padding:2px 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ev.ok{background:var(--ok-t);color:#124D31}.ev.blue{background:var(--info-t);color:#123F8C}.ev.amb{background:var(--warn-t);color:#5E3700}.ev.gray{background:#E6E6E6;color:#4F5254}
+</style>
+</helmet>
+<div class="ad" style="position:relative;min-height:100%">
+<div class="shell">
+
+  <div style="background:#fff;border-right:1px solid var(--line)">
+    <dc-import name="AdminNav" current="Kalender" hint-size="264px,100%"></dc-import>
+  </div>
+
+  <div style="min-width:0;display:flex;flex-direction:column">
+    <header class="top">
+      <label class="search"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM21 21l-4.3-4.3"/></svg><span style="position:absolute;left:-9999px">Suche</span><input type="search" placeholder="Name, E-Mail, Fahrzeug oder Vertrag suchen…"></label>
+      <div style="margin-left:auto;display:flex;gap:12px;align-items:center">
+        <button class="btn btn-p" type="button"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Neue Buchung</button>
+        <button class="icon-btn" type="button" aria-label="Benachrichtigungen, 4 ungelesen"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><span class="dot">4</span></button>
+      </div>
+    </header>
+
+    <main class="main">
+      <div class="pg-h">
+        <div><h1 class="h1">Kalender</h1><p>Belegung, Anfragen und Wartung der Flotte</p></div>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <div style="display:flex;gap:6px;align-items:center">
+            <button class="icon-btn" type="button" aria-label="Vorheriger Monat"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg></button>
+            <b class="h2" style="min-width:150px;text-align:center">Dezember 2026</b>
+            <button class="icon-btn" type="button" aria-label="Nächster Monat"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button>
+          </div>
+          <button class="btn btn-g" type="button">Heute</button>
+          <div class="tabs" role="tablist" aria-label="Ansicht">
+            <button class="tab" role="tab" aria-selected="true" type="button">Fahrzeuge</button>
+            <button class="tab" role="tab" aria-selected="false" type="button">Monat</button>
+          </div>
+        </div>
+      </div>
+
+      <section class="panel" aria-labelledby="gt-h" style="overflow:hidden">
+        <div class="panel-h">
+          <h2 class="h2" id="gt-h">Belegung pro Fahrzeug</h2>
+          <ul style="display:flex;gap:16px;flex-wrap:wrap" class="sm">
+            <li style="display:flex;gap:6px;align-items:center"><span class="gb-ok" style="width:16px;height:16px;border-radius:4px;border:1.5px solid #9CCDB4"></span>Aktiv</li>
+            <li style="display:flex;gap:6px;align-items:center"><span class="gb-blue" style="width:16px;height:16px;border-radius:4px;border:1.5px solid #A9C2EC"></span>Reserviert</li>
+            <li style="display:flex;gap:6px;align-items:center"><span class="gb-amb" style="width:16px;height:16px;border-radius:4px"></span>Offene Anfrage</li>
+            <li style="display:flex;gap:6px;align-items:center"><span class="gb-gray" style="width:16px;height:16px;border-radius:4px;border:1.5px solid #C5C5C5"></span>Wartung</li>
+          </ul>
+        </div>
+        <div style="display:grid;grid-template-columns:200px minmax(0,1fr);border-bottom:1px solid var(--line);background:var(--row)">
+          <div class="sm mut" style="padding:12px 16px;font-weight:600">Fahrzeug</div>
+          <div style="display:grid;grid-template-columns:repeat(31,minmax(0,1fr))">
+            <sc-for list="{{days}}" as="d" hint-placeholder-count="31">
+              <div class="num" style="text-align:center;padding:6px 0;font-size:13px;font-weight:600;background:{{d.bg}};color:{{d.fg}}"><div style="font-size:11px;font-weight:500">{{d.wd}}</div>{{d.n}}</div>
+            </sc-for>
+          </div>
+        </div>
+        <sc-for list="{{gantt}}" as="r" hint-placeholder-count="6">
+          <div class="gantt-row">
+            <div style="padding:0 16px"><div style="font-weight:600;line-height:1.25">{{r.car}}</div><div class="sm mut">{{r.meta}}</div></div>
+            <div class="gcols" style="position:relative;height:56px;border-left:1px solid var(--line-s)">
+              <sc-if value="{{r.b1}}" hint-placeholder-val="{{ true }}"><div class="gb {{r.b1.c}}" style="left:{{r.b1.l}};width:{{r.b1.w}}">{{r.b1.t}}</div></sc-if>
+              <sc-if value="{{r.b2}}" hint-placeholder-val="{{ true }}"><div class="gb {{r.b2.c}}" style="left:{{r.b2.l}};width:{{r.b2.w}}">{{r.b2.t}}</div></sc-if>
+              <sc-if value="{{r.b3}}" hint-placeholder-val="{{ false }}"><div class="gb {{r.b3.c}}" style="left:{{r.b3.l}};width:{{r.b3.w}}">{{r.b3.t}}</div></sc-if>
+            </div>
+          </div>
+        </sc-for>
+      </section>
+
+      <section class="panel" aria-labelledby="mt-h" style="overflow:hidden">
+        <div class="panel-h"><h2 class="h2" id="mt-h">Abholungen und Rückgaben</h2><span class="sm mut">Dezember 2026</span></div>
+        <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));background:var(--row);border-bottom:1px solid var(--line)">
+          <div class="sm mut" style="padding:10px 12px;font-weight:600">Mo</div><div class="sm mut" style="padding:10px 12px;font-weight:600">Di</div><div class="sm mut" style="padding:10px 12px;font-weight:600">Mi</div><div class="sm mut" style="padding:10px 12px;font-weight:600">Do</div><div class="sm mut" style="padding:10px 12px;font-weight:600">Fr</div><div class="sm mut" style="padding:10px 12px;font-weight:600">Sa</div><div class="sm mut" style="padding:10px 12px;font-weight:600">So</div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr))">
+          <sc-for list="{{cells}}" as="c" hint-placeholder-count="35">
+            <div class="mcell {{c.out}}">
+              <span class="d">{{c.d}}</span>
+              <sc-if value="{{c.e1}}" hint-placeholder-val="{{ false }}"><span class="ev {{c.k1}}">{{c.e1}}</span></sc-if>
+              <sc-if value="{{c.e2}}" hint-placeholder-val="{{ false }}"><span class="ev {{c.k2}}">{{c.e2}}</span></sc-if>
+              <sc-if value="{{c.more}}" hint-placeholder-val="{{ false }}"><span class="sm mut">{{c.more}}</span></sc-if>
+            </div>
+          </sc-for>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1300}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const wdn = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+    const days = [];
+    for (let n = 1; n <= 31; n++) {
+      const w = (n + 0) % 7; // Dec 1 2026 is Tuesday -> index 1
+      const wi = (n) % 7; // 1 -> Di (1)
+      const we = wi === 5 || wi === 6;
+      days.push({ n, wd: wdn[wi], bg: we ? '#EFEFEF' : 'transparent', fg: we ? '#5F6265' : '#3E4144' });
+    }
+    const bar = (s, e, c, t) => ({ l: ((s - 1) / 31 * 100).toFixed(3) + '%', w: ((e - s + 1) / 31 * 100).toFixed(3) + '%', c, t });
+    const gantt = [
+      { car: 'Škoda Superb Combi', meta: 'Kombi · Diesel', b1: bar(1, 6, 'gb-ok', 'Laura Meier'), b2: bar(7, 20, 'gb-amb', 'Anfrage: Sarah Zürcher'), b3: null },
+      { car: 'VW Passat Variant', meta: 'Kombi · Benzin', b1: bar(1, 31, 'gb-blue', 'Marco Brunner'), b2: null, b3: null },
+      { car: 'Škoda Enyaq iV', meta: 'SUV · Elektro', b1: bar(1, 31, 'gb-ok', 'Nadia Frei (bis 10.02.)'), b2: null, b3: null },
+      { car: 'Škoda Kodiaq', meta: 'SUV · Diesel', b1: bar(3, 4, 'gb-gray', 'Wartung'), b2: bar(5, 12, 'gb-blue', 'Elena Rossi'), b3: bar(20, 31, 'gb-amb', 'Anfrage: Anja Steiner') },
+      { car: 'Hyundai Tucson', meta: 'SUV · Hybrid', b1: bar(15, 16, 'gb-gray', 'Wartung'), b2: null, b3: null },
+      { car: 'Škoda Octavia', meta: 'Limousine · Benzin', b1: bar(1, 5, 'gb-blue', 'Luca Moser'), b2: bar(10, 12, 'gb-blue', 'Julia Weber'), b3: null }
+    ];
+    const B = [
+      { n: 'Laura M.', s: 1, e: 6, k: 'ok' }, { n: 'Marco B.', s: 1, e: 31, k: 'blue' }, { n: 'Luca M.', s: 1, e: 5, k: 'blue' },
+      { n: 'Elena R.', s: 5, e: 12, k: 'blue' }, { n: 'Julia W.', s: 10, e: 12, k: 'blue' }, { n: 'Sarah Z.', s: 7, e: 20, k: 'amb', q: true },
+      { n: 'Anja S.', s: 20, e: 31, k: 'amb', q: true }
+    ];
+    const W = [{ n: 'Wartung Kodiaq', d: 3 }, { n: 'Wartung Tucson', d: 15 }];
+    const cells = [];
+    for (let i = 0; i < 35; i++) {
+      const d = i;
+      const out = d < 1 || d > 31;
+      const label = d < 1 ? '30. Nov' : d > 31 ? (d - 31) + '. Jan' : String(d);
+      const ev = [];
+      if (!out) {
+        B.forEach(b => {
+          if (b.s === d) ev.push({ t: (b.q ? 'Anfrage ' : 'Abholung ') + b.n, k: b.k });
+          if (b.e === d && b.e !== 31) ev.push({ t: 'Rückgabe ' + b.n, k: b.k });
+        });
+        W.forEach(w => { if (w.d === d) ev.push({ t: w.n, k: 'gray' }); });
+      }
+      cells.push({ d: label, out: out ? 'out' : 'in', e1: ev[0] ? ev[0].t : '', k1: ev[0] ? ev[0].k : 'ok', e2: ev[1] ? ev[1].t : '', k2: ev[1] ? ev[1].k : 'ok', more: ev.length > 2 ? '+' + (ev.length - 2) + ' weitere' : '' });
+    }
+    return { days, gantt, cells };
+  }
+}
+</script>
+</body>
+</html>

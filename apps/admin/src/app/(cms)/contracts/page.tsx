@@ -1,896 +1,1157 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
 import {
-  FileSignature,
-  Search,
-  PenTool,
   Download,
-  CheckCircle,
-  Clock,
-  XCircle,
+  Eye,
+  FileSignature,
   Mail,
-  User,
-  Car,
-  Calendar,
-  DollarSign,
-  ChevronDown,
-  ChevronUp,
-  X,
-  FileText,
+  PenTool,
+  Plus,
+  QrCode,
   Receipt,
-  Loader2,
   RefreshCw,
-  AlertTriangle,
+  Search,
   Tablet,
+  CircleCheck,
+  CircleX,
+  Wrench,
 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { useAdminAuth } from '@/hooks/useAdminAuth';
-import { api } from '@/lib/api';
 import dynamic from 'next/dynamic';
+import type { CreateInvoiceRequest } from '@hoppdrive/shared';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Alert,
+  Button,
+  Cell2,
+  ChipGroup,
+  DrawerLayout,
+  EmptyState,
+  IconButton,
+  Input,
+  Menu,
+  MobileCard,
+  PageHeader,
+  Panel,
+  ProgressSteps,
+  SkeletonRows,
+  SkeletonTableRows,
+  StatusPill,
+  Table,
+  Tabs,
+  TBody,
+  Td,
+  Th,
+  THead,
+  Tr,
+  cn,
+  useConfirm,
+  useMediaQuery,
+  useToast,
+  type MenuItem,
+} from '@/components/ui';
+import { useNewBooking } from '@/components/NewBookingModal';
+import { useShellCounts } from '@/components/shell';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
+import { useCurrency } from '@/hooks/useCurrency';
+import { useCan } from '@/hooks/usePermission';
+import { api } from '@/lib/api';
+import { bookingProgress, contractFilename, contractNumber, invoiceFilename } from '@/lib/booking';
+import { fetchBookings } from '@/lib/bookings';
+import { triggerBlobDownload } from '@/lib/download';
+import { errorText } from '@/lib/errors';
+import { fmtDate, fmtDateShort, fmtMoney } from '@/lib/format';
+import { qrBillError, qrMissingList as qrMissingListText, type InvoiceKind } from '@/lib/invoice-model';
+import { BookingDetail } from './BookingDetail';
+import { BookingEditModal } from './BookingEditModal';
+import { CreateInvoiceModal, DunningModal, EmailModal, type InvoiceModalError } from './dialogs';
+import {
+  canInvoice,
+  invoiceState,
+  invoiceTypeOf,
+  vehicleOf,
+  type Booking,
+  type BookingStatusFilter,
+  type ContractActions,
+  type ContractFilter,
+  type Invoice,
+  type InvoiceFilter,
+  type InvoiceTypeFilter,
+} from './types';
+import { useTranslations } from 'next-intl';
+import { tr } from '@/i18n/active';
 
 const SignaturePad = dynamic(() => import('@/components/SignaturePad'), { ssr: false });
 
-interface Vehicle {
-  id: string;
-  brand: string;
-  model: string;
-}
+/** ?newInvoice= values of the deep link. */
+const NEW_INVOICE_KINDS = new Map<string, InvoiceKind>([
+  ['damage', 'DAMAGE'],
+  ['fine', 'FINE'],
+  ['other', 'OTHER'],
+]);
 
-interface Booking {
-  id: string;
-  vehicleId: string;
-  customerName: string;
-  customerEmail?: string | null;
-  startDate: string;
-  endDate: string;
-  status: string;
-  notes?: string | null;
-  totalPrice?: number;
-  currency?: string;
-  contractStatus?: string;
-  signedAt?: string | null;
-}
-
-interface Invoice {
-  id: string;
-  invoiceNumber: string;
-  bookingId: string;
-  periodStart: string;
-  periodEnd: string;
-  issueDate: string;
-  dueDate: string;
-  subtotal: number;
-  vatAmount: number;
-  penalty: number;
-  total: number;
-  currency: string;
-  status: 'PENDING' | 'PAID';
-  parentInvoiceId?: string | null;
-  notes?: string | null;
-  createdAt: string;
-}
-
-const CONTRACT_STATUS_CONFIG: Record<string, { label: string; color: string; icon: any }> = {
-  PENDING: { label: 'Ausstehend', color: 'bg-amber-50 text-amber-700 border-amber-200', icon: Clock },
-  SIGNED: { label: 'Signiert', color: 'bg-green-50 text-green-700 border-green-200', icon: CheckCircle },
-  VOIDED: { label: 'Storniert', color: 'bg-red-50 text-red-700 border-red-200', icon: XCircle },
-};
-
-const BOOKING_STATUS_COLORS: Record<string, string> = {
-  reserved: 'bg-yellow-50 text-yellow-700',
-  active: 'bg-green-50 text-green-700',
-  completed: 'bg-neutral-100 text-neutral-600',
-  cancelled: 'bg-red-50 text-red-700',
-};
-
-function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString('de-CH', { day: '2-digit', month: '2-digit', year: 'numeric' });
-}
-
-function toInputDate(iso: string) {
-  return new Date(iso).toISOString().split('T')[0];
-}
+const periodText = (b: Booking) => `${fmtDateShort(b.startDate)} – ${fmtDateShort(b.endDate)}`;
+const priceText = (b: Booking, fallbackCurrency: string) =>
+  b.status === 'cancelled' || !b.totalPrice ? '–' : fmtMoney(b.totalPrice, { currency: b.currency || fallbackCurrency });
 
 export default function ContractsPage() {
-  const router = useRouter();
+  return (
+    <Suspense fallback={<SkeletonRows rows={6} />}>
+      <ContractsView />
+    </Suspense>
+  );
+}
+
+function ContractsView() {
+  const tt = useTranslations();
+  const t = useTranslations();
   const { token } = useAdminAuth();
+  const { toast } = useToast();
+  const confirm = useConfirm();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const newBooking = useNewBooking();
+  const { refresh: refreshCounts } = useShellCounts();
+  const canEdit = useCan('contracts', 'edit');
+  const businessCurrency = useCurrency();
+  const isTabletUp = useMediaQuery('(min-width: 768px)');
+  const isDesktop = useMediaQuery('(min-width: 1024px)');
+  const isXl = useMediaQuery('(min-width: 1280px)');
+  const isWide = useMediaQuery('(min-width: 1800px)');
+
+  const tab: 'buchungen' | 'rechnungen' = searchParams.get('tab') === 'rechnungen' ? 'rechnungen' : 'buchungen';
+  const selectedId = searchParams.get('id');
+  const invoiceParam = searchParams.get('invoice');
+  // ?tab=rechnungen&newInvoice=damage|fine|other&bookingId=<id>: opens the create-invoice dialog (e.g. after a return inspection).
+  const newInvoiceParam = searchParams.get('newInvoice');
+  const newInvoiceBookingId = searchParams.get('bookingId');
+
+  // Data
   const [bookings, setBookings] = useState<Booking[]>([]);
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [invoicesFailed, setInvoicesFailed] = useState(false);
 
   // Filters
+  const [statusFilter, setStatusFilter] = useState<BookingStatusFilter>('all');
+  const [contractFilter, setContractFilter] = useState<ContractFilter>('all');
+  const [invoiceFilter, setInvoiceFilter] = useState<InvoiceFilter>('all');
+  const [invoiceTypeFilter, setInvoiceTypeFilter] = useState<InvoiceTypeFilter>('all');
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
 
-  // Expanded booking detail
-  const [expandedId, setExpandedId] = useState<string | null>(null);
-
-  // Edit email inline
-  const [editEmailId, setEditEmailId] = useState<string | null>(null);
-  const [editEmailValue, setEditEmailValue] = useState('');
-  const [savingEmail, setSavingEmail] = useState(false);
-
-  // Signature
-  const [showSignature, setShowSignature] = useState(false);
-  const [signingBooking, setSigningBooking] = useState<Booking | null>(null);
+  // Dialogs and running requests
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [signing, setSigning] = useState<Booking | null>(null);
   const [signingLoading, setSigningLoading] = useState(false);
+  const [emailBooking, setEmailBooking] = useState<Booking | null>(null);
+  const [editingBooking, setEditingBooking] = useState<Booking | null>(null);
+  const [emailSaving, setEmailSaving] = useState(false);
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [invoiceDialog, setInvoiceDialog] = useState<{ open: boolean; booking: Booking | null; kind?: InvoiceKind; autoDamages?: boolean }>({ open: false, booking: null });
+  const [invoiceCreating, setInvoiceCreating] = useState(false);
+  const [invoiceError, setInvoiceError] = useState<InvoiceModalError | null>(null);
+  const [dunningInvoice, setDunningInvoice] = useState<Invoice | null>(null);
+  const [dunningSending, setDunningSending] = useState(false);
+  const [dunningError, setDunningError] = useState<string | null>(null);
 
-  // Booking status transitions
-  const [statusLoading, setStatusLoading] = useState<string | null>(null);
+  // ── Loading ───────────────────────────────────────────────────
 
-  // Invoice creation per booking
-  const [invoicePeriod, setInvoicePeriod] = useState<Record<string, { start: string; end: string }>>({});
-  const [invoiceLoading, setInvoiceLoading] = useState<string | null>(null);
-
-  // Invoice list per booking
-  const [bookingInvoices, setBookingInvoices] = useState<Record<string, Invoice[]>>({});
-  const [invoicesLoading, setInvoicesLoading] = useState<string | null>(null);
-
-  // Reissue dialog
-  const [reissueInvoice, setReissueInvoice] = useState<Invoice | null>(null);
-  const [reissuePenalty, setReissuePenalty] = useState('');
-  const [reissueNotes, setReissueNotes] = useState('');
-  const [reissueLoading, setReissueLoading] = useState(false);
-
-  async function fetchData() {
-    try {
-      const [bookingData, vehicleData] = await Promise.all([
-        api.getBookings(),
-        api.getVehicles(),
-      ]);
-      setBookings(bookingData.items || bookingData || []);
-      setVehicles(vehicleData);
-    } catch (err) {
-      console.error('Failed to load data', err);
-    } finally {
+  const load = useCallback(
+    async (silent = false) => {
+      if (!token) return;
+      if (!silent) setLoading(true);
+      const [bookingRes, invoiceRes] = await Promise.allSettled([fetchBookings(), api.getInvoices()]);
+      if (bookingRes.status === 'fulfilled') {
+        setBookings((bookingRes.value.items || []) as Booking[]);
+        setLoadError(null);
+      } else if (!silent) {
+        setLoadError(errorText(bookingRes.reason, tr('contracts.dieBuchungenKonntenNicht')));
+      }
+      if (invoiceRes.status === 'fulfilled') {
+        setInvoices(invoiceRes.value as Invoice[]);
+        setInvoicesFailed(false);
+      } else {
+        setInvoicesFailed(true);
+      }
       setLoading(false);
-    }
-  }
+    },
+    [token],
+  );
 
+  const { bookingsVersion } = newBooking;
   useEffect(() => {
-    if (!token) return;
-    fetchData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token]);
+    void load(bookingsVersion > 0);
+  }, [load, bookingsVersion]);
 
-  // When a booking is expanded, load its invoices + set default period
-  useEffect(() => {
-    if (!expandedId) return;
-    const booking = bookings.find((b) => b.id === expandedId);
-    if (booking && !invoicePeriod[expandedId]) {
-      setInvoicePeriod((prev) => ({
-        ...prev,
-        [expandedId]: { start: toInputDate(booking.startDate), end: toInputDate(booking.endDate) },
-      }));
-    }
-    loadInvoicesForBooking(expandedId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [expandedId]);
+  // ── Derived data ──────────────────────────────────────────────
 
-  async function loadInvoicesForBooking(bookingId: string) {
-    setInvoicesLoading(bookingId);
-    try {
-      const invoices = await api.getInvoices({ bookingId });
-      setBookingInvoices((prev) => ({ ...prev, [bookingId]: invoices }));
-    } catch (err) {
-      console.error('Failed to load invoices', err);
-    } finally {
-      setInvoicesLoading(null);
-    }
-  }
+  const invoicesByBooking = useMemo(() => {
+    const map = new Map<string, Invoice[]>();
+    invoices.forEach((inv) => {
+      if (inv.bookingId) map.set(inv.bookingId, [...(map.get(inv.bookingId) ?? []), inv]);
+    });
+    return map;
+  }, [invoices]);
 
-  // Derived data
-  const vehicleMap = useMemo(() => {
-    const m = new Map<string, Vehicle>();
-    vehicles.forEach((v) => m.set(v.id, v));
-    return m;
-  }, [vehicles]);
+  const statusCounts = useMemo(() => {
+    const count = (s: string) => bookings.filter((b) => b.status === s).length;
+    return { all: bookings.length, reserved: count('reserved'), active: count('active'), completed: count('completed'), cancelled: count('cancelled') };
+  }, [bookings]);
+
+  const contractCounts = useMemo(
+    () => ({
+      all: bookings.length,
+      pending: bookings.filter((b) => (b.contractStatus || 'PENDING') === 'PENDING' && b.status !== 'cancelled').length,
+      signed: bookings.filter((b) => b.contractStatus === 'SIGNED').length,
+    }),
+    [bookings],
+  );
 
   const filteredBookings = useMemo(() => {
+    const q = search.trim().toLowerCase();
     return bookings
+      .filter((b) => statusFilter === 'all' || b.status === statusFilter)
       .filter((b) => {
-        if (statusFilter === 'pending') return (b.contractStatus || 'PENDING') === 'PENDING' && b.status !== 'cancelled';
-        if (statusFilter === 'signed') return b.contractStatus === 'SIGNED';
-        if (statusFilter === 'cancelled') return b.status === 'cancelled';
+        if (contractFilter === 'pending') return (b.contractStatus || 'PENDING') === 'PENDING' && b.status !== 'cancelled';
+        if (contractFilter === 'signed') return b.contractStatus === 'SIGNED';
         return true;
       })
       .filter((b) => {
-        if (!search) return true;
-        const q = search.toLowerCase();
-        const vehicle = vehicleMap.get(b.vehicleId);
+        if (!q) return true;
         return (
           b.customerName.toLowerCase().includes(q) ||
-          (b.customerEmail && b.customerEmail.toLowerCase().includes(q)) ||
-          (vehicle && `${vehicle.brand} ${vehicle.model}`.toLowerCase().includes(q)) ||
-          b.id.toLowerCase().includes(q)
+          (b.customerEmail?.toLowerCase().includes(q) ?? false) ||
+          vehicleOf(b).toLowerCase().includes(q) ||
+          b.id.toLowerCase().includes(q) ||
+          contractNumber(b.id).toLowerCase().includes(q)
         );
       })
       .sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime());
-  }, [bookings, statusFilter, search, vehicleMap]);
+  }, [bookings, statusFilter, contractFilter, search]);
 
-  const stats = useMemo(() => {
-    const activeBookings = bookings.filter((b) => b.status !== 'cancelled');
+  const invoiceCounts = useMemo(() => {
+    const states = invoices.map(invoiceState);
     return {
-      total: activeBookings.length,
-      pending: activeBookings.filter((b) => (b.contractStatus || 'PENDING') === 'PENDING').length,
-      signed: activeBookings.filter((b) => b.contractStatus === 'SIGNED').length,
+      all: invoices.length,
+      open: states.filter((s) => s === 'PENDING').length,
+      overdue: states.filter((s) => s === 'OVERDUE').length,
+      paid: states.filter((s) => s === 'PAID').length,
     };
-  }, [bookings]);
+  }, [invoices]);
 
-  // ─── Actions ─────────────────────────────────────────────
+  const invoiceTypeCounts = useMemo(() => {
+    const count = (type: string) => invoices.filter((inv) => invoiceTypeOf(inv) === type).length;
+    return { all: invoices.length, RENTAL: count('RENTAL'), DAMAGE: count('DAMAGE'), FINE: count('FINE'), OTHER: count('OTHER') };
+  }, [invoices]);
 
-  function openSignaturePad(booking: Booking) {
-    setSigningBooking(booking);
-    setShowSignature(true);
-  }
+  const filteredInvoices = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return invoices.filter((inv) => {
+      const state = invoiceState(inv);
+      if (invoiceFilter === 'open' && state !== 'PENDING') return false;
+      if (invoiceFilter === 'overdue' && state !== 'OVERDUE') return false;
+      if (invoiceFilter === 'paid' && state !== 'PAID') return false;
+      if (invoiceTypeFilter !== 'all' && invoiceTypeOf(inv) !== invoiceTypeFilter) return false;
+      if (!q) return true;
+      return inv.invoiceNumber.toLowerCase().includes(q) || (inv.customerName ?? inv.booking?.customerName ?? '').toLowerCase().includes(q);
+    });
+  }, [invoices, invoiceFilter, invoiceTypeFilter, search]);
 
-  async function handleSignContract(signatureDataUrl: string) {
-    if (!signingBooking) return;
+  const selectedBooking = useMemo(() => bookings.find((b) => b.id === selectedId) ?? null, [bookings, selectedId]);
+  // The persistent drawer (>= 1024 px) narrows the table: the Fortschritt column then moves into the drawer (same on tablet); on desktop it shows dots below 1280 px (labels stay readable by screen readers).
+  const drawerInline = Boolean(selectedBooking) && isDesktop;
+  const compactTable = drawerInline || !isDesktop; // tablet and drawer-open layouts: no progress column, fewer row icons
+  const showProgress = !compactTable;
+  const progressLabels = isWide || isXl;
+
+  // ── URL state ─────────────────────────────────────────────────
+
+  const goTab = useCallback(
+    (next: string) => {
+      setSearch('');
+      router.replace(next === 'rechnungen' ? `${pathname}?tab=rechnungen` : pathname, { scroll: false });
+    },
+    [router, pathname],
+  );
+
+  const openBooking = useCallback(
+    (id: string) => {
+      router.replace(`${pathname}?id=${id}`, { scroll: false });
+    },
+    [router, pathname],
+  );
+
+  const closeBooking = useCallback(() => {
+    router.replace(tab === 'rechnungen' ? `${pathname}?tab=rechnungen` : pathname, { scroll: false });
+  }, [router, pathname, tab]);
+
+  // ?id= of a booking that is not in the list (deleted or beyond the loaded page)
+  const warnedMissing = useRef<string | null>(null);
+  useEffect(() => {
+    if (!selectedId || loading || selectedBooking) return;
+    if (warnedMissing.current === selectedId) return;
+    warnedMissing.current = selectedId;
+    toast.error(tr('contracts.buchungNichtGefunden'), tr('contracts.derLinkVerweistAuf'));
+    router.replace(pathname, { scroll: false });
+  }, [selectedId, selectedBooking, loading, toast, router, pathname]);
+
+  // ?tab=rechnungen&invoice=<id>: scroll to and highlight the invoice
+  useEffect(() => {
+    if (tab !== 'rechnungen' || !invoiceParam || loading) return;
+    setInvoiceFilter('all');
+    const timer = window.setTimeout(() => document.getElementById(`invoice-${invoiceParam}`)?.scrollIntoView({ block: 'center' }), 50);
+    return () => window.clearTimeout(timer);
+  }, [tab, invoiceParam, loading, invoices.length]);
+
+  // ?newInvoice=...: open the dialog once the bookings are there, then drop the parameters from the URL.
+  const handledNewInvoice = useRef<string | null>(null);
+  useEffect(() => {
+    const kind = newInvoiceParam ? NEW_INVOICE_KINDS.get(newInvoiceParam) : undefined;
+    if (!kind || loading) return;
+    const key = `${newInvoiceParam}:${newInvoiceBookingId ?? ''}`;
+    if (handledNewInvoice.current === key) return;
+    handledNewInvoice.current = key;
+    if (canEdit) {
+      const booking = newInvoiceBookingId ? (bookings.find((b) => b.id === newInvoiceBookingId) ?? null) : null;
+      if (newInvoiceBookingId && !booking) toast.error(tr('contracts.buchungNichtGefunden'), tr('contracts.derLinkVerweistAuf'));
+      setInvoiceError(null);
+      setInvoiceDialog({ open: true, booking, kind, autoDamages: kind === 'DAMAGE' });
+    }
+    router.replace(`${pathname}?tab=rechnungen`, { scroll: false });
+  }, [newInvoiceParam, newInvoiceBookingId, loading, bookings, canEdit, router, pathname, toast]);
+
+  // ── Actions ───────────────────────────────────────────────────
+
+  const patchBooking = (id: string, patch: Partial<Booking>) => setBookings((rows) => rows.map((b) => (b.id === id ? { ...b, ...patch } : b)));
+
+  const downloadContract = useCallback(
+    async (b: Booking) => {
+      setBusyId(b.id);
+      try {
+        triggerBlobDownload(await api.downloadContract(b.id), contractFilename(b.id));
+      } catch (err) {
+        toast.error(tr('common.vertragKonnteNichtHeruntergela'), errorText(err));
+      } finally {
+        setBusyId(null);
+      }
+    },
+    [toast],
+  );
+
+  async function handleSign(signatureDataUrl: string) {
+    if (!signing) return;
     setSigningLoading(true);
     try {
-      await api.finalizeContract(signingBooking.id, {
-        signature: signatureDataUrl,
-        customerEmail: signingBooking.customerEmail || undefined,
-      });
-      setShowSignature(false);
-      setSigningBooking(null);
-      await fetchData();
-    } catch (err: any) {
-      alert(err.message || 'Vertrag konnte nicht signiert werden.');
+      await api.finalizeContract(signing.id, { signature: signatureDataUrl, customerEmail: signing.customerEmail || undefined });
+      toast.success(tr('common.vertragSigniert'), signing.customerEmail ? tr('common.derVertragWurdePer') : tr('contracts.vertragVonGespeichert', { customerName: signing.customerName }));
+      setSigning(null);
+      void load(true);
+      refreshCounts();
+    } catch (err) {
+      toast.error(tr('common.vertragKonnteNichtSigniert'), errorText(err));
     } finally {
       setSigningLoading(false);
     }
   }
 
-  function triggerBlobDownload(blob: Blob, filename: string) {
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    window.URL.revokeObjectURL(url);
-    document.body.removeChild(a);
-  }
-
-  async function handleCreateInvoice(booking: Booking) {
-    const period = invoicePeriod[booking.id];
-    if (!period || !period.start || !period.end) {
-      alert('Bitte Zeitraum auswählen.');
-      return;
-    }
-    setInvoiceLoading(booking.id);
+  async function handleSaveEmail(email: string) {
+    if (!emailBooking) return;
+    setEmailSaving(true);
+    setEmailError(null);
     try {
-      const invoice = await api.createInvoice({
-        bookingId: booking.id,
-        periodStart: period.start,
-        periodEnd: period.end,
-      });
-      // Download the new invoice immediately
-      const blob = await api.downloadInvoice(invoice.id);
-      triggerBlobDownload(blob, `HoppDrive-Rechnung-${invoice.invoiceNumber}.pdf`);
-      // Refresh invoice list
-      await loadInvoicesForBooking(booking.id);
-    } catch (err: any) {
-      alert(err.message || 'Rechnung konnte nicht erstellt werden.');
+      await api.updateBooking(emailBooking.id, { customerEmail: email });
+      patchBooking(emailBooking.id, { customerEmail: email });
+      toast.success(tr('contracts.eMailGespeichert'), `${emailBooking.customerName}: ${email}`);
+      setEmailBooking(null);
+    } catch (err) {
+      setEmailError(errorText(err, tr('contracts.eMailKonnteNicht')));
     } finally {
-      setInvoiceLoading(null);
+      setEmailSaving(false);
     }
   }
 
-  async function handleToggleStatus(inv: Invoice) {
-    const newStatus = inv.status === 'PENDING' ? 'PAID' : 'PENDING';
-    try {
-      await api.toggleInvoiceStatus(inv.id, newStatus);
-      await loadInvoicesForBooking(inv.bookingId);
-    } catch (err: any) {
-      alert(err.message || 'Status konnte nicht geändert werden.');
-    }
-  }
+  const transition = useCallback(
+    async (b: Booking, status: 'active' | 'completed' | 'cancelled') => {
+      if (status === 'cancelled') {
+        // Replaces window.confirm(): the dialog stays open with the error if the API refuses.
+        const done = await confirm({
+          title: tr('contracts.buchungStornieren'),
+          description: tr('contracts.dasFahrzeugWirdFuer', { customerName: b.customerName, vehicleOf: vehicleOf(b), date: fmtDate(b.startDate), date2: fmtDate(b.endDate) }),
+          warning: tr('contracts.dasStornierenKannNicht'),
+          confirmLabel: tr('contracts.buchungStornieren2'),
+          cancelLabel: tr('contracts.behalten'),
+          icon: <CircleX size={20} />,
+          onConfirm: async () => {
+            const updated = await api.transitionBookingStatus(b.id, status);
+            patchBooking(b.id, { status: updated.status });
+          },
+        });
+        if (done) {
+          toast.success(tr('contracts.buchungStorniert'), b.customerName);
+          refreshCounts();
+        }
+        return;
+      }
+      setBusyId(b.id);
+      try {
+        const updated = await api.transitionBookingStatus(b.id, status);
+        patchBooking(b.id, { status: updated.status });
+        toast.success(status === 'active' ? tr('contracts.alsAbgeholtMarkiert') : tr('contracts.alsZurueckgegebenMarkiert'), `${b.customerName}, ${vehicleOf(b)}`);
+      } catch (err) {
+        toast.error(tr('contracts.statusKonnteNichtGeaendert'), errorText(err));
+      } finally {
+        setBusyId(null);
+      }
+    },
+    [confirm, toast, refreshCounts],
+  );
 
-  async function handleReissue() {
-    if (!reissueInvoice) return;
-    setReissueLoading(true);
-    try {
-      const newInvoice = await api.reissueInvoice(reissueInvoice.id, {
-        penalty: Number(reissuePenalty) || 0,
-        notes: reissueNotes || undefined,
-      });
-      // Download reissued invoice
-      const blob = await api.downloadInvoice(newInvoice.id);
-      triggerBlobDownload(blob, `HoppDrive-Rechnung-${newInvoice.invoiceNumber}.pdf`);
-      await loadInvoicesForBooking(reissueInvoice.bookingId);
-      setReissueInvoice(null);
-      setReissuePenalty('');
-      setReissueNotes('');
-    } catch (err: any) {
-      alert(err.message || 'Mahnung konnte nicht erstellt werden.');
-    } finally {
-      setReissueLoading(false);
-    }
-  }
+  const downloadInvoice = useCallback(
+    async (inv: Invoice) => {
+      setBusyId(inv.id);
+      try {
+        triggerBlobDownload(await api.downloadInvoice(inv.id), invoiceFilename(inv.invoiceNumber));
+      } catch (err) {
+        toast.error(tr('contracts.rechnungKonnteNichtHeruntergel'), errorText(err));
+      } finally {
+        setBusyId(null);
+      }
+    },
+    [toast],
+  );
 
-  async function handleDownloadInvoice(inv: Invoice) {
-    try {
-      const blob = await api.downloadInvoice(inv.id);
-      triggerBlobDownload(blob, `HoppDrive-Rechnung-${inv.invoiceNumber}.pdf`);
-    } catch (err: any) {
-      alert(err.message || 'Rechnung konnte nicht heruntergeladen werden.');
-    }
-  }
+  const downloadInvoiceQr = useCallback(
+    async (inv: Invoice) => {
+      setBusyId(inv.id);
+      try {
+        triggerBlobDownload(await api.downloadInvoice(inv.id, { qr: true }), invoiceFilename(`${inv.invoiceNumber}-QR`));
+      } catch (err) {
+        const qr = qrBillError(err);
+        if (qr) {
+          toast({
+            tone: 'error',
+            title: tr('invoiceEditor.qrUnavailableTitle'),
+            description: qr.missing.length > 0 ? tr('invoiceEditor.qrUnavailableText', { list: qrMissingListText(qr.missing) }) : errorText(err),
+            action: { label: tr('invoiceEditor.openInvoiceSettings'), onClick: () => router.push('/settings#invoice-h') },
+          });
+        } else {
+          toast.error(tr('invoiceEditor.qrDownloadFailed'), errorText(err));
+        }
+      } finally {
+        setBusyId(null);
+      }
+    },
+    [toast, router],
+  );
 
-  async function handleDownloadContract(bookingId: string) {
-    try {
-      const blob = await api.downloadContract(bookingId);
-      triggerBlobDownload(blob, `HoppDrive-Vertrag-${bookingId.substring(0, 8).toUpperCase()}.pdf`);
-    } catch (err: any) {
-      alert(err.message || 'Vertrag konnte nicht heruntergeladen werden.');
-    }
-  }
+  const toggleInvoice = useCallback(
+    async (inv: Invoice) => {
+      const next = inv.status === 'PENDING' ? 'PAID' : 'PENDING';
+      setBusyId(inv.id);
+      try {
+        await api.toggleInvoiceStatus(inv.id, next);
+        setInvoices((rows) => rows.map((r) => (r.id === inv.id ? { ...r, status: next, isOverdue: next === 'PAID' ? false : r.isOverdue } : r)));
+        toast.success(next === 'PAID' ? tr('contracts.alsBezahltMarkiert') : tr('contracts.alsOffenMarkiert'), tr('contracts.rechnung', { invoiceNumber: inv.invoiceNumber }));
+        void load(true);
+        refreshCounts();
+      } catch (err) {
+        toast.error(tr('contracts.statusKonnteNichtGeaendert'), errorText(err));
+      } finally {
+        setBusyId(null);
+      }
+    },
+    [toast, load, refreshCounts],
+  );
 
-  async function handleTransitionStatus(bookingId: string, status: 'active' | 'completed' | 'cancelled') {
-    if (status === 'cancelled' && !confirm('Diese Buchung wirklich stornieren?')) return;
-    setStatusLoading(bookingId);
+  async function handleCreateInvoice(request: CreateInvoiceRequest) {
+    setInvoiceCreating(true);
+    setInvoiceError(null);
     try {
-      const updated = await api.transitionBookingStatus(bookingId, status);
-      setBookings((prev) => prev.map((b) => (b.id === bookingId ? { ...b, status: updated.status } : b)));
-    } catch (err: any) {
-      alert(err.message || 'Status konnte nicht geändert werden.');
-    } finally {
-      setStatusLoading(null);
-    }
-  }
-
-  async function handleSaveEmail(bookingId: string) {
-    if (!editEmailValue.trim()) return;
-    setSavingEmail(true);
-    try {
-      await api.updateBooking(bookingId, { customerEmail: editEmailValue.trim() });
-      setBookings((prev) =>
-        prev.map((b) => (b.id === bookingId ? { ...b, customerEmail: editEmailValue.trim() } : b)),
+      const invoice = await api.createInvoice(request);
+      let downloaded = true;
+      try {
+        triggerBlobDownload(await api.downloadInvoice(invoice.id), invoiceFilename(invoice.invoiceNumber));
+      } catch {
+        downloaded = false;
+      }
+      setInvoiceDialog({ open: false, booking: null });
+      const mailRequested = request.sendEmail === true;
+      const description = downloaded ? tr('contracts.diePDFDateiWurde', { invoiceNumber: invoice.invoiceNumber }) : tr('contracts.derDownloadIstFehlgeschlagen', { invoiceNumber: invoice.invoiceNumber });
+      toast.success(tr('contracts.rechnungErstellt'), description);
+      if (mailRequested && invoice.emailSent) {
+        toast.success(tr('invoiceEditor.mailSent'), tr('invoiceEditor.mailSentText', { invoiceNumber: invoice.invoiceNumber, email: invoice.customerEmail ?? '' }));
+      } else if (mailRequested && invoice.emailError === 'no_recipient') {
+        toast.error(tr('invoiceEditor.mailNoRecipient'), tr('invoiceEditor.mailNoRecipientText', { invoiceNumber: invoice.invoiceNumber }));
+      } else if (mailRequested && invoice.emailError === 'send_failed') {
+        toast.error(tr('invoiceEditor.mailFailed'), tr('invoiceEditor.mailFailedText', { invoiceNumber: invoice.invoiceNumber }));
+      }
+      await load(true);
+      refreshCounts();
+    } catch (err) {
+      const qr = qrBillError(err);
+      setInvoiceError(
+        qr
+          ? { text: qr.missing.length > 0 ? tr('invoiceEditor.qrUnavailable') : qr.message || tr('invoiceEditor.qrUnavailable'), qrMissing: qr.missing.length > 0 ? qr.missing : [] }
+          : { text: errorText(err, tr('contracts.rechnungKonnteNichtErstellt')) },
       );
-      setEditEmailId(null);
-      setEditEmailValue('');
-    } catch (err: any) {
-      alert(err.message || 'E-Mail konnte nicht gespeichert werden.');
     } finally {
-      setSavingEmail(false);
+      setInvoiceCreating(false);
     }
   }
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-2 border-brand-600 border-t-transparent" />
+  async function handleDunning(data: { penalty: number; notes: string; sendEmail: boolean }) {
+    if (!dunningInvoice) return;
+    setDunningSending(true);
+    setDunningError(null);
+    try {
+      const created = await api.reissueInvoice(dunningInvoice.id, {
+        penalty: data.penalty,
+        notes: data.notes || undefined,
+        sendEmail: data.sendEmail,
+      });
+      let downloaded = true;
+      try {
+        triggerBlobDownload(await api.downloadInvoice(created.id), invoiceFilename(created.invoiceNumber));
+      } catch {
+        downloaded = false;
+      }
+      const original = dunningInvoice;
+      setDunningInvoice(null);
+      if (data.sendEmail && created.emailSent) {
+        toast.success(tr('contracts.mahnungGesendet'), `${created.invoiceNumber} an ${original.customerEmail ?? tr('contracts.denKunden')}${downloaded ? tr('contracts.pDFHeruntergeladen') : ''}.`);
+      } else if (data.sendEmail && created.emailError === 'send_failed') {
+        toast({ tone: 'error', title: tr('contracts.mahnungErstelltEMail'), description: tr('contracts.derVersandIstFehlgeschlagen', { invoiceNumber: created.invoiceNumber }) });
+      } else if (data.sendEmail && created.emailError === 'no_recipient') {
+        toast({ tone: 'error', title: tr('contracts.mahnungErstelltEMail'), description: tr('contracts.fuerDieRechnungIst', { invoiceNumber: created.invoiceNumber }) });
+      } else {
+        toast.success(tr('contracts.mahnungErstellt'), `${created.invoiceNumber}${downloaded ? tr('contracts.pDFHeruntergeladen') : ''}.`);
+      }
+      await load(true);
+      refreshCounts();
+    } catch (err) {
+      setDunningError(errorText(err, tr('contracts.mahnungKonnteNichtErstellt')));
+    } finally {
+      setDunningSending(false);
+    }
+  }
+
+  const actions: ContractActions = {
+    canEdit,
+    openBooking,
+    downloadContract: (b) => void downloadContract(b),
+    signOnDevice: (b) => router.push(`/contracts/${b.id}/sign`),
+    quickSign: (b) => setSigning(b),
+    editEmail: (b) => {
+      setEmailError(null);
+      setEmailBooking(b);
+    },
+    editBooking: (b) => setEditingBooking(b),
+    transition: (b, status) => void transition(b, status),
+    createInvoice: (b) => {
+      setInvoiceError(null);
+      setInvoiceDialog({ open: true, booking: b });
+    },
+    downloadInvoice: (inv) => void downloadInvoice(inv),
+    downloadInvoiceQr: (inv) => void downloadInvoiceQr(inv),
+    toggleInvoice: (inv) => void toggleInvoice(inv),
+    dunning: (inv) => {
+      setDunningError(null);
+      setDunningInvoice(inv);
+    },
+    busyId,
+  };
+
+  // ── Render ────────────────────────────────────────────────────
+
+  const tabs = [
+    { id: 'buchungen', label: t('common.buchungen'), count: bookings.length },
+    { id: 'rechnungen', label: t('common.rechnungen'), count: invoices.length },
+  ];
+
+  const statusOptions: { value: BookingStatusFilter; label: string; count: number }[] = [
+    { value: 'all', label: t('common.alle'), count: statusCounts.all },
+    { value: 'reserved', label: t('common.reserviert'), count: statusCounts.reserved },
+    { value: 'active', label: t('common.aktiv'), count: statusCounts.active },
+    { value: 'completed', label: t('common.erledigt'), count: statusCounts.completed },
+    { value: 'cancelled', label: t('contracts.storniert'), count: statusCounts.cancelled },
+  ];
+  const contractOptions: { value: ContractFilter; label: string; count: number }[] = [
+    { value: 'all', label: t('contracts.alleVertraege'), count: contractCounts.all },
+    { value: 'pending', label: t('contracts.ausstehend'), count: contractCounts.pending },
+    { value: 'signed', label: t('common.signiert'), count: contractCounts.signed },
+  ];
+  const invoiceOptions: { value: InvoiceFilter; label: string; count: number }[] = [
+    { value: 'all', label: t('common.alle'), count: invoiceCounts.all },
+    { value: 'open', label: t('common.offen'), count: invoiceCounts.open },
+    { value: 'overdue', label: t('contracts.ueberfaellig'), count: invoiceCounts.overdue },
+    { value: 'paid', label: t('common.bezahlt'), count: invoiceCounts.paid },
+  ];
+
+  const invoiceTypeOptions: { value: InvoiceTypeFilter; label: string; count: number }[] = [
+    { value: 'all', label: t('invoiceEditor.allTypes'), count: invoiceTypeCounts.all },
+    { value: 'RENTAL', label: t('invoiceEditor.kinds.RENTAL'), count: invoiceTypeCounts.RENTAL },
+    { value: 'DAMAGE', label: t('invoiceEditor.kinds.DAMAGE'), count: invoiceTypeCounts.DAMAGE },
+    { value: 'FINE', label: t('invoiceEditor.kinds.FINE'), count: invoiceTypeCounts.FINE },
+    { value: 'OTHER', label: t('invoiceEditor.kinds.OTHER'), count: invoiceTypeCounts.OTHER },
+  ];
+
+  const searchField = (label: string, placeholder = t('contracts.suchen')) => (
+    <div className="relative min-w-[220px] max-w-[360px] flex-1 max-md:min-w-0 max-md:max-w-none">
+      <Search size={18} aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-graphite" />
+      <Input type="search" aria-label={label} placeholder={placeholder} value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10" />
+    </div>
+  );
+
+  const errorBlock = loadError ? (
+    <Alert
+      tone="err"
+      title={t('contracts.buchungenKonntenNichtGeladen')}
+      action={
+        <Button variant="outline" size="sm" onClick={() => void load()}>
+          {t('common.erneutVersuchen')}
+        </Button>
+      }
+    >
+      {loadError}
+    </Alert>
+  ) : null;
+
+  const noMatches = (reset: () => void) => (
+    <EmptyState
+      compact
+      tone="neutral"
+      icon={<FileSignature size={32} />}
+      title={t('contracts.keineEintraegeGefunden')}
+      text={t('contracts.mitDenGewaehltenFiltern')}
+      actions={
+        <Button variant="ghost" onClick={reset}>
+          {t('contracts.filterZuruecksetzen')}
+        </Button>
+      }
+    />
+  );
+
+  const bookingsView =
+    loading ? (
+      isTabletUp ? (
+        <Table aria-label={t('contracts.buchungenWerdenGeladen')} className="relative">
+          <TBody>
+            <SkeletonTableRows rows={6} columns={6} />
+          </TBody>
+        </Table>
+      ) : (
+        <SkeletonRows rows={3} />
+      )
+    ) : bookings.length === 0 ? (
+      <EmptyState
+        icon={<FileSignature size={32} />}
+        title={t('contracts.nochKeineBuchungen')}
+        text={t('contracts.buchungenEntstehenAusAnfragen')}
+        actions={newBooking.canCreate ? <Button onClick={() => newBooking.open()}>{t('common.neueBuchung')}</Button> : undefined}
+      />
+    ) : filteredBookings.length === 0 ? (
+      noMatches(() => {
+        setStatusFilter('all');
+        setContractFilter('all');
+        setSearch('');
+      })
+    ) : isTabletUp ? (
+      <Table aria-label={t('common.buchungen')} className={cn('relative', compactTable && '[&_td]:px-3 [&_th]:px-3')}>
+        <THead>
+          <Tr>
+            <Th>{t('common.kunde')}</Th>
+            <Th>{t('contracts.fahrzeugUndZeitraum')}</Th>
+            <Th>{t('common.status')}</Th>
+            {showProgress && <Th>{t('contracts.fortschritt')}</Th>}
+            <Th align="right">{t('contracts.betrag')}</Th>
+            <Th align="right">
+              <span className="sr-only">{t('common.aktionen')}</span>
+            </Th>
+          </Tr>
+        </THead>
+        <TBody>
+          {filteredBookings.map((b) => {
+            const progress = bookingProgress(b, invoicesByBooking.get(b.id) ?? []);
+            return (
+              <Tr key={b.id} selected={b.id === selectedId} onClick={() => openBooking(b.id)} className={cn(b.status === 'cancelled' && 'text-graphite')}>
+                <Td>
+                  <Cell2
+                    primary={
+                      <button type="button" onClick={(e) => { e.stopPropagation(); openBooking(b.id); }} className="text-left font-semibold hover:underline">
+                        {b.customerName}
+                      </button>
+                    }
+                    secondary={b.customerEmail || tt('contracts.keineEMailHinterlegt')}
+                  />
+                </Td>
+                <Td>
+                  <Cell2 primary={vehicleOf(b)} secondary={<span className="num">{periodText(b)}</span>} />
+                </Td>
+                <Td>
+                  <StatusPill kind="booking" status={b.status} />
+                </Td>
+                {showProgress && (
+                  <Td>
+                    <ProgressSteps
+                      compact
+                      steps={progress.steps}
+                      aria-label={t('contracts.fortschritt2', { next: progress.next })}
+                      className={cn('flex-nowrap', !progressLabels && '[&_.prog-step>span:nth-child(2)]:sr-only [&_.prog-dot]:h-6 [&_.prog-dot]:w-6')}
+                    />
+                  </Td>
+                )}
+                <Td align="right" className="num whitespace-nowrap text-base">
+                  <b>{priceText(b, businessCurrency)}</b>
+                </Td>
+                <Td onClick={(e) => e.stopPropagation()}>
+                  <div className="acts">
+                    <BookingRowActions booking={b} actions={actions} compact={compactTable} />
+                  </div>
+                </Td>
+              </Tr>
+            );
+          })}
+        </TBody>
+      </Table>
+    ) : (
+      <div className="flex flex-col gap-3">
+        {filteredBookings.map((b) => (
+          <BookingCard key={b.id} booking={b} invoices={invoicesByBooking.get(b.id) ?? []} actions={actions} currency={businessCurrency} />
+        ))}
       </div>
     );
-  }
+
+  const invoicesView =
+    loading ? (
+      <SkeletonRows rows={4} />
+    ) : invoicesFailed ? (
+      <div className="p-5">
+        <Alert
+          tone="err"
+          title={t('contracts.rechnungenKonntenNichtGeladen')}
+          action={
+            <Button variant="outline" size="sm" onClick={() => void load()}>
+              {t('common.erneutVersuchen')}
+            </Button>
+          }
+        >
+          {t('contracts.dieVerbindungZumServer')}
+        </Alert>
+      </div>
+    ) : invoices.length === 0 ? (
+      <EmptyState
+        icon={<Receipt size={32} />}
+        title={t('contracts.nochKeineRechnungen')}
+        text={t('contracts.rechnungenErstellenSieAus')}
+        actions={canEdit ? <Button onClick={() => actions.createInvoice(null)}>{t('common.rechnungErstellen')}</Button> : undefined}
+      />
+    ) : filteredInvoices.length === 0 ? (
+      noMatches(() => {
+        setInvoiceFilter('all');
+        setInvoiceTypeFilter('all');
+        setSearch('');
+      })
+    ) : isTabletUp ? (
+      <Table aria-label={t('common.rechnungen')} className="relative">
+        <THead>
+          <Tr>
+            <Th>{t('contracts.nummer')}</Th>
+            <Th>{t('invoiceEditor.colType')}</Th>
+            <Th>{t('common.kunde')}</Th>
+            <Th>{t('contracts.faelligAm')}</Th>
+            <Th>{t('common.status')}</Th>
+            <Th align="right">{t('contracts.betrag')}</Th>
+            <Th align="right">
+              <span className="sr-only">{t('common.aktionen')}</span>
+            </Th>
+          </Tr>
+        </THead>
+        <TBody>
+          {filteredInvoices.map((inv) => {
+            const state = invoiceState(inv);
+            return (
+              <Tr key={inv.id} id={`invoice-${inv.id}`} selected={inv.id === invoiceParam}>
+                <Td className="num">
+                  <span className="flex flex-wrap items-center gap-2">
+                    <b>{inv.invoiceNumber}</b>
+                    {inv.parentInvoiceId && <span className="st s-amber st-plain !h-[22px] !text-xs">{t('common.mahnung')}</span>}
+                  </span>
+                </Td>
+                <Td>
+                  <InvoiceTypeCell invoice={inv} />
+                </Td>
+                <Td>{inv.customerName ?? inv.booking?.customerName ?? '–'}</Td>
+                <Td className="num whitespace-nowrap">{fmtDate(inv.dueDate)}</Td>
+                <Td>
+                  <StatusPill kind="invoice" status={state} />
+                </Td>
+                <Td align="right" className="num whitespace-nowrap text-base">
+                  <b>{fmtMoney(inv.total, { currency: inv.currency })}</b>
+                </Td>
+                <Td>
+                  <div className="acts items-center">
+                    <IconButton aria-label={t('contracts.rechnungAlsPDFHerunterladen', { invoiceNumber: inv.invoiceNumber })} className="pr" disabled={busyId === inv.id} onClick={() => actions.downloadInvoice(inv)}>
+                      <Download size={20} aria-hidden="true" />
+                    </IconButton>
+                    <IconButton aria-label={t('invoiceEditor.downloadQr', { invoiceNumber: inv.invoiceNumber })} className="pr" disabled={busyId === inv.id} onClick={() => actions.downloadInvoiceQr(inv)}>
+                      <QrCode size={20} aria-hidden="true" />
+                    </IconButton>
+                    {canEdit && state === 'OVERDUE' && (
+                      <Button variant="ghost" size="sm" onClick={() => actions.dunning(inv)}>
+                        {t('common.mahnungSenden')}
+                      </Button>
+                    )}
+                    {canEdit && state === 'PENDING' && (
+                      <Button variant="ghost" size="sm" disabled={busyId === inv.id} onClick={() => actions.toggleInvoice(inv)}>
+                        {t('contracts.alsBezahltMarkieren')}
+                      </Button>
+                    )}
+                    {canEdit && state === 'PAID' && (
+                      <Button variant="ghost" size="sm" disabled={busyId === inv.id} onClick={() => actions.toggleInvoice(inv)}>
+                        {t('contracts.alsOffenMarkieren')}
+                      </Button>
+                    )}
+                    <Menu items={invoiceMenu(inv, actions)} label={t('contracts.weitereAktionenFuerRechnung', { invoiceNumber: inv.invoiceNumber })} />
+                  </div>
+                </Td>
+              </Tr>
+            );
+          })}
+        </TBody>
+      </Table>
+    ) : (
+      <div className="flex flex-col gap-3">
+        {filteredInvoices.map((inv) => (
+          <InvoiceCard key={inv.id} invoice={inv} actions={actions} highlighted={inv.id === invoiceParam} />
+        ))}
+      </div>
+    );
 
   return (
-    <div>
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-neutral-900">Verträge</h1>
-          <p className="text-sm text-neutral-500 mt-1">Mietverträge verwalten, signieren und herunterladen</p>
-        </div>
-      </div>
-
-      {/* Stats cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-        <button
-          onClick={() => setStatusFilter('all')}
-          className={`flex items-center gap-3 p-4 rounded-xl border transition-colors ${
-            statusFilter === 'all' ? 'border-brand-300 bg-brand-50 ring-1 ring-brand-200' : 'border-neutral-200 bg-white hover:border-neutral-300'
-          }`}
-        >
-          <div className="w-10 h-10 rounded-lg bg-brand-100 text-brand-600 flex items-center justify-center">
-            <FileSignature className="w-5 h-5" />
+    <div className="flex flex-col gap-5 md:gap-6">
+      <DrawerLayout className="lg:-m-8">
+        <div className="flex min-w-0 flex-col gap-5 md:gap-6 lg:p-8">
+          <div className="max-md:hidden">
+            <PageHeader
+              title={t('contracts.vertraegeUndRechnungen')}
+              subtitle={t('contracts.vonDerReservierungBis')}
+              tabs={<Tabs aria-label={t('contracts.ansicht')} tabs={tabs} value={tab} onChange={goTab} />}
+              tabsInline
+            />
           </div>
-          <div className="text-left">
-            <p className="text-2xl font-bold text-neutral-900">{stats.total}</p>
-            <p className="text-xs text-neutral-500">Gesamt</p>
-          </div>
-        </button>
+          <h1 className="sr-only md:hidden">{t('contracts.vertraegeUndRechnungen')}</h1>
+          {!isTabletUp && (
+            <Tabs aria-label={t('contracts.ansicht')} tabs={tabs} value={tab} onChange={goTab} className="w-full [&>.tab]:flex-1 [&>.tab]:justify-center" />
+          )}
 
-        <button
-          onClick={() => setStatusFilter('pending')}
-          className={`flex items-center gap-3 p-4 rounded-xl border transition-colors ${
-            statusFilter === 'pending' ? 'border-amber-300 bg-amber-50 ring-1 ring-amber-200' : 'border-neutral-200 bg-white hover:border-neutral-300'
-          }`}
-        >
-          <div className="w-10 h-10 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center">
-            <Clock className="w-5 h-5" />
-          </div>
-          <div className="text-left">
-            <p className="text-2xl font-bold text-neutral-900">{stats.pending}</p>
-            <p className="text-xs text-neutral-500">Ausstehend</p>
-          </div>
-        </button>
+          {errorBlock}
 
-        <button
-          onClick={() => setStatusFilter('signed')}
-          className={`flex items-center gap-3 p-4 rounded-xl border transition-colors ${
-            statusFilter === 'signed' ? 'border-green-300 bg-green-50 ring-1 ring-green-200' : 'border-neutral-200 bg-white hover:border-neutral-300'
-          }`}
-        >
-          <div className="w-10 h-10 rounded-lg bg-green-100 text-green-600 flex items-center justify-center">
-            <CheckCircle className="w-5 h-5" />
-          </div>
-          <div className="text-left">
-            <p className="text-2xl font-bold text-neutral-900">{stats.signed}</p>
-            <p className="text-xs text-neutral-500">Signiert</p>
-          </div>
-        </button>
-      </div>
-
-      {/* Search */}
-      <div className="mb-4">
-        <div className="relative max-w-sm">
-          <Search className="w-4 h-4 text-neutral-400 absolute left-3 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buchung suchen…"
-            className="w-full pl-9 pr-3 py-2 border border-neutral-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-          />
-        </div>
-      </div>
-
-      {/* Bookings list */}
-      <div className="bg-white rounded-xl border border-neutral-200 overflow-hidden">
-        {filteredBookings.length === 0 ? (
-          <div className="text-center py-16">
-            <FileSignature className="w-12 h-12 text-neutral-300 mx-auto mb-3" />
-            <p className="text-neutral-500 text-sm">Keine Buchungen gefunden</p>
-          </div>
-        ) : (
-          <div className="divide-y divide-neutral-100">
-            {filteredBookings.map((booking) => {
-              const vehicle = vehicleMap.get(booking.vehicleId);
-              const contractStatus = booking.contractStatus || 'PENDING';
-              const statusConfig = CONTRACT_STATUS_CONFIG[contractStatus] || CONTRACT_STATUS_CONFIG.PENDING;
-              const StatusIcon = statusConfig.icon;
-              const isExpanded = expandedId === booking.id;
-              const isCancelled = booking.status === 'cancelled';
-              const invoices = bookingInvoices[booking.id] || [];
-              const period = invoicePeriod[booking.id] || { start: '', end: '' };
-
-              return (
-                <div key={booking.id} className={isCancelled ? 'opacity-60' : ''}>
-                  {/* Row */}
-                  <button
-                    onClick={() => setExpandedId(isExpanded ? null : booking.id)}
-                    className="w-full flex items-center gap-4 px-5 py-4 text-left hover:bg-neutral-50 transition-colors"
-                  >
-                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 border ${statusConfig.color}`}>
-                      <StatusIcon className="w-4 h-4" />
-                    </div>
-
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-semibold text-neutral-900 truncate">{booking.customerName}</p>
-                        <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${BOOKING_STATUS_COLORS[booking.status] || 'bg-neutral-100 text-neutral-600'}`}>
-                          {booking.status}
-                        </span>
-                      </div>
-                      <p className="text-xs text-neutral-500 truncate mt-0.5">
-                        {vehicle ? `${vehicle.brand} ${vehicle.model}` : '–'} · {fmtDate(booking.startDate)} – {fmtDate(booking.endDate)}
-                      </p>
-                    </div>
-
-                    {booking.totalPrice != null && booking.totalPrice > 0 && (
-                      <div className="text-right shrink-0 hidden sm:block">
-                        <p className="text-sm font-semibold text-neutral-900">
-                          {booking.currency || 'CHF'} {Number(booking.totalPrice).toFixed(2)}
-                        </p>
-                      </div>
-                    )}
-
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      {contractStatus === 'SIGNED' && (
-                        <span
-                          onClick={(e) => { e.stopPropagation(); handleDownloadContract(booking.id); }}
-                          className="p-2 rounded-lg text-brand-600 hover:bg-brand-50 transition-colors cursor-pointer"
-                          title="Vertrag herunterladen"
-                        >
-                          <Download className="w-4 h-4" />
-                        </span>
-                      )}
-                      {contractStatus === 'PENDING' && !isCancelled && (
-                        <>
-                          <span
-                            onClick={(e) => { e.stopPropagation(); router.push(`/contracts/${booking.id}/sign`); }}
-                            className="p-2 rounded-lg text-brand-600 hover:bg-brand-50 transition-colors cursor-pointer"
-                            title="Auf Gerät unterschreiben (Kunde)"
-                          >
-                            <Tablet className="w-4 h-4" />
-                          </span>
-                          <span
-                            onClick={(e) => { e.stopPropagation(); openSignaturePad(booking); }}
-                            className="p-2 rounded-lg text-brand-600 hover:bg-brand-50 transition-colors cursor-pointer"
-                            title="Schnell unterschreiben (hier im Panel)"
-                          >
-                            <PenTool className="w-4 h-4" />
-                          </span>
-                        </>
-                      )}
-                      {isExpanded ? (
-                        <ChevronUp className="w-4 h-4 text-neutral-400" />
-                      ) : (
-                        <ChevronDown className="w-4 h-4 text-neutral-400" />
-                      )}
-                    </div>
-                  </button>
-
-                  {/* Expanded detail */}
-                  {isExpanded && (
-                    <div className="px-5 pb-5 pt-1 bg-neutral-50 border-t border-neutral-100">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {/* Customer info */}
-                        <div className="space-y-2">
-                          <h4 className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">Kundendaten</h4>
-                          <div className="flex items-center gap-2 text-sm">
-                            <User className="w-4 h-4 text-neutral-400 shrink-0" />
-                            <span className="text-neutral-900">{booking.customerName}</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-sm">
-                            <Mail className="w-4 h-4 text-neutral-400 shrink-0" />
-                            {editEmailId === booking.id ? (
-                              <div className="flex items-center gap-1.5 flex-1">
-                                <input
-                                  type="email"
-                                  value={editEmailValue}
-                                  onChange={(e) => setEditEmailValue(e.target.value)}
-                                  placeholder="E-Mail eingeben…"
-                                  className="flex-1 border border-neutral-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-brand-500"
-                                  autoFocus
-                                  onKeyDown={(e) => e.key === 'Enter' && handleSaveEmail(booking.id)}
-                                />
-                                <button
-                                  onClick={() => { setEditEmailId(null); setEditEmailValue(''); }}
-                                  className="text-neutral-400 hover:text-neutral-600"
-                                >
-                                  <X className="w-3.5 h-3.5" />
-                                </button>
-                              </div>
-                            ) : booking.customerEmail ? (
-                              <span className="text-neutral-900">{booking.customerEmail}</span>
-                            ) : (
-                              <button
-                                onClick={() => { setEditEmailId(booking.id); setEditEmailValue(''); }}
-                                className="text-brand-600 hover:text-brand-700 text-sm font-medium"
-                              >
-                                + E-Mail hinzufügen
-                              </button>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Booking info */}
-                        <div className="space-y-2">
-                          <h4 className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">Buchung</h4>
-                          <div className="flex items-center gap-2 text-sm">
-                            <Car className="w-4 h-4 text-neutral-400 shrink-0" />
-                            <span className="text-neutral-900">{vehicle ? `${vehicle.brand} ${vehicle.model}` : '–'}</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-sm">
-                            <Calendar className="w-4 h-4 text-neutral-400 shrink-0" />
-                            <span className="text-neutral-900">{fmtDate(booking.startDate)} – {fmtDate(booking.endDate)}</span>
-                          </div>
-                          {booking.totalPrice != null && booking.totalPrice > 0 && (
-                            <div className="flex items-center gap-2 text-sm">
-                              <DollarSign className="w-4 h-4 text-neutral-400 shrink-0" />
-                              <span className="text-neutral-900 font-medium">{booking.currency || 'CHF'} {Number(booking.totalPrice).toFixed(2)}</span>
-                            </div>
-                          )}
-                          {booking.notes && (
-                            <div className="flex items-start gap-2 text-sm">
-                              <FileText className="w-4 h-4 text-neutral-400 shrink-0 mt-0.5" />
-                              <span className="text-neutral-500">{booking.notes}</span>
-                            </div>
-                          )}
-                          {(booking.status === 'reserved' || booking.status === 'active') && (
-                            <div className="flex flex-wrap gap-1.5 pt-1">
-                              {booking.status === 'reserved' && (
-                                <button
-                                  onClick={() => handleTransitionStatus(booking.id, 'active')}
-                                  disabled={statusLoading === booking.id}
-                                  className="px-2.5 py-1 text-xs font-medium text-green-700 bg-green-50 hover:bg-green-100 rounded-lg border border-green-200 transition-colors disabled:opacity-50"
-                                >
-                                  Als abgeholt markieren
-                                </button>
-                              )}
-                              {booking.status === 'active' && (
-                                <button
-                                  onClick={() => handleTransitionStatus(booking.id, 'completed')}
-                                  disabled={statusLoading === booking.id}
-                                  className="px-2.5 py-1 text-xs font-medium text-neutral-700 bg-neutral-100 hover:bg-neutral-200 rounded-lg border border-neutral-200 transition-colors disabled:opacity-50"
-                                >
-                                  Als zurückgegeben markieren
-                                </button>
-                              )}
-                              <button
-                                onClick={() => handleTransitionStatus(booking.id, 'cancelled')}
-                                disabled={statusLoading === booking.id}
-                                className="px-2.5 py-1 text-xs font-medium text-red-700 bg-red-50 hover:bg-red-100 rounded-lg border border-red-200 transition-colors disabled:opacity-50"
-                              >
-                                Stornieren
-                              </button>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Contract info + actions */}
-                        <div className="space-y-3">
-                          <h4 className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">Vertrag</h4>
-                          <div className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm font-medium border ${statusConfig.color}`}>
-                            <StatusIcon className="w-3.5 h-3.5" />
-                            {statusConfig.label}
-                          </div>
-                          {booking.signedAt && (
-                            <p className="text-xs text-neutral-500">
-                              Signiert am {new Date(booking.signedAt).toLocaleString('de-CH')}
-                            </p>
-                          )}
-                          <p className="text-[11px] text-neutral-400 font-mono">
-                            Nr. {booking.id.substring(0, 8).toUpperCase()}
-                          </p>
-                          <div className="flex flex-wrap gap-2 pt-1">
-                            {contractStatus === 'PENDING' && !isCancelled && (
-                              <>
-                                <button
-                                  onClick={() => router.push(`/contracts/${booking.id}/sign`)}
-                                  className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 rounded-lg transition-colors"
-                                  title="AGB, Vertrag und Unterschrift auf einem Gerät, das dem Kunden übergeben werden kann"
-                                >
-                                  <Tablet className="w-4 h-4" />
-                                  Auf Gerät unterschreiben
-                                </button>
-                                <button
-                                  onClick={() => openSignaturePad(booking)}
-                                  className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-brand-700 bg-brand-50 hover:bg-brand-100 rounded-lg transition-colors border border-brand-200"
-                                  title="Schnell hier im Panel unterschreiben, ohne AGB/Vertragsvorschau"
-                                >
-                                  <PenTool className="w-4 h-4" />
-                                  Schnell unterschreiben
-                                </button>
-                              </>
-                            )}
-                            {contractStatus === 'SIGNED' && (
-                              <button
-                                onClick={() => handleDownloadContract(booking.id)}
-                                className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-brand-700 bg-brand-50 hover:bg-brand-100 rounded-lg transition-colors border border-brand-200"
-                              >
-                                <Download className="w-4 h-4" />
-                                Vertrag PDF
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* ─── Invoice Section ──────────────────────── */}
-                      {!isCancelled && booking.totalPrice != null && booking.totalPrice > 0 && (
-                        <div className="mt-6 pt-5 border-t border-neutral-200">
-                          <h4 className="text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-3">Rechnungen</h4>
-
-                          {/* New invoice: date range + create */}
-                          <div className="flex flex-wrap items-end gap-3 mb-4 p-3 bg-white rounded-lg border border-neutral-200">
-                            <div>
-                              <label className="block text-[11px] font-medium text-neutral-500 mb-1">Von</label>
-                              <input
-                                type="date"
-                                value={period.start}
-                                onChange={(e) => setInvoicePeriod((p) => ({ ...p, [booking.id]: { ...p[booking.id], start: e.target.value } }))}
-                                className="border border-neutral-300 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-[11px] font-medium text-neutral-500 mb-1">Bis</label>
-                              <input
-                                type="date"
-                                value={period.end}
-                                onChange={(e) => setInvoicePeriod((p) => ({ ...p, [booking.id]: { ...p[booking.id], end: e.target.value } }))}
-                                className="border border-neutral-300 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-                              />
-                            </div>
-                            <button
-                              onClick={() => handleCreateInvoice(booking)}
-                              disabled={invoiceLoading === booking.id}
-                              className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors disabled:opacity-50"
-                            >
-                              {invoiceLoading === booking.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Receipt className="w-4 h-4" />}
-                              Rechnung erstellen
-                            </button>
-                          </div>
-
-                          {/* Existing invoices list */}
-                          {invoicesLoading === booking.id ? (
-                            <div className="flex items-center gap-2 text-sm text-neutral-400 py-3">
-                              <Loader2 className="w-4 h-4 animate-spin" /> Rechnungen laden…
-                            </div>
-                          ) : invoices.length === 0 ? (
-                            <p className="text-sm text-neutral-400 py-2">Keine Rechnungen vorhanden.</p>
-                          ) : (
-                            <div className="space-y-2">
-                              {invoices.map((inv) => (
-                                <div
-                                  key={inv.id}
-                                  className="flex flex-wrap items-center gap-3 p-3 bg-white rounded-lg border border-neutral-200"
-                                >
-                                  {/* Invoice number + period */}
-                                  <div className="flex-1 min-w-[200px]">
-                                    <div className="flex items-center gap-2">
-                                      <span className="text-sm font-semibold text-neutral-900">{inv.invoiceNumber}</span>
-                                      {inv.parentInvoiceId && (
-                                        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-orange-50 text-orange-700 border border-orange-200">
-                                          Mahnung
-                                        </span>
-                                      )}
-                                    </div>
-                                    <p className="text-xs text-neutral-500 mt-0.5">
-                                      {fmtDate(inv.periodStart)} – {fmtDate(inv.periodEnd)}
-                                      {inv.penalty > 0 && (
-                                        <span className="ml-2 text-orange-600">
-                                          (+ {inv.currency} {inv.penalty.toFixed(2)} Mahngebühr)
-                                        </span>
-                                      )}
-                                    </p>
-                                  </div>
-
-                                  {/* Amount */}
-                                  <div className="text-right">
-                                    <p className="text-sm font-semibold text-neutral-900">
-                                      {inv.currency} {inv.total.toFixed(2)}
-                                    </p>
-                                    <p className="text-[11px] text-neutral-400">
-                                      {fmtDate(inv.issueDate)}
-                                    </p>
-                                  </div>
-
-                                  {/* Status badge – click to toggle */}
-                                  <button
-                                    onClick={() => handleToggleStatus(inv)}
-                                    className={`px-2.5 py-1 rounded-full text-xs font-semibold border transition-colors cursor-pointer ${
-                                      inv.status === 'PAID'
-                                        ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100'
-                                        : 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
-                                    }`}
-                                    title={inv.status === 'PAID' ? 'Klicken: auf Ausstehend setzen' : 'Klicken: als Bezahlt markieren'}
-                                  >
-                                    {inv.status === 'PAID' ? 'Bezahlt' : 'Ausstehend'}
-                                  </button>
-
-                                  {/* Actions */}
-                                  <div className="flex items-center gap-1">
-                                    <button
-                                      onClick={() => handleDownloadInvoice(inv)}
-                                      className="p-1.5 rounded-lg text-brand-600 hover:bg-brand-50 transition-colors"
-                                      title="Rechnung herunterladen"
-                                    >
-                                      <Download className="w-4 h-4" />
-                                    </button>
-                                    {inv.status === 'PENDING' && (
-                                      <button
-                                        onClick={() => {
-                                          setReissueInvoice(inv);
-                                          setReissuePenalty('');
-                                          setReissueNotes('');
-                                        }}
-                                        className="p-1.5 rounded-lg text-orange-600 hover:bg-orange-50 transition-colors"
-                                        title="Mahnung erstellen"
-                                      >
-                                        <RefreshCw className="w-4 h-4" />
-                                      </button>
-                                    )}
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      {/* Signature Modal */}
-      {showSignature && signingBooking && (
-        <SignaturePad
-          customerName={signingBooking.customerName}
-          loading={signingLoading}
-          onConfirm={handleSignContract}
-          onCancel={() => {
-            setShowSignature(false);
-            setSigningBooking(null);
-          }}
-        />
-      )}
-
-      {/* Reissue Modal */}
-      {reissueInvoice && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-lg bg-orange-100 text-orange-600 flex items-center justify-center">
-                <AlertTriangle className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-neutral-900">Mahnung erstellen</h3>
-                <p className="text-sm text-neutral-500">Rechnung {reissueInvoice.invoiceNumber} erneut ausstellen</p>
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-1">Mahngebühr ({reissueInvoice.currency})</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={reissuePenalty}
-                  onChange={(e) => setReissuePenalty(e.target.value)}
-                  placeholder="0.00"
-                  className="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-                  autoFocus
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-1">Bemerkung (optional)</label>
-                <input
-                  type="text"
-                  value={reissueNotes}
-                  onChange={(e) => setReissueNotes(e.target.value)}
-                  placeholder="z.B. 2. Mahnung"
-                  className="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-                />
-              </div>
-
-              <div className="bg-neutral-50 rounded-lg p-3 text-sm">
-                <div className="flex justify-between text-neutral-600">
-                  <span>Originalbetrag</span>
-                  <span>{reissueInvoice.currency} {(reissueInvoice.total - reissueInvoice.penalty).toFixed(2)}</span>
-                </div>
-                {Number(reissuePenalty) > 0 && (
-                  <div className="flex justify-between text-orange-600 mt-1">
-                    <span>+ Mahngebühr</span>
-                    <span>{reissueInvoice.currency} {Number(reissuePenalty).toFixed(2)}</span>
+          {tab === 'buchungen' ? (
+            <>
+              {isTabletUp ? (
+                <Panel aria-labelledby="bookings-heading" className="overflow-hidden">
+                  <div className="panel-h">
+                    <h2 className="h2" id="bookings-heading">
+                      {t('common.buchungen')}
+                    </h2>
+                    <ChipGroup aria-label={t('contracts.statusFiltern')} options={statusOptions} value={statusFilter} onChange={setStatusFilter} />
                   </div>
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-line-soft px-5 py-3">
+                    {searchField(t('contracts.buchungSuchenNameE'), t('contracts.buchungSuchen'))}
+                    <ChipGroup aria-label={t('contracts.vertragFiltern')} options={contractOptions} value={contractFilter} onChange={setContractFilter} />
+                  </div>
+                  {bookingsView}
+                </Panel>
+              ) : (
+                <>
+                  <ChipGroup aria-label={t('contracts.statusFiltern')} scrollable options={statusOptions} value={statusFilter} onChange={setStatusFilter} className="-mx-4 px-4" />
+                  <ChipGroup aria-label={t('contracts.vertragFiltern')} scrollable options={contractOptions} value={contractFilter} onChange={setContractFilter} className="-mx-4 px-4" />
+                  {searchField(t('contracts.buchungSuchen2'), t('contracts.buchungSuchen'))}
+                  {bookingsView}
+                </>
+              )}
+            </>
+          ) : isTabletUp ? (
+            <Panel aria-labelledby="invoices-heading" className="overflow-hidden">
+              <div className="panel-h">
+                <h2 className="h2" id="invoices-heading">
+                  {t('common.rechnungen')}
+                </h2>
+                {canEdit && (
+                  <Button variant="ghost" size="sm" iconLeft={<Plus size={16} aria-hidden="true" />} onClick={() => actions.createInvoice(null)}>
+                    {t('common.rechnungErstellen')}
+                  </Button>
                 )}
-                <div className="flex justify-between font-bold text-neutral-900 mt-2 pt-2 border-t border-neutral-200">
-                  <span>Neuer Betrag</span>
-                  <span>{reissueInvoice.currency} {((reissueInvoice.total - reissueInvoice.penalty) + Number(reissuePenalty || 0)).toFixed(2)}</span>
-                </div>
               </div>
-            </div>
-
-            <div className="flex items-center gap-2 mt-5">
-              <button
-                onClick={() => setReissueInvoice(null)}
-                className="flex-1 px-4 py-2 text-sm font-medium text-neutral-700 bg-neutral-100 hover:bg-neutral-200 rounded-lg transition-colors"
-              >
-                Abbrechen
-              </button>
-              <button
-                onClick={handleReissue}
-                disabled={reissueLoading}
-                className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-orange-600 hover:bg-orange-700 rounded-lg transition-colors disabled:opacity-50"
-              >
-                {reissueLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-                Mahnung erstellen
-              </button>
-            </div>
-          </div>
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-line-soft px-5 py-3">
+                {searchField(t('contracts.rechnungSuchenNummerOder'), t('contracts.rechnungSuchen'))}
+                <ChipGroup aria-label={t('contracts.rechnungenFiltern')} options={invoiceOptions} value={invoiceFilter} onChange={setInvoiceFilter} />
+                <ChipGroup aria-label={t('invoiceEditor.filterType')} options={invoiceTypeOptions} value={invoiceTypeFilter} onChange={setInvoiceTypeFilter} />
+              </div>
+              {invoicesView}
+            </Panel>
+          ) : (
+            <>
+              <ChipGroup aria-label={t('contracts.rechnungenFiltern')} scrollable options={invoiceOptions} value={invoiceFilter} onChange={setInvoiceFilter} className="-mx-4 px-4" />
+              <ChipGroup aria-label={t('invoiceEditor.filterType')} scrollable options={invoiceTypeOptions} value={invoiceTypeFilter} onChange={setInvoiceTypeFilter} className="-mx-4 px-4" />
+              {searchField(t('contracts.rechnungSuchen2'), t('contracts.rechnungSuchen'))}
+              {canEdit && (
+                <Button variant="outline" iconLeft={<Plus size={18} aria-hidden="true" />} onClick={() => actions.createInvoice(null)}>
+                  {t('common.rechnungErstellen')}
+                </Button>
+              )}
+              {invoicesView}
+            </>
+          )}
         </div>
+
+        {tab === 'buchungen' && (
+          <BookingDetail
+            booking={selectedBooking}
+            invoices={selectedBooking ? (invoicesByBooking.get(selectedBooking.id) ?? []) : []}
+            invoicesLoading={loading}
+            actions={actions}
+            onClose={closeBooking}
+          />
+        )}
+      </DrawerLayout>
+
+      {signing && (
+        <SignaturePad customerName={signing.customerName} loading={signingLoading} onConfirm={handleSign} onCancel={() => setSigning(null)} />
       )}
+
+      <BookingEditModal
+        booking={editingBooking}
+        onClose={() => setEditingBooking(null)}
+        onSaved={(updated) => {
+          patchBooking(updated.id, updated as unknown as Partial<Booking>);
+          toast.success(tr('bookingEdit.saved'), updated.customerName);
+          setEditingBooking(null);
+          void load(true);
+        }}
+      />
+      <EmailModal booking={emailBooking} saving={emailSaving} error={emailError} onClose={() => setEmailBooking(null)} onSave={(email) => void handleSaveEmail(email)} />
+      <CreateInvoiceModal
+        open={invoiceDialog.open}
+        booking={invoiceDialog.booking}
+        initialKind={invoiceDialog.kind}
+        autoAddDamages={invoiceDialog.autoDamages}
+        bookings={bookings}
+        creating={invoiceCreating}
+        error={invoiceError}
+        onClose={() => setInvoiceDialog({ open: false, booking: null })}
+        onCreate={(request) => void handleCreateInvoice(request)}
+      />
+      <DunningModal invoice={dunningInvoice} sending={dunningSending} error={dunningError} onClose={() => setDunningInvoice(null)} onSend={(data) => void handleDunning(data)} />
+    </div>
+  );
+}
+
+// ─── Menus and row actions ──────────────────────────────────────
+
+function bookingMenu(b: Booking, a: ContractActions): MenuItem[] {
+  const items: MenuItem[] = [{ key: 'open', label: tr('contracts.detailsAnsehen'), icon: <Eye size={18} />, onSelect: () => a.openBooking(b.id) }];
+  if (b.contractStatus === 'SIGNED') {
+    items.push({ key: 'pdf', label: tr('contracts.vertragAlsPDFHerunterladen'), icon: <Download size={18} />, onSelect: () => a.downloadContract(b) });
+  }
+  if (!a.canEdit) return items;
+  const cancelled = b.status === 'cancelled';
+  if (b.contractStatus !== 'SIGNED' && !cancelled) {
+    items.push({ key: 'device', label: tr('common.aufGeraetUnterschreiben'), icon: <Tablet size={18} />, onSelect: () => a.signOnDevice(b) });
+    items.push({ key: 'quick', label: tr('common.schnellUnterschreiben'), icon: <PenTool size={18} />, onSelect: () => a.quickSign(b) });
+  }
+  items.push({ key: 'email', label: b.customerEmail ? tr('contracts.eMailAendern') : tr('common.eMailHinzufuegen'), icon: <Mail size={18} />, onSelect: () => a.editEmail(b) });
+  if (b.status === 'reserved') items.push({ key: 'pickup', label: tr('contracts.alsAbgeholtMarkieren'), icon: <CircleCheck size={18} />, onSelect: () => a.transition(b, 'active') });
+  if (b.status === 'active') items.push({ key: 'return', label: tr('contracts.alsZurueckgegebenMarkieren'), icon: <Wrench size={18} />, onSelect: () => a.transition(b, 'completed') });
+  if (canInvoice(b)) items.push({ key: 'invoice', label: tr('common.rechnungErstellen'), icon: <Receipt size={18} />, onSelect: () => a.createInvoice(b) });
+  if (b.status === 'reserved' || b.status === 'active') {
+    items.push({ key: 'cancel', label: tr('contracts.stornieren'), icon: <CircleX size={18} />, danger: true, separatorBefore: true, onSelect: () => a.transition(b, 'cancelled') });
+  }
+  return items;
+}
+
+function invoiceMenu(inv: Invoice, a: ContractActions): MenuItem[] {
+  const state = invoiceState(inv);
+  const items: MenuItem[] = [
+    { key: 'pdf', label: tr('contracts.alsPDFHerunterladen'), icon: <Download size={18} />, onSelect: () => a.downloadInvoice(inv) },
+    { key: 'qr', label: tr('invoiceEditor.downloadQrMenu'), icon: <QrCode size={18} />, onSelect: () => a.downloadInvoiceQr(inv) },
+  ];
+  const bookingId = inv.bookingId;
+  if (bookingId) items.push({ key: 'booking', label: tr('common.zurBuchung'), icon: <Eye size={18} />, onSelect: () => a.openBooking(bookingId) });
+  if (inv.type === 'FINE' && inv.items?.some((i) => i.fineId)) {
+    const fineId = inv.items.find((i) => i.fineId)?.fineId;
+    if (fineId) items.push({ key: 'fine', label: tr('invoiceEditor.toFine'), icon: <Receipt size={18} />, href: `/fines?id=${fineId}` });
+  }
+  if (a.canEdit) {
+    items.push({ key: 'toggle', label: state === 'PAID' ? tr('contracts.alsOffenMarkieren') : tr('contracts.alsBezahltMarkieren'), icon: <CircleCheck size={18} />, onSelect: () => a.toggleInvoice(inv) });
+    if (state !== 'PAID') items.push({ key: 'dunning', label: tr('common.mahnungSenden'), icon: <RefreshCw size={18} />, onSelect: () => a.dunning(inv) });
+  }
+  return items;
+}
+
+function BookingRowActions({ booking: b, actions: a, compact = false }: { booking: Booking; actions: ContractActions; compact?: boolean }) {
+  const t = useTranslations();
+  const signed = b.contractStatus === 'SIGNED';
+  return (
+    <>
+      {signed && (
+        <IconButton aria-label={t('contracts.vertragVonAlsPDF', { customerName: b.customerName })} className="pr" disabled={a.busyId === b.id} onClick={() => a.downloadContract(b)}>
+          <Download size={20} aria-hidden="true" />
+        </IconButton>
+      )}
+      {!signed && b.status !== 'cancelled' && a.canEdit && !compact && (
+        <>
+          <IconButton aria-label={t('contracts.aufGeraetUnterschreiben', { customerName: b.customerName })} className="pr" onClick={() => a.signOnDevice(b)}>
+            <Tablet size={20} aria-hidden="true" />
+          </IconButton>
+          <IconButton aria-label={t('contracts.schnellUnterschreiben', { customerName: b.customerName })} className="pr" onClick={() => a.quickSign(b)}>
+            <PenTool size={20} aria-hidden="true" />
+          </IconButton>
+        </>
+      )}
+      <Menu items={bookingMenu(b, a)} label={t('contracts.weitereAktionenFuer', { customerName: b.customerName })} />
+    </>
+  );
+}
+
+// ─── Mobile cards ───────────────────────────────────────────────
+
+function BookingCard({ booking: b, invoices, actions: a, currency }: { booking: Booking; invoices: Invoice[]; actions: ContractActions; currency: string }) {
+  const t = useTranslations();
+  const progress = bookingProgress(b, invoices);
+  const unpaid = invoices.filter((i) => i.status === 'PENDING');
+  const signed = b.contractStatus === 'SIGNED';
+
+  // The primary action is whatever the booking needs next.
+  let primary: { label: string; run: () => void } | null = null;
+  if (a.canEdit) {
+    if (progress.nextAction === 'sign') primary = { label: t('common.aufGeraetUnterschreiben'), run: () => a.signOnDevice(b) };
+    else if (progress.nextAction === 'invoice') primary = { label: t('common.rechnungErstellen'), run: () => a.createInvoice(b) };
+    else if (progress.nextAction === 'pay') {
+      primary = unpaid.length === 1 ? { label: t('contracts.alsBezahltMarkieren'), run: () => a.toggleInvoice(unpaid[0]) } : { label: t('contracts.rechnungenAnsehen'), run: () => a.openBooking(b.id) };
+    }
+  }
+  if (!primary) primary = { label: t('contracts.details'), run: () => a.openBooking(b.id) };
+
+  return (
+    <MobileCard
+      title={<span className="text-base">{b.customerName}</span>}
+      subtitle={vehicleOf(b)}
+      status={<StatusPill kind="booking" status={b.status} />}
+      onOpen={() => a.openBooking(b.id)}
+      actions={
+        <>
+          <Button variant="outline" className="min-w-0 flex-1" onClick={primary.run}>
+            {primary.label}
+          </Button>
+          {signed && (
+            <IconButton aria-label={t('contracts.vertragVonHerunterladen', { customerName: b.customerName })} variant="outline" disabled={a.busyId === b.id} onClick={() => a.downloadContract(b)}>
+              <Download size={20} aria-hidden="true" />
+            </IconButton>
+          )}
+          <Menu
+            items={bookingMenu(b, a)}
+            label={t('contracts.weitereAktionenFuer', { customerName: b.customerName })}
+            trigger={(p) => (
+              <IconButton {...p} aria-label={t('contracts.weitereAktionenFuer', { customerName: b.customerName })} variant="outline">
+                <DotsIcon />
+              </IconButton>
+            )}
+          />
+        </>
+      }
+    >
+      <div className="flex items-baseline justify-between gap-2">
+        <span className="num mut">{periodText(b)}</span>
+        <b className="num text-lg">{priceText(b, currency)}</b>
+      </div>
+      <ProgressSteps
+        compact
+        steps={progress.steps}
+        aria-label={t('contracts.fortschritt2', { next: progress.next })}
+        className="[&_.prog-step>span:nth-child(2)]:sr-only [&_.prog-dot]:h-6 [&_.prog-dot]:w-6"
+      />
+      <div className="sm">
+        <b>{t('contracts.alsNaechstes')}</b> {progress.next}
+      </div>
+    </MobileCard>
+  );
+}
+
+/** Invoice type badge + number of lines + QR badge. */
+function InvoiceTypeCell({ invoice: inv }: { invoice: Invoice }) {
+  const t = useTranslations();
+  const type = invoiceTypeOf(inv);
+  const itemCount = inv.items?.length ?? 0;
+  return (
+    <span className="flex flex-wrap items-center gap-1.5">
+      <StatusPill tone={type === 'RENTAL' ? 'gray' : type === 'DAMAGE' ? 'amber' : type === 'FINE' ? 'red' : 'blue'} plain label={t(`invoiceEditor.kinds.${type}`)} />
+      {itemCount > 0 && <span className="sm mut">{t('invoiceEditor.itemCount', { count: itemCount })}</span>}
+      {inv.withQrBill && <StatusPill tone="vio" plain label={t('invoiceEditor.qrBadge')} />}
+    </span>
+  );
+}
+
+function DotsIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+      <path d="M12 12h.01M19 12h.01M5 12h.01" />
+    </svg>
+  );
+}
+
+function InvoiceCard({ invoice: inv, actions: a, highlighted }: { invoice: Invoice; actions: ContractActions; highlighted: boolean }) {
+  const tt = useTranslations();
+  const t = useTranslations();
+  const state = invoiceState(inv);
+  return (
+    <div id={`invoice-${inv.id}`}>
+      <MobileCard
+        className={cn(highlighted && 'border-ink')}
+        title={<span className="num text-base">{inv.invoiceNumber}</span>}
+        subtitle={inv.customerName ?? inv.booking?.customerName}
+        status={<StatusPill kind="invoice" status={state} />}
+        actions={
+          <>
+            {a.canEdit && state === 'OVERDUE' && (
+              <Button variant="outline" className="min-w-0 flex-1" onClick={() => a.dunning(inv)}>
+                {t('common.mahnungSenden')}
+              </Button>
+            )}
+            {a.canEdit && state !== 'OVERDUE' && (
+              <Button variant="outline" className="min-w-0 flex-1" disabled={a.busyId === inv.id} onClick={() => a.toggleInvoice(inv)}>
+                {state === 'PAID' ? tt('contracts.alsOffenMarkieren') : tt('contracts.alsBezahltMarkieren')}
+              </Button>
+            )}
+            <IconButton aria-label={t('contracts.rechnungHerunterladen', { invoiceNumber: inv.invoiceNumber })} variant="outline" disabled={a.busyId === inv.id} onClick={() => a.downloadInvoice(inv)}>
+              <Download size={20} aria-hidden="true" />
+            </IconButton>
+            <IconButton aria-label={t('invoiceEditor.downloadQr', { invoiceNumber: inv.invoiceNumber })} variant="outline" disabled={a.busyId === inv.id} onClick={() => a.downloadInvoiceQr(inv)}>
+              <QrCode size={20} aria-hidden="true" />
+            </IconButton>
+            <Menu
+              items={invoiceMenu(inv, a)}
+              label={t('contracts.weitereAktionenFuerRechnung', { invoiceNumber: inv.invoiceNumber })}
+              trigger={(p) => (
+                <IconButton {...p} aria-label={t('contracts.weitereAktionenFuerRechnung', { invoiceNumber: inv.invoiceNumber })} variant="outline">
+                  <DotsIcon />
+                </IconButton>
+              )}
+            />
+          </>
+        }
+      >
+        <div className="flex items-baseline justify-between gap-2">
+          <span className="sm mut">
+            {t.rich('contracts.dueOn', { date: fmtDate(inv.dueDate), num: (chunks) => <span className="num">{chunks}</span> })}
+            {inv.parentInvoiceId && ` · ${t('common.mahnung')}`}
+          </span>
+          <b className="num text-lg">{fmtMoney(inv.total, { currency: inv.currency })}</b>
+        </div>
+        <InvoiceTypeCell invoice={inv} />
+      </MobileCard>
     </div>
   );
 }

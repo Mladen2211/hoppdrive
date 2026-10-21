@@ -1,7 +1,9 @@
-'use client';
-
-import { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
+import { useTranslations } from 'next-intl';
+import { Button } from '@/components/ui';
+import type { Translate } from '@/i18n/types';
+import { useFormatters } from '@/i18n/useFormatters';
+import { DEFAULT_TIERS, type PricingTier } from '@/lib/pricing';
 import type { FaqContent } from '@/types/homepage-sections';
 
 export type { FaqContent };
@@ -13,119 +15,99 @@ export interface FaqItemData {
   category: string;
 }
 
-const FALLBACK_FAQ: FaqItemData[] = [
-  {
-    id: '1',
-    question: 'Was kostet die Miete bei HoppDrive?',
-    answer: 'Unsere Mietwagen starten ab CHF 59 pro Tag. Bei längerer Mietdauer profitieren Sie von automatischen Rabatten: 20% ab 8 Tagen und bis zu 40% ab 31 Tagen.',
-    category: 'pricing',
-  },
-  {
-    id: '2',
-    question: 'Ist eine Versicherung inklusive?',
-    answer: 'Ja, bei jeder Anmietung ist eine Vollkasko-Versicherung inklusive. Es gibt keine versteckten Zusatzkosten für den Versicherungsschutz.',
-    category: 'insurance',
-  },
-  {
-    id: '3',
-    question: 'Wie lange kann ich ein Fahrzeug mieten?',
-    answer: 'Sie können unsere Fahrzeuge ab 1 Tag bis zu mehreren Monaten mieten. Je länger die Mietdauer, desto günstiger der Tagespreis – ideal für Langzeitmiete.',
-    category: 'rental',
-  },
-  {
-    id: '4',
-    question: 'Welche Dokumente brauche ich?',
-    answer: 'Sie benötigen einen gültigen Führerschein und einen Identitätsausweis (Pass oder ID). Bei der Übergabe wird ein Mietvertrag vor Ort unterschrieben.',
-    category: 'documents',
-  },
-  {
-    id: '5',
-    question: 'Kann ich die Mietdauer verlängern?',
-    answer: 'Ja, eine Verlängerung ist jederzeit möglich – einfach Kontakt aufnehmen. Der Preis passt sich automatisch an die neue Gesamtdauer an.',
-    category: 'rental',
-  },
-  {
-    id: '6',
-    question: 'Wo kann ich das Fahrzeug abholen?',
-    answer: 'Die Fahrzeugübergabe findet an unserem Standort statt. Die genaue Adresse und Wegbeschreibung erhalten Sie nach der Buchungsbestätigung.',
-    category: 'pickup',
-  },
-];
-
-function AccordionItem({ item, isOpen, onToggle }: { item: FaqItemData; isOpen: boolean; onToggle: () => void }) {
-  return (
-    <div className="border-b border-neutral-200 last:border-b-0">
-      <button
-        onClick={onToggle}
-        className="w-full flex items-center justify-between py-5 px-1 text-left group"
-        aria-expanded={isOpen}
-      >
-        <span className="text-base font-semibold text-neutral-900 group-hover:text-brand-600 transition-colors pr-4">
-          {item.question}
-        </span>
-        <ChevronDown
-          className={`w-5 h-5 text-neutral-400 transition-transform duration-200 flex-shrink-0 ${
-            isOpen ? 'rotate-180' : ''
-          }`}
-        />
-      </button>
-      <div
-        className={`overflow-hidden transition-all duration-300 ${
-          isOpen ? 'max-h-96 pb-5' : 'max-h-0'
-        }`}
-      >
-        <p className="text-neutral-600 text-sm leading-relaxed px-1">{item.answer}</p>
-      </div>
-    </div>
+/**
+ * " Bei längerer Mietdauer profitieren Sie von automatischen Rabatten: 20% ab 8 Tagen und bis zu 40% ab 31 Tagen.",
+ * built from the live day tiers. `t` = translator of the `faq` namespace.
+ */
+function discountSentence(tiers: PricingTier[], t: Translate, list: (items: string[]) => string): string {
+  const discounted = tiers.filter((tier) => tier.discountPercent > 0).sort((a, b) => a.fromDay - b.fromDay);
+  if (discounted.length === 0) return '';
+  const parts = discounted.map((tier, i) =>
+    t(i === discounted.length - 1 && discounted.length > 1 ? 'discountPartMax' : 'discountPart', {
+      percent: tier.discountPercent,
+      days: tier.fromDay,
+    }),
   );
+  return t('discountSentence', { parts: list(parts) });
 }
 
-interface FaqSectionProps {
+export interface FaqSectionProps {
   content?: FaqContent;
   items?: FaqItemData[];
+  minPrice?: number | null;
+  /** Live day tiers, used for the fallback answer about discounts. */
+  tiers?: PricingTier[];
+  /** ISO code of the site currency. */
+  currency?: string;
 }
 
-export function FaqSection({ content, items }: FaqSectionProps) {
+/**
+ * FAQ as native <details> (keyboard and screen-reader support for free, no
+ * height limit that could clip long answers). The first question is open.
+ */
+export function FaqSection({ content, items, minPrice = null, tiers = DEFAULT_TIERS, currency }: FaqSectionProps) {
+  const t = useTranslations('faq');
+  const f = useFormatters(currency);
   const c = content || {};
-  const label = c.label ?? 'Häufige Fragen';
-  const heading = c.heading ?? 'Alles was Sie wissen müssen';
-  const description = c.description ?? 'Finden Sie schnell Antworten auf die häufigsten Fragen rund um unsere Mietwagen.';
-  const faqItems = items && items.length > 0 ? items : FALLBACK_FAQ;
-  const [openIndex, setOpenIndex] = useState<number | null>(0);
+  const label = c.label ?? t('label');
+  const heading = c.heading ?? t('heading');
+
+  // Fallback Q&A while the CMS has none (texts in messages/<locale>.json -> faq.fallback).
+  const fallbackItems: FaqItemData[] = [
+    {
+      id: '1',
+      question: t('fallback.priceQuestion'),
+      answer:
+        minPrice !== null
+          ? t('fallback.priceAnswer', {
+              price: f.money(minPrice, { decimals: 0 }),
+              discounts: discountSentence(tiers, t, f.list),
+            })
+          : t('fallback.priceAnswerNoPrice', { discounts: discountSentence(tiers, t, f.list) }),
+      category: 'pricing',
+    },
+    { id: '2', question: t('fallback.insuranceQuestion'), answer: t('fallback.insuranceAnswer'), category: 'insurance' },
+    { id: '3', question: t('fallback.durationQuestion'), answer: t('fallback.durationAnswer'), category: 'rental' },
+    { id: '4', question: t('fallback.documentsQuestion'), answer: t('fallback.documentsAnswer'), category: 'documents' },
+    { id: '5', question: t('fallback.extendQuestion'), answer: t('fallback.extendAnswer'), category: 'rental' },
+    { id: '6', question: t('fallback.pickupQuestion'), answer: t('fallback.pickupAnswer'), category: 'pickup' },
+  ];
+  const faqItems = items && items.length > 0 ? items : fallbackItems;
 
   return (
-    <section id="faq" className="py-20 bg-neutral-50 border-y border-neutral-200">
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-12">
-          <span className="text-brand-600 font-semibold text-sm uppercase tracking-wider">
-            {label}
-          </span>
-          <h2 className="text-3xl md:text-4xl font-bold mt-3 mb-4">
-            {heading}
-          </h2>
-          <p className="text-neutral-500 max-w-2xl mx-auto text-lg">
-            {description}
-          </p>
-        </div>
+    <section id="faq" className="sec bg-white">
+      <div className="wrap">
+        <div className="grid grid-cols-[minmax(0,.8fr)_minmax(0,1.2fr)] gap-x-16 gap-y-5 lg:grid-rows-[auto_1fr] max-lg:grid-cols-1 max-lg:gap-7">
+          <div className="flex flex-col gap-3.5 self-start lg:col-start-1 lg:row-start-1">
+            <p className="kick">{label}</p>
+            <h2 className="h2">{heading}</h2>
+            {c.description && <p className="lead">{c.description}</p>}
+          </div>
 
-        <div className="bg-white rounded-2xl border border-neutral-200 px-6 md:px-8">
-          {faqItems.map((item, idx) => (
-            <AccordionItem
-              key={item.id}
-              item={item}
-              isOpen={openIndex === idx}
-              onToggle={() => setOpenIndex(openIndex === idx ? null : idx)}
-            />
-          ))}
-        </div>
+          <div className="border-t border-line lg:col-start-2 lg:row-span-2 lg:row-start-1">
+            {faqItems.map((item, index) => (
+              <details key={item.id} open={index === 0} className="group border-b border-line">
+                <summary className="flex min-h-16 cursor-pointer list-none items-center justify-between gap-4 py-3 text-lg font-semibold [&::-webkit-details-marker]:hidden">
+                  {item.question}
+                  <ChevronDown
+                    size={22}
+                    strokeWidth={2.2}
+                    aria-hidden="true"
+                    className="flex-none transition-transform group-open:rotate-180 motion-reduce:transition-none"
+                  />
+                </summary>
+                <p className="max-w-[62ch] whitespace-pre-line pb-[22px] text-graphite">{item.answer}</p>
+              </details>
+            ))}
+          </div>
 
-        <div className="text-center mt-8">
-          <p className="text-neutral-500 text-sm">
-            Noch Fragen?{' '}
-            <a href="#contact-form" className="text-brand-600 font-semibold hover:underline">
-              Kontaktieren Sie uns direkt
-            </a>
-          </p>
+          <div className="flex flex-col gap-3 self-start rounded-18 border border-line bg-white p-6 lg:col-start-1 lg:row-start-2">
+            <b>{t('askTitle')}</b>
+            <p className="mut">{t('askText')}</p>
+            <Button href="#contact-form" variant="outline" className="max-lg:w-full lg:self-start">
+              {t('askCta')}
+            </Button>
+          </div>
         </div>
       </div>
     </section>

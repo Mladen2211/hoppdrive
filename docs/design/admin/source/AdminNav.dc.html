@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Seitenleiste</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./admin.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fira+Sans:wght@400;500;600;700&family=Fira+Sans+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>body{margin:0;background:#fff}</style>
+</helmet>
+<nav class="ad side {{railCls}}" aria-label="Hauptnavigation" style="border:0;min-height:900px">
+  <div class="brand">
+    <img src="/_blob/3c8c22cf0c301f831c336e6bf36e584f" alt="HoppDrive Admin">
+    <div class="markbox"><img src="/_blob/d6aea83af0e4a797da75d95eab312540" alt="HoppDrive" width="40" height="40"></div>
+  </div>
+  <sc-for list="{{nav}}" as="n" hint-placeholder-count="14">
+    <sc-if value="{{n.group}}" hint-placeholder-val="{{ false }}"><div class="grp">{{n.label}}</div></sc-if>
+    <sc-if value="{{n.item}}" hint-placeholder-val="{{ true }}">
+      <a class="navi" href="{{n.href}}" aria-current="{{n.cur}}" aria-label="{{n.label}}">
+        <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="{{n.d}}"/></svg>
+        <span class="lbl">{{n.label}}</span>
+        <sc-if value="{{n.count}}" hint-placeholder-val="{{ false }}"><span class="cnt">{{n.count}}</span></sc-if>
+        <sc-if value="{{n.isNew}}" hint-placeholder-val="{{ false }}"><span class="st s-vio newtag" style="margin-left:auto;height:22px;font-size:12px">Neu</span></sc-if>
+      </a>
+    </sc-if>
+  </sc-for>
+  <div class="me">
+    <div class="av" aria-hidden="true">MR</div>
+    <div class="meta" style="min-width:0;flex:1"><div style="font-weight:600">Mladen R.</div><div class="sm mut">Administrator</div></div>
+    <button class="ib meta" type="button" aria-label="Abmelden"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg></button>
+  </div>
+</nav>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"current":{"editor":"text","default":"Übersicht"},"rail":{"editor":"boolean","default":false},"$preview":{"width":264,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const cur = this.props.current ?? 'Übersicht';
+    const g = (label) => ({ group: true, item: false, label });
+    const it = (label, d, href, o = {}) => ({ group: false, item: true, label, d, href, cur: label === cur ? 'page' : 'false', count: o.count || '', isNew: !!o.isNew });
+    return {
+      railCls: this.props.rail ? 'rail' : '',
+      nav: [
+        g('Betrieb'),
+        it('Übersicht', 'M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z', 'Main.dc.html'),
+        it('Anfragen', 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z', 'Inquiries-Desktop.dc.html', { count: '3' }),
+        it('Verträge', 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M8 13h8M8 17h8M8 9h2', 'Contracts-Desktop.dc.html', { count: '2' }),
+        it('Kalender', 'M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z', 'Calendar-Desktop.dc.html'),
+        it('Flotte', 'M5 17H3v-5l2-5h14l2 5v5h-2M5 17a2 2 0 1 0 4 0M15 17a2 2 0 1 0 4 0M9 17h6M3 12h18', 'Fleet-Desktop.dc.html'),
+        it('Berichte', 'M12 20V10M18 20V4M6 20v-4', 'Reports-Desktop.dc.html'),
+        g('Inhalte'),
+        it('Homepage', 'm3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z', 'Content-Desktop.dc.html'),
+        it('Bewertungen', 'm12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z', 'Content-Lists.dc.html'),
+        it('FAQ', 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3M12 17h.01', 'Content-Lists.dc.html'),
+        it('Standorte', 'M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0zM12 7a3 3 0 1 0 0 6 3 3 0 0 0 0-6z', 'Content-Lists.dc.html'),
+        it('Website', 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM2 12h20M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20z', 'Settings-Users.dc.html'),
+        g('System'),
+        it('Benutzer und Rollen', 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM22 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8', 'Settings-Users.dc.html', { isNew: true })
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

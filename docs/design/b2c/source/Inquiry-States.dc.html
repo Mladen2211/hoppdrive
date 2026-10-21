@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Anfrageformular Zustände</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./b2c.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fira+Sans:wght@400;500;600;700;800&family=Fira+Sans+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="hd" style="width:1440px;height:2400px;padding:60px;display:grid;grid-template-columns:repeat(2,640px);grid-auto-rows:min-content;gap:56px 40px;align-content:start">
+
+  <!-- 1 leer -->
+  <section style="display:flex;flex-direction:column;gap:14px">
+    <h2 class="h3" style="display:flex;gap:10px;align-items:center"><span class="badge b-ink">1</span>Leer, bereit zum Ausfüllen</h2>
+    <form class="card" aria-label="Mietanfrage leer" style="padding:28px">
+      <div class="fgrid" style="gap:14px">
+        <div class="fld"><label for="a-name">Name</label><input id="a-name" class="in" type="text" placeholder="Max Muster"></div>
+        <div class="fld"><label for="a-phone">Telefon</label><input id="a-phone" class="in" type="tel" placeholder="+41 79 123 45 67"></div>
+        <div class="fld full"><label for="a-mail">E-Mail</label><input id="a-mail" class="in" type="email" placeholder="max@beispiel.ch"></div>
+        <div class="fld full"><label for="a-car">Fahrzeug von Interesse</label><select id="a-car" class="in"><option>Kein bestimmtes Fahrzeug</option></select></div>
+        <div class="fld"><label for="a-from">Gewünschter Beginn</label><input id="a-from" class="in" type="date"></div>
+        <div class="fld"><label for="a-to">Gewünschtes Ende</label><input id="a-to" class="in" type="date"></div>
+        <label class="chk full"><input type="checkbox"><span>Ich habe die Datenschutzerklärung gelesen und stimme zu.</span></label>
+        <div class="full"><button class="btn btn-p btn-lg btn-b" type="button" disabled>Anfrage senden</button><p class="hint" style="margin-top:8px">Die Schaltfläche wird aktiv, sobald Name, E-Mail und Datenschutz ausgefüllt sind.</p></div>
+      </div>
+    </form>
+  </section>
+
+  <!-- 2 validierung -->
+  <section style="display:flex;flex-direction:column;gap:14px">
+    <h2 class="h3" style="display:flex;gap:10px;align-items:center"><span class="badge b-ink">2</span>Eingabefehler</h2>
+    <form class="card" aria-label="Mietanfrage mit Fehlern" style="padding:28px">
+      <div class="alert al-err" role="alert" style="margin-bottom:16px">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+        <div><b>3 Angaben müssen Sie noch korrigieren.</b><div class="sm">E-Mail, Enddatum und Datenschutz.</div></div>
+      </div>
+      <div class="fgrid" style="gap:14px">
+        <div class="fld"><label for="b-name">Name</label><input id="b-name" class="in ok" type="text" value="Laura Meier"></div>
+        <div class="fld"><label for="b-phone">Telefon</label><input id="b-phone" class="in" type="tel" value="+41 79 123 45 67"></div>
+        <div class="fld full"><label for="b-mail">E-Mail</label><input id="b-mail" class="in bad" type="email" value="laura.meier@" aria-invalid="true" aria-describedby="b-mail-e"><span id="b-mail-e" class="errm"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>Bitte geben Sie eine vollständige E-Mail-Adresse ein, z. B. laura@beispiel.ch.</span></div>
+        <div class="fld full"><label for="b-car">Fahrzeug von Interesse</label><select id="b-car" class="in"><option>Škoda Superb Combi</option></select></div>
+        <div class="fld"><label for="b-from">Gewünschter Beginn</label><input id="b-from" class="in" type="date" value="2026-12-06"></div>
+        <div class="fld"><label for="b-to">Gewünschtes Ende</label><input id="b-to" class="in bad" type="date" value="2026-11-23" aria-invalid="true" aria-describedby="b-to-e"><span id="b-to-e" class="errm"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>Das Ende muss nach dem Beginn liegen.</span></div>
+        <label class="chk full"><input type="checkbox" aria-invalid="true"><span>Ich habe die Datenschutzerklärung gelesen und stimme zu.<span class="errm" style="margin-top:4px">Ohne Ihre Zustimmung können wir die Anfrage nicht bearbeiten.</span></span></label>
+        <div class="full"><button class="btn btn-p btn-lg btn-b" type="button">Anfrage senden</button></div>
+      </div>
+    </form>
+  </section>
+
+  <!-- 3 sendet -->
+  <section style="display:flex;flex-direction:column;gap:14px">
+    <h2 class="h3" style="display:flex;gap:10px;align-items:center"><span class="badge b-ink">3</span>Wird gesendet</h2>
+    <form class="card" aria-label="Mietanfrage wird gesendet" aria-busy="true" style="padding:28px">
+      <div class="fgrid" style="gap:14px;opacity:.6">
+        <div class="fld"><label for="c-name">Name</label><input id="c-name" class="in" type="text" value="Laura Meier" disabled></div>
+        <div class="fld"><label for="c-phone">Telefon</label><input id="c-phone" class="in" type="tel" value="+41 79 123 45 67" disabled></div>
+        <div class="fld full"><label for="c-mail">E-Mail</label><input id="c-mail" class="in" type="email" value="laura.meier@beispiel.ch" disabled></div>
+        <div class="fld full"><label for="c-car">Fahrzeug von Interesse</label><select id="c-car" class="in" disabled><option>Škoda Superb Combi</option></select></div>
+        <div class="fld"><label for="c-from">Gewünschter Beginn</label><input id="c-from" class="in" type="date" value="2026-11-23" disabled></div>
+        <div class="fld"><label for="c-to">Gewünschtes Ende</label><input id="c-to" class="in" type="date" value="2026-12-06" disabled></div>
+      </div>
+      <div style="margin-top:18px"><button class="btn btn-p btn-lg btn-b" type="button" style="gap:12px;background:var(--ruby-d)" aria-live="polite"><span class="spin" aria-hidden="true"></span>Anfrage wird gesendet…</button></div>
+      <p class="hint" style="margin-top:8px;text-align:center">Bitte schliessen Sie die Seite nicht.</p>
+    </form>
+  </section>
+
+  <!-- 4 erfolg -->
+  <section style="display:flex;flex-direction:column;gap:14px">
+    <h2 class="h3" style="display:flex;gap:10px;align-items:center"><span class="badge b-ink">4</span>Erfolgreich gesendet</h2>
+    <div class="card" role="status" style="padding:32px;display:flex;flex-direction:column;gap:20px">
+      <div style="display:flex;gap:16px;align-items:center">
+        <div style="width:56px;height:56px;border-radius:50%;background:var(--ok-t);color:var(--ok);display:flex;align-items:center;justify-content:center"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></div>
+        <div><h3 class="h3" style="font-size:26px">Danke, Laura. Ihre Anfrage ist bei uns.</h3><p class="mut">Wir melden uns schnellstmöglich unter laura.meier@beispiel.ch.</p></div>
+      </div>
+      <dl style="margin:0;display:grid;grid-template-columns:auto 1fr;gap:8px 20px;padding:16px;background:var(--paper);border-radius:12px;font-size:15px">
+        <dt class="mut">Fahrzeug</dt><dd style="margin:0;font-weight:600">Škoda Superb Combi</dd>
+        <dt class="mut">Zeitraum</dt><dd style="margin:0;font-weight:600">23.11.2026 – 06.12.2026 (14 Tage)</dd>
+        <dt class="mut">Richtpreis</dt><dd style="margin:0;font-weight:600" class="num">CHF 995.40</dd>
+      </dl>
+      <ul class="after" style="display:flex;flex-direction:column;gap:12px">
+        <li><div class="n">1</div><div><b>Bestätigung per E-Mail</b><div class="sm mut">Bitte prüfen Sie auch Ihren Spam-Ordner.</div></div></li>
+        <li><div class="n">2</div><div><b>Wir prüfen die Verfügbarkeit</b><div class="sm mut">Danach erhalten Sie Preis und Angebot.</div></div></li>
+      </ul>
+      <div style="display:flex;gap:12px;flex-wrap:wrap"><a class="btn btn-p" href="Fleet-Desktop.dc.html">Weitere Fahrzeuge ansehen</a><a class="btn btn-g" href="Main.dc.html">Zur Startseite</a></div>
+    </div>
+  </section>
+
+  <!-- 5 serverfehler -->
+  <section style="display:flex;flex-direction:column;gap:14px">
+    <h2 class="h3" style="display:flex;gap:10px;align-items:center"><span class="badge b-ink">5</span>Senden fehlgeschlagen</h2>
+    <form class="card" aria-label="Mietanfrage Fehler beim Senden" style="padding:28px">
+      <div class="alert al-err" role="alert" style="margin-bottom:16px;flex-direction:column;gap:10px">
+        <div style="display:flex;gap:12px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12a10 10 0 0 1 20 0M5 12a7 7 0 0 1 14 0M8.5 12a3.5 3.5 0 0 1 7 0M12 12v.01M3 3l18 18"/></svg><div><b>Die Anfrage wurde nicht gesendet.</b><div class="sm">Der Server ist gerade nicht erreichbar. Ihre Eingaben sind noch da.</div></div></div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn btn-p" type="button" style="min-height:44px">Erneut senden</button><span class="sm" style="align-self:center">Oder schreiben Sie an info@hoppdrive.ch</span></div>
+      </div>
+      <div class="fgrid" style="gap:14px">
+        <div class="fld"><label for="e-name">Name</label><input id="e-name" class="in" type="text" value="Laura Meier"></div>
+        <div class="fld"><label for="e-phone">Telefon</label><input id="e-phone" class="in" type="tel" value="+41 79 123 45 67"></div>
+        <div class="fld full"><label for="e-mail">E-Mail</label><input id="e-mail" class="in" type="email" value="laura.meier@beispiel.ch"></div>
+        <div class="fld full"><label for="e-msg">Nachricht</label><textarea id="e-msg" class="in" style="min-height:90px">Ich brauche das Auto für einen Umzug.</textarea></div>
+      </div>
+    </form>
+  </section>
+
+  <!-- 6 vorbelegt -->
+  <section style="display:flex;flex-direction:column;gap:14px">
+    <h2 class="h3" style="display:flex;gap:10px;align-items:center"><span class="badge b-ink">6</span>Fahrzeug vorbelegt (von Karte oder Detailseite)</h2>
+    <form class="card" aria-label="Mietanfrage mit vorgewähltem Fahrzeug" style="padding:28px">
+      <div class="alert al-info" style="margin-bottom:16px;align-items:center">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        <span style="flex:1">Fahrzeug aus Ihrer Auswahl übernommen: <b>Škoda Kodiaq</b></span>
+        <button class="btn btn-g" type="button" style="min-height:40px;padding:0 12px;font-size:14px">Ändern</button>
+      </div>
+      <div class="fgrid" style="gap:14px">
+        <div class="fld"><label for="f6-name">Name</label><input id="f6-name" class="in" type="text" placeholder="Max Muster"></div>
+        <div class="fld"><label for="f6-phone">Telefon</label><input id="f6-phone" class="in" type="tel" placeholder="+41 79 123 45 67"></div>
+        <div class="fld full"><label for="f6-mail">E-Mail</label><input id="f6-mail" class="in" type="email" placeholder="max@beispiel.ch"></div>
+        <div class="fld full"><label for="f6-car">Fahrzeug von Interesse</label><select id="f6-car" class="in ok"><option>Škoda Kodiaq · 7 Sitze · Diesel</option></select></div>
+        <div class="fld full"><div class="pp"><b class="num">Ab CHF 85 / Tag</b><span>Wählen Sie Beginn und Ende für einen Richtpreis.</span></div></div>
+      </div>
+    </form>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":2400}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

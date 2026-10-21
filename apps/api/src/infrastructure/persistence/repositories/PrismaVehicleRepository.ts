@@ -1,4 +1,4 @@
-import { PrismaClient, Vehicle as PrismaVehicle, VehicleImage as PrismaImage } from '@prisma/client';
+import { Prisma, PrismaClient, Vehicle as PrismaVehicle, VehicleImage as PrismaImage } from '@prisma/client';
 import {
   Vehicle,
   Money,
@@ -15,6 +15,14 @@ export class PrismaVehicleRepository implements IVehicleRepository {
   async findById(id: string): Promise<Vehicle | null> {
     const row = await this.prisma.vehicle.findUnique({
       where: { id },
+      include: { images: { orderBy: { sortOrder: 'asc' } } },
+    });
+    return row ? this.toDomain(row) : null;
+  }
+
+  async findByLicensePlate(normalisedPlate: string): Promise<Vehicle | null> {
+    const row = await this.prisma.vehicle.findUnique({
+      where: { licensePlate: normalisedPlate },
       include: { images: { orderBy: { sortOrder: 'asc' } } },
     });
     return row ? this.toDomain(row) : null;
@@ -44,6 +52,9 @@ export class PrismaVehicleRepository implements IVehicleRepository {
         seats: vehicle.specs.seats,
         fuelType: vehicle.specs.fuelType,
         range: vehicle.specs.range,
+        description: vehicle.description,
+        licensePlate: vehicle.licensePlate,
+        translations: this.translationsInput(vehicle.translations),
         isAvailable: vehicle.isAvailable,
         images: {
           create: vehicle.images.map((img) => ({
@@ -75,6 +86,9 @@ export class PrismaVehicleRepository implements IVehicleRepository {
         seats: vehicle.specs.seats,
         fuelType: vehicle.specs.fuelType,
         range: vehicle.specs.range,
+        description: vehicle.description,
+        licensePlate: vehicle.licensePlate,
+        translations: this.translationsInput(vehicle.translations),
         isAvailable: vehicle.isAvailable,
       },
       include: { images: { orderBy: { sortOrder: 'asc' } } },
@@ -88,6 +102,11 @@ export class PrismaVehicleRepository implements IVehicleRepository {
 
   async count(): Promise<number> {
     return this.prisma.vehicle.count();
+  }
+
+  /** Json columns need Prisma.JsonNull to store "no value". */
+  private translationsInput(value: Vehicle['translations']) {
+    return value ? (value as Prisma.InputJsonValue) : Prisma.JsonNull;
   }
 
   private toDomain(row: VehicleWithImages): Vehicle {
@@ -114,6 +133,9 @@ export class PrismaVehicleRepository implements IVehicleRepository {
           isPrimary: img.isPrimary,
         }),
       ),
+      description: row.description,
+      licensePlate: row.licensePlate,
+      translations: (row.translations as Vehicle['translations']) ?? null,
       isAvailable: row.isAvailable,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
