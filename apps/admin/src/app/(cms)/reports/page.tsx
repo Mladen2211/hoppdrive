@@ -1,403 +1,471 @@
 'use client';
 
-import { useState } from 'react';
-import { BarChart3, Calendar, Car, Download, TrendingUp } from 'lucide-react';
+import type { ReportSummaryDto } from '@hoppdrive/shared';
+import { Download } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Alert,
+  Button,
+  ChipGroup,
+  Field,
+  Input,
+  KpiCard,
+  PageHeader,
+  Panel,
+  Skeleton,
+  Tabs,
+  deriveInvoiceStatus,
+  useMediaQuery,
+  useToast,
+} from '@/components/ui';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
+import { useCurrency } from '@/hooks/useCurrency';
 import { api } from '@/lib/api';
+import { downloadCsv } from '@/lib/download';
+import { errorText } from '@/lib/errors';
+import { fmtDate, fmtMoney, fmtNumber, toInputDate } from '@/lib/format';
+import {
+  EXPORT_OPTIONS,
+  bookingRows,
+  exportFilename,
+  invoiceRows,
+  invoicesInRange,
+  revenueRows,
+  type ExportKind,
+  type InvoiceRow,
+} from '@/lib/reports-csv';
+import {
+  CATEGORY_LABELS,
+  PERIOD_TABS,
+  PRESETS,
+  absoluteDelta,
+  chartMonths,
+  chartSummary,
+  comparisonLabel,
+  comparisonYear,
+  currentRange,
+  daysText,
+  futureMonthsNote,
+  kpiRange,
+  percentDelta,
+  pointsText,
+  presetRange,
+  rangeLabel,
+  reportRangeParams,
+  seriesNames,
+  type BookingReport,
+  type Delta,
+  type FixedPeriodKind,
+  type PeriodKind,
+  type PresetKey,
+  type Range,
+} from '@/lib/reports-model';
+import { ChartLegend, RevenueChart } from './RevenueChart';
+import { VehicleRevenue, type VehicleRow } from './VehicleRevenue';
+import { useTranslations } from 'next-intl';
+import { tr } from '@/i18n/active';
 
-interface VehicleReport {
-  vehicleId: string;
-  brand: string;
-  model: string;
-  bookings: {
-    id: string;
-    customerName: string;
-    startDate: string;
-    endDate: string;
-    totalPrice: number;
-    currency: string;
-    status: string;
-    days: number;
-  }[];
-  totalEarnings: number;
-  totalDays: number;
+interface LoadedReport {
+  /** The range that was asked for (chart, booking list, CSV) */
+  range: Range;
+  /** The range the KPIs, the vehicle table and the deltas cover (up to today for a running period) */
+  kpi: Range & { clamped: boolean };
+  summary: ReportSummaryDto;
+  chart: ReportSummaryDto;
+  report: BookingReport | null;
 }
 
-interface ReportData {
-  from: string;
-  to: string;
-  vehicles: VehicleReport[];
-  grandTotal: number;
-  grandDays: number;
-  totalBookings: number;
-}
+const sameRange = (a: Range, b: Range) => a.from === b.from && a.to === b.to;
 
-function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString('de-CH', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  });
-}
-
-function fmtCHF(amount: number) {
-  return amount.toLocaleString('de-CH', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-}
-
-// Quick presets
-function getPreset(preset: string): { from: string; to: string } {
-  const now = new Date();
-  const y = now.getFullYear();
-  const m = now.getMonth();
-
-  const fmt = (d: Date) => d.toISOString().split('T')[0];
-
-  switch (preset) {
-    case 'thisMonth':
-      return { from: fmt(new Date(y, m, 1)), to: fmt(new Date(y, m + 1, 0)) };
-    case 'lastMonth':
-      return { from: fmt(new Date(y, m - 1, 1)), to: fmt(new Date(y, m, 0)) };
-    case 'thisQuarter': {
-      const q = Math.floor(m / 3) * 3;
-      return { from: fmt(new Date(y, q, 1)), to: fmt(new Date(y, q + 3, 0)) };
-    }
-    case 'thisYear':
-      return { from: fmt(new Date(y, 0, 1)), to: fmt(new Date(y, 11, 31)) };
-    case 'lastYear':
-      return { from: fmt(new Date(y - 1, 0, 1)), to: fmt(new Date(y - 1, 11, 31)) };
-    default:
-      return { from: fmt(new Date(y, m, 1)), to: fmt(now) };
+function trend(delta: Delta | null) {
+  if (!delta) {
+    return {
+      node: (
+        <>
+          <span aria-hidden="true">–</span>
+          <span className="sr-only">{tr('reports.keinVorjahreswertZumVergleich')}</span>
+        </>
+      ),
+      tone: 'mute' as const,
+    };
   }
+  return { node: delta.text, tone: delta.tone };
 }
-
-const STATUS_COLORS: Record<string, string> = {
-  reserved: 'bg-yellow-100 text-yellow-800',
-  active: 'bg-green-100 text-green-800',
-  completed: 'bg-neutral-100 text-neutral-600',
-  cancelled: 'bg-red-100 text-red-700',
-};
 
 export default function ReportsPage() {
+  const tt = useTranslations();
   const { token } = useAdminAuth();
+  const currency = useCurrency();
+  const { toast } = useToast();
+  const isTabletUp = useMediaQuery('(min-width: 768px)');
 
-  const now = new Date();
-  const [from, setFrom] = useState(
-    new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0],
-  );
-  const [to, setTo] = useState(now.toISOString().split('T')[0]);
+  const [kind, setKind] = useState<PeriodKind>('year');
+  const [range, setRange] = useState<Range>(() => currentRange('year'));
+  const [exportKinds, setExportKinds] = useState<ExportKind[]>(['bookings']);
+  const [exporting, setExporting] = useState(false);
 
-  const [report, setReport] = useState<ReportData | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [expandedVehicle, setExpandedVehicle] = useState<string | null>(null);
+  const [data, setData] = useState<LoadedReport | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [reportFailed, setReportFailed] = useState(false);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const requestId = useRef(0);
 
-  async function fetchReport() {
-    if (!token) return;
+  const rangeInvalid = range.from > range.to;
+
+  // ── Loading: automatically whenever the period changes ────────
+
+  const load = useCallback(async () => {
+    if (!token || !range.from || !range.to || range.from > range.to) return;
+    const id = ++requestId.current;
     setLoading(true);
-    setError('');
-    try {
-      const data = await api.getBookingReport(from, to);
-      setReport(data);
-      setExpandedVehicle(null);
-    } catch (err: any) {
-      setError(err.message || 'Bericht konnte nicht geladen werden.');
-    } finally {
+    setError(null);
+    const todayKey = toInputDate(new Date());
+    const k = kpiRange(range, todayKey);
+    const booking = reportRangeParams(range);
+    const [summaryRes, chartRes, reportRes] = await Promise.allSettled([
+      api.getReportSummary(k.from, k.to),
+      k.clamped ? api.getReportSummary(range.from, range.to) : Promise.resolve(null),
+      api.getBookingReport(booking.from, booking.to),
+    ]);
+    if (id !== requestId.current) return; // a newer period was picked meanwhile
+
+    if (summaryRes.status === 'rejected') {
+      setError(errorText(summaryRes.reason, tr('reports.derBerichtKonnteNicht')));
       setLoading(false);
+      return;
     }
-  }
+    const summary = summaryRes.value;
+    const chart = chartRes.status === 'fulfilled' && chartRes.value ? chartRes.value : summary;
+    setData({
+      range: { ...range },
+      kpi: k,
+      summary,
+      chart,
+      report: reportRes.status === 'fulfilled' ? (reportRes.value as BookingReport) : null,
+    });
+    setReportFailed(reportRes.status === 'rejected');
+    setExpandedId(null);
+    setLoading(false);
+  }, [token, range]);
 
-  function applyPreset(preset: string) {
-    const { from: f, to: t } = getPreset(preset);
-    setFrom(f);
-    setTo(t);
-  }
+  useEffect(() => {
+    void load();
+  }, [load]);
 
-  function exportCSV() {
-    if (!report) return;
+  // ── Period controls ───────────────────────────────────────────
 
-    const rows: string[] = [
-      'Fahrzeug;Kunde;Von;Bis;Tage;Preis (CHF);Status',
-    ];
+  const pickKind = (next: PeriodKind) => {
+    setKind(next);
+    if (next !== 'custom') setRange(currentRange(next as FixedPeriodKind));
+  };
 
-    for (const v of report.vehicles) {
-      for (const b of v.bookings) {
-        rows.push(
-          [
-            `${v.brand} ${v.model}`,
-            b.customerName,
-            fmtDate(b.startDate),
-            fmtDate(b.endDate),
-            b.days,
-            fmtCHF(b.totalPrice),
-            b.status,
-          ].join(';'),
-        );
+  const activePreset = PRESETS.find((p) => sameRange(presetRange(p.key), range))?.key ?? null;
+  const pickPreset = (key: PresetKey) => {
+    const preset = PRESETS.find((p) => p.key === key);
+    if (!preset) return;
+    setKind(preset.kind);
+    setRange(presetRange(key));
+  };
+
+  // ── Derived ───────────────────────────────────────────────────
+
+  const todayKey = toInputDate(new Date());
+
+  const view = useMemo(() => {
+    if (!data) return null;
+    const { kpi, summary, chart } = data;
+    const label = rangeLabel(kpi.from, kpi.to);
+    const names = seriesNames(data.range.from, data.range.to);
+    const compare = comparisonLabel(kpi.from, kpi.to);
+    const compareYear = comparisonYear(kpi.from, kpi.to);
+    const months = chartMonths(chart.monthly, todayKey);
+
+    // One row per vehicle: the summary (revenue prorated to the range, utilisation) joined with the booking list.
+    const detailById = new Map((data.report?.vehicles ?? []).map((v) => [v.vehicleId, v]));
+    const rows: VehicleRow[] = summary.byVehicle
+      .filter((v) => v.bookings > 0)
+      .map((v) => ({
+        id: v.vehicleId,
+        name: v.name,
+        bookings: v.bookings,
+        days: v.days,
+        utilization: v.utilizationPercent,
+        revenue: v.revenue,
+        detail: detailById.get(v.vehicleId),
+      }));
+    // Vehicles that only the booking list knows (e.g. no longer in the fleet) must not disappear.
+    const known = new Set(summary.byVehicle.map((v) => v.vehicleId));
+    (data.report?.vehicles ?? []).forEach((v) => {
+      if (!known.has(v.vehicleId)) {
+        rows.push({ id: v.vehicleId, name: `${v.brand} ${v.model}`, bookings: v.bookings.length, days: v.totalDays, utilization: null, revenue: v.totalEarnings, detail: v });
       }
-      rows.push(`${v.brand} ${v.model} — Gesamt;;;${v.totalDays};${fmtCHF(v.totalEarnings)};`);
-    }
-    rows.push(`GESAMT;;;;${report.grandDays};${fmtCHF(report.grandTotal)};`);
+    });
 
-    const blob = new Blob(['\uFEFF' + rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `hoppdrive-bericht-${from}-bis-${to}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    return {
+      label,
+      compare,
+      compareYear,
+      names,
+      months,
+      rows,
+      total: {
+        bookings: rows.reduce((s, r) => s + r.bookings, 0),
+        days: rows.reduce((s, r) => s + r.days, 0),
+        revenue: rows.reduce((s, r) => s + r.revenue, 0),
+      },
+      note: futureMonthsNote(months),
+      summaryText: chartSummary(months, names),
+      deltas: {
+        revenue: percentDelta(summary.revenue, summary.previous.revenue, compare),
+        bookings: percentDelta(summary.bookings, summary.previous.bookings, compare),
+        duration: absoluteDelta(summary.avgDurationDays, summary.previous.avgDurationDays, daysText),
+        utilization: absoluteDelta(summary.utilizationPercent, summary.previous.utilizationPercent, pointsText),
+      },
+    };
+  }, [data, todayKey]);
+
+  // ── Export ────────────────────────────────────────────────────
+
+  const canExport = Boolean(data) && exportKinds.length > 0 && !exporting && !rangeInvalid;
+
+  async function exportCsv() {
+    if (!data || exporting || exportKinds.length === 0) return;
+    setExporting(true);
+    const names: string[] = [];
+    try {
+      for (const choice of EXPORT_OPTIONS.map((o) => o.value).filter((v) => exportKinds.includes(v))) {
+        if (choice === 'bookings') {
+          if (!data.report) throw new Error(tr('reports.dieBuchungsdatenKonntenNicht'));
+          if (data.report.vehicles.length === 0) {
+            toast.info(tr('reports.keineBuchungenImGewaehlten'), tr('reports.dieBuchungsCSVWurde'));
+            continue;
+          }
+          downloadCsv(bookingRows(data.report, currency), exportFilename('bookings', data.range));
+          names.push(tr('common.buchungen'));
+        } else if (choice === 'invoices') {
+          const all = (await api.getInvoices()) as (InvoiceRow & { issueDate: string })[];
+          const rows = invoicesInRange(all, data.range);
+          downloadCsv(invoiceRows(rows, (inv) => Boolean(inv.isOverdue) || deriveInvoiceStatus(inv) === 'OVERDUE', currency), exportFilename('invoices', data.range));
+          names.push(tr('common.rechnungen'));
+        } else {
+          downloadCsv(revenueRows(data.chart.monthly, currency), exportFilename('revenue', data.range));
+          names.push(tr('common.umsatz'));
+        }
+      }
+      if (names.length > 0) toast.success(names.length === 1 ? tr('common.cSVExportiert') : tr('reports.cSVDateienExportiert', { length: names.length }), names.join(', '));
+    } catch (err) {
+      toast.error(tr('common.exportFehlgeschlagen'), errorText(err));
+    } finally {
+      setExporting(false);
+    }
   }
 
-  // Compute bar widths for visual chart
-  const maxEarnings = report
-    ? Math.max(...report.vehicles.map((v) => v.totalEarnings), 1)
-    : 1;
+  const exportButton = (className?: string) => (
+    <Button variant="outline" className={className} iconLeft={<Download size={18} aria-hidden="true" />} disabled={!canExport} loading={exporting} onClick={() => void exportCsv()}>
+      {tt('reports.cSVExportieren')}
+    </Button>
+  );
+
+  // ── Render ────────────────────────────────────────────────────
+
+  const showSkeleton = loading && !data;
+  const busy = loading && Boolean(data);
+
+  const presetBar = (
+    <ChipGroup
+      aria-label={tt('reports.schnellauswahl')}
+      scrollable
+      options={PRESETS.map((p) => ({ value: p.key, label: p.label }))}
+      value={(activePreset ?? '') as PresetKey}
+      onChange={pickPreset}
+      className="-mx-4 px-4 md:mx-0 md:px-0"
+    />
+  );
+
+  const periodTabs = <Tabs aria-label={tt('common.zeitraum')} tabs={PERIOD_TABS} value={kind} onChange={(id) => pickKind(id as PeriodKind)} />;
+
+  const kpis =
+    showSkeleton || !data || !view ? (
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-busy="true">
+        {[0, 1, 2, 3].map((i) => (
+          <Skeleton key={i} className="h-[138px]" rounded={16} />
+        ))}
+      </div>
+    ) : (
+      <section aria-label={tt('reports.kennzahlen', { label: view.label })} className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {(() => {
+          const t1 = trend(view.deltas.revenue);
+          const t2 = trend(view.deltas.bookings);
+          const t3 = trend(view.deltas.duration);
+          const t4 = trend(view.deltas.utilization);
+          return (
+            <>
+              <KpiCard label={tt('reports.umsatz', { label: view.label })} value={fmtMoney(data.summary.revenue, { currency, decimals: 0 })} trend={t1.node} trendTone={t1.tone} />
+              <KpiCard label={tt('common.buchungen')} value={fmtNumber(data.summary.bookings)} trend={t2.node} trendTone={t2.tone} />
+              <KpiCard label={tt('reports.mietdauer')} value={data.summary.bookings > 0 ? daysText(data.summary.avgDurationDays) : '–'} trend={t3.node} trendTone={t3.tone} />
+              <KpiCard label={tt('reports.auslastung')} value={`${Math.round(data.summary.utilizationPercent)} %`} trend={t4.node} trendTone={t4.tone} />
+            </>
+          );
+        })()}
+      </section>
+    );
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold text-neutral-900 mb-6">Einnahmenbericht</h1>
+    <div className="flex flex-col gap-5 md:gap-6">
+      <div className="max-md:hidden">
+        <PageHeader
+          title={tt('reports.berichte')}
+          subtitle={tt('reports.umsatzUndAuslastungMit')}
+          tabs={periodTabs}
+          tabsInline
+          actions={exportButton()}
+        />
+      </div>
+      <h1 className="sr-only md:hidden">{tt('reports.berichte')}</h1>
 
-      {/* ── Controls ─────────────────────────── */}
-      <div className="bg-white rounded-xl shadow-sm border border-neutral-200 p-6 mb-6">
-        <div className="flex flex-col lg:flex-row items-start lg:items-end gap-4">
-          {/* Date pickers */}
-          <div className="flex items-end gap-3">
-            <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1">Von</label>
-              <input
-                type="date"
-                value={from}
-                onChange={(e) => setFrom(e.target.value)}
-                className="border border-neutral-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1">Bis</label>
-              <input
-                type="date"
-                value={to}
-                min={from}
-                onChange={(e) => setTo(e.target.value)}
-                className="border border-neutral-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-              />
-            </div>
-            <button
-              onClick={fetchReport}
-              disabled={loading}
-              className="px-5 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700 transition-colors disabled:opacity-50"
-            >
-              {loading ? 'Laden…' : 'Bericht erstellen'}
-            </button>
-          </div>
+      {!isTabletUp && (
+        <ChipGroup
+          aria-label={tt('common.zeitraum')}
+          scrollable
+          options={PERIOD_TABS.map((t) => ({ value: t.id, label: t.label }))}
+          value={kind}
+          onChange={pickKind}
+          className="-mx-4 px-4"
+        />
+      )}
 
-          {/* Presets */}
-          <div className="flex flex-wrap gap-2">
-            {[
-              { key: 'thisMonth', label: 'Dieser Monat' },
-              { key: 'lastMonth', label: 'Letzter Monat' },
-              { key: 'thisQuarter', label: 'Dieses Quartal' },
-              { key: 'thisYear', label: 'Dieses Jahr' },
-              { key: 'lastYear', label: 'Letztes Jahr' },
-            ].map(({ key, label }) => (
-              <button
-                key={key}
-                onClick={() => applyPreset(key)}
-                className="px-3 py-1.5 text-xs font-medium border border-neutral-300 rounded-lg hover:bg-neutral-50 transition-colors"
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {error && (
-          <div className="mt-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
-            {error}
+      <div className="flex flex-col gap-3">
+        {presetBar}
+        {kind === 'custom' && (
+          <div className="grid max-w-[480px] grid-cols-2 gap-3 max-[420px]:grid-cols-1">
+            <Field label={tt('common.von')} required>
+              <Input type="date" value={range.from} onChange={(e) => setRange((r) => ({ ...r, from: e.target.value }))} />
+            </Field>
+            <Field label={tt('common.bis')} required error={rangeInvalid ? tt('reports.dasEnddatumLiegtVor') : undefined}>
+              <Input type="date" value={range.to} min={range.from || undefined} onChange={(e) => setRange((r) => ({ ...r, to: e.target.value }))} />
+            </Field>
           </div>
         )}
       </div>
 
-      {/* ── Report Results ───────────────────── */}
-      {report && (
-        <>
-          {/* Summary cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-            <div className="bg-white rounded-xl shadow-sm border border-neutral-200 p-5">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <TrendingUp className="w-5 h-5 text-green-600" />
-                </div>
-                <div>
-                  <p className="text-sm text-neutral-500">Gesamteinnahmen</p>
-                  <p className="text-xl font-bold text-neutral-900">CHF {fmtCHF(report.grandTotal)}</p>
-                </div>
-              </div>
+      {error && (
+        <Alert
+          tone="err"
+          title={tt('reports.berichtKonnteNichtGeladen')}
+          action={
+            <Button variant="outline" size="sm" onClick={() => void load()}>
+              {tt('common.erneutVersuchen')}
+            </Button>
+          }
+        >
+          {error}
+        </Alert>
+      )}
+
+      <div className={busy ? 'pointer-events-none flex flex-col gap-5 opacity-60 transition-opacity motion-reduce:transition-none md:gap-6' : 'flex flex-col gap-5 md:gap-6'} aria-busy={loading || undefined}>
+        {kpis}
+
+        {view && data?.kpi.clamped && (
+          <p className="hint -mt-2">{tt('reports.clampedHint', { date: fmtDate(todayKey), year: view.compareYear ?? 'none' })}</p>
+        )}
+
+        <div className="grid items-start gap-5 md:gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+          <Panel aria-labelledby="chart-heading">
+            <div className="panel-h">
+              <h2 className="h2" id="chart-heading">
+                {tt('reports.umsatzProMonat')}
+              </h2>
+              {view && <ChartLegend names={view.names} />}
             </div>
-            <div className="bg-white rounded-xl shadow-sm border border-neutral-200 p-5">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <Calendar className="w-5 h-5 text-blue-600" />
-                </div>
-                <div>
-                  <p className="text-sm text-neutral-500">Vermietete Tage</p>
-                  <p className="text-xl font-bold text-neutral-900">{report.grandDays}</p>
-                </div>
-              </div>
+            <div className="panel-b">
+              {showSkeleton || !view ? (
+                <Skeleton className="h-[300px]" rounded={12} />
+              ) : (
+                <>
+                  <RevenueChart months={view.months} names={view.names} summary={view.summaryText} />
+                  {view.note && <p className="hint mt-3.5">{view.note}</p>}
+                </>
+              )}
             </div>
-            <div className="bg-white rounded-xl shadow-sm border border-neutral-200 p-5">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-brand-100 rounded-lg">
-                  <BarChart3 className="w-5 h-5 text-brand-600" />
-                </div>
-                <div>
-                  <p className="text-sm text-neutral-500">Buchungen</p>
-                  <p className="text-xl font-bold text-neutral-900">{report.totalBookings}</p>
-                </div>
-              </div>
+          </Panel>
+
+          <Panel aria-labelledby="category-heading">
+            <div className="panel-h">
+              <h2 className="h2" id="category-heading">
+                {tt('reports.umsatzNachKategorie')}
+              </h2>
             </div>
+            {showSkeleton || !data ? (
+              <div className="panel-b flex flex-col gap-[18px]">
+                <Skeleton className="h-10" />
+                <Skeleton className="h-10" />
+                <Skeleton className="h-10" />
+              </div>
+            ) : data.summary.byCategory.length === 0 ? (
+              <p className="mut panel-b">{tt('reports.imGewaehltenZeitraumGibt')}</p>
+            ) : (
+              <ul className="panel-b flex flex-col gap-[18px]">
+                {data.summary.byCategory.map((c) => {
+                  const label = CATEGORY_LABELS[c.type] ?? c.type;
+                  return (
+                    <li key={c.type}>
+                      <div className="mb-1.5 flex justify-between gap-3">
+                        <b className="font-semibold">{label}</b>
+                        <span className="num whitespace-nowrap">
+                          <b>{fmtMoney(c.revenue, { currency, decimals: 0 })}</b> <span className="mut">{Math.round(c.share)} %</span>
+                        </span>
+                      </div>
+                      <div className="h-2.5 overflow-hidden rounded-full bg-line-soft" role="img" aria-label={tt('reports.desUmsatzes', { label, round: Math.round(c.share) })}>
+                        <div className="h-full rounded-full bg-ruby" style={{ width: `${Math.max(0, Math.min(100, c.share))}%` }} />
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+            <div className="border-t border-line-soft p-5">
+              <div className="lbl mb-2" id="export-label">
+                {tt('reports.export')}
+              </div>
+              <ChipGroup<ExportKind>
+                multiple
+                aria-label={tt('reports.exportInhalteDerCSV')}
+                options={EXPORT_OPTIONS}
+                value={exportKinds}
+                onChange={setExportKinds}
+              />
+              <p className="hint mt-2">{tt('reports.dieCSVEnthaeltDen')}</p>
+              <div className="mt-3 md:hidden">{exportButton('w-full')}</div>
+            </div>
+          </Panel>
+        </div>
+
+        <Panel aria-labelledby="vehicles-heading" className="overflow-hidden">
+          <div className="panel-h">
+            <h2 className="h2" id="vehicles-heading">
+              {tt('reports.fahrzeugeNachUmsatz')}
+            </h2>
+            {view && data && <span className="sm mut">{rangeLabel(data.kpi.from, data.kpi.to, { year: true })}</span>}
           </div>
-
-          {/* Export button */}
-          {report.vehicles.length > 0 && (
-            <div className="flex justify-end mb-4">
-              <button
-                onClick={exportCSV}
-                className="flex items-center gap-2 px-4 py-2 text-sm font-medium border border-neutral-300 rounded-lg hover:bg-neutral-50 transition-colors"
-              >
-                <Download className="w-4 h-4" />
-                CSV exportieren
-              </button>
-            </div>
-          )}
-
-          {/* Earnings bar chart + table */}
-          {report.vehicles.length === 0 ? (
-            <div className="bg-white rounded-xl shadow-sm border border-neutral-200 p-12 text-center">
-              <BarChart3 className="w-12 h-12 text-neutral-300 mx-auto mb-3" />
-              <p className="text-neutral-500">Keine Buchungen im gewählten Zeitraum.</p>
+          {showSkeleton || !view ? (
+            <div className="p-5">
+              <Skeleton className="h-40" rounded={12} />
             </div>
           ) : (
-            <div className="space-y-4">
-              {report.vehicles.map((v) => {
-                const barWidth = (v.totalEarnings / maxEarnings) * 100;
-                const isExpanded = expandedVehicle === v.vehicleId;
-
-                return (
-                  <div
-                    key={v.vehicleId}
-                    className="bg-white rounded-xl shadow-sm border border-neutral-200 overflow-hidden"
-                  >
-                    <button
-                      onClick={() =>
-                        setExpandedVehicle(isExpanded ? null : v.vehicleId)
-                      }
-                      className="w-full text-left p-5 hover:bg-neutral-50 transition-colors"
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <Car className="w-5 h-5 text-neutral-400" />
-                          <span className="font-semibold text-neutral-900">
-                            {v.brand} {v.model}
-                          </span>
-                          <span className="text-xs text-neutral-400">
-                            {v.bookings.length} Buchung{v.bookings.length !== 1 ? 'en' : ''}
-                          </span>
-                        </div>
-                        <div className="text-right">
-                          <span className="text-lg font-bold text-green-700">
-                            CHF {fmtCHF(v.totalEarnings)}
-                          </span>
-                          <span className="text-xs text-neutral-400 ml-2">
-                            {v.totalDays} Tage
-                          </span>
-                        </div>
-                      </div>
-                      {/* Bar */}
-                      <div className="w-full h-3 bg-neutral-100 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-brand-500 rounded-full transition-all duration-500"
-                          style={{ width: `${barWidth}%` }}
-                        />
-                      </div>
-                    </button>
-
-                    {/* Expanded detail table */}
-                    {isExpanded && (
-                      <div className="border-t border-neutral-200 px-5 pb-4">
-                        <table className="w-full text-sm mt-3">
-                          <thead>
-                            <tr className="text-left text-xs text-neutral-500 border-b border-neutral-100">
-                              <th className="pb-2 font-medium">Kunde</th>
-                              <th className="pb-2 font-medium">Zeitraum</th>
-                              <th className="pb-2 font-medium text-right">Tage</th>
-                              <th className="pb-2 font-medium text-right">Preis</th>
-                              <th className="pb-2 font-medium text-right">Status</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {v.bookings.map((b) => (
-                              <tr
-                                key={b.id}
-                                className="border-b border-neutral-50 last:border-0"
-                              >
-                                <td className="py-2 text-neutral-900">{b.customerName}</td>
-                                <td className="py-2 text-neutral-500">
-                                  {fmtDate(b.startDate)} – {fmtDate(b.endDate)}
-                                </td>
-                                <td className="py-2 text-right text-neutral-500">{b.days}</td>
-                                <td className="py-2 text-right font-medium text-neutral-900">
-                                  CHF {fmtCHF(b.totalPrice)}
-                                </td>
-                                <td className="py-2 text-right">
-                                  <span
-                                    className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
-                                      STATUS_COLORS[b.status] || 'bg-neutral-100 text-neutral-600'
-                                    }`}
-                                  >
-                                    {b.status}
-                                  </span>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                          <tfoot>
-                            <tr className="border-t border-neutral-200 font-semibold text-neutral-900">
-                              <td className="pt-2" colSpan={2}>
-                                Zwischensumme
-                              </td>
-                              <td className="pt-2 text-right">{v.totalDays}</td>
-                              <td className="pt-2 text-right text-green-700">
-                                CHF {fmtCHF(v.totalEarnings)}
-                              </td>
-                              <td />
-                            </tr>
-                          </tfoot>
-                        </table>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-
-              {/* Grand total bar */}
-              <div className="bg-neutral-900 text-white rounded-xl p-5">
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-lg">Gesamt</span>
-                  <div className="text-right">
-                    <span className="text-2xl font-bold">
-                      CHF {fmtCHF(report.grandTotal)}
-                    </span>
-                    <span className="text-sm text-neutral-400 ml-3">
-                      {report.grandDays} Tage · {report.totalBookings} Buchungen
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <VehicleRevenue
+              rows={view.rows}
+              total={view.total}
+              expandedId={expandedId}
+              onToggle={(id) => setExpandedId((cur) => (cur === id ? null : id))}
+              detailsLoading={false}
+              detailsFailed={reportFailed}
+              onRetryDetails={() => void load()}
+              isTabletUp={isTabletUp}
+            />
           )}
-        </>
-      )}
+        </Panel>
+      </div>
     </div>
   );
 }

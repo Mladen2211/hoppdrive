@@ -18,6 +18,7 @@ async function seed() {
       name: 'HoppDrive Admin',
       passwordHash: adminPassword,
       mustResetPassword: true,
+      role: 'ADMIN', // the seed admin always has full access (also the column default)
     },
   });
   console.log('  ✓ Admin user created (admin@hoppdrive.ch / ChangeMe123!@#)');
@@ -214,6 +215,21 @@ async function seed() {
     });
   }
   console.log(`  ✓ ${vehicles.length} sample vehicles created`);
+
+  // Fee catalog (same defaults as the API's startup seeding: only while the catalog is empty)
+  if ((await prisma.fee.count()) === 0) {
+    await prisma.fee.createMany({
+      data: [
+        { name: 'Bearbeitungsgebühr Busse', category: 'FINE_ADMIN', defaultAmount: 50 },
+        { name: 'Reinigung', category: 'CLEANING', defaultAmount: 80 },
+        { name: 'Tankservice', category: 'FUEL', defaultAmount: 30 },
+        { name: 'Verspätete Rückgabe', category: 'LATE_RETURN', defaultAmount: 50 },
+        { name: 'Schadenpauschale', category: 'DAMAGE', defaultAmount: 150 },
+        { name: 'Selbstbehalt (Schadenfall)', category: 'DAMAGE', defaultAmount: 500 },
+      ],
+    });
+    console.log('  ✓ 6 default fees created');
+  }
 
   console.log('\n✅ Seed complete!');
 }

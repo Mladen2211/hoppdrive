@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Fahrzeugdetail Mobil</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./b2c.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fira+Sans:wght@400;500;600;700;800&family=Fira+Sans+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>body{margin:0;background:#F2F2F2}</style>
+</helmet>
+<div class="hd m">
+
+  <header class="nav">
+    <div class="wrap nav-in">
+      <a href="Home-Mobile.dc.html" aria-label="HoppDrive Startseite"><img class="nav-logo" src="/_blob/c58998c5c84da27dee7cde4d98723e61" alt="HoppDrive"></a>
+      <button class="ico-btn" type="button" aria-label="Navigation umschalten" aria-expanded="false" style="margin-left:auto"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    </div>
+  </header>
+
+  <div class="wrap" style="padding-top:14px;padding-bottom:12px">
+    <nav class="crumbs" aria-label="Brotkrumen"><a href="Fleet-Mobile.dc.html" style="gap:6px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>Alle Fahrzeuge</a></nav>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:12px">
+    <div style="position:relative;aspect-ratio:4/3;background:linear-gradient(180deg,#EDEDED 0%,#DCDCDC 100%);display:flex;align-items:flex-end;justify-content:center;overflow:hidden">
+      <span class="badge b-ok" style="position:absolute;left:16px;top:16px">Verfügbar</span>
+      <span style="position:absolute;right:16px;top:16px;font-size:11px;color:#55595C;background:rgba(255,255,255,.85);padding:2px 8px;border-radius:999px">Foto folgt</span>
+      <img src="/_blob/24230269e1cfd4b39a93ad59bed30fba" alt="Platzhalter-Illustration eines Kombis, Seitenansicht" style="width:88%;margin-bottom:22px">
+      <span style="position:absolute;right:16px;bottom:14px;background:rgba(44,46,48,.85);color:#fff;font-size:13px;padding:3px 10px;border-radius:999px">1 / 5</span>
+    </div>
+    <div style="display:flex;justify-content:center;gap:8px" aria-hidden="true">
+      <span style="width:22px;height:8px;border-radius:99px;background:var(--ruby)"></span><span style="width:8px;height:8px;border-radius:99px;background:var(--cool)"></span><span style="width:8px;height:8px;border-radius:99px;background:var(--cool)"></span><span style="width:8px;height:8px;border-radius:99px;background:var(--cool)"></span><span style="width:8px;height:8px;border-radius:99px;background:var(--cool)"></span>
+    </div>
+  </div>
+
+  <section style="padding:20px 0 36px">
+    <div class="wrap" style="display:flex;flex-direction:column;gap:20px">
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <span class="sm mut">Kombi · 2024</span>
+        <h1 class="h2" style="font-size:30px">Škoda Superb Combi</h1>
+        <div class="sm mut" style="display:flex;gap:14px;margin-top:6px;flex-wrap:wrap"><span>150 PS</span><span>Automatik</span><span>5 Sitze</span><span>Benzin</span></div>
+      </div>
+      <div style="display:flex;align-items:baseline;gap:8px"><span class="mut">Ab</span><b class="num" style="font-size:46px;line-height:1">CHF 79</b><span class="mut">/ Tag</span></div>
+
+      <div class="card" style="padding:18px;display:flex;flex-direction:column;gap:14px">
+        <h2 class="h3" style="font-size:18px">Tagespreis nach Mietdauer</h2>
+        <div class="steps" style="height:150px" role="img" aria-label="Tag 1 bis 7: 79 Franken, Tag 8 bis 30: 63.20 Franken, ab Tag 31: 47.40 Franken">
+          <div class="step s1" style="padding:10px"><span>Tag 1–7</span><b class="num" style="font-size:22px">79.00</b></div>
+          <div class="step s2" style="padding:10px"><span>Tag 8–30</span><b class="num" style="font-size:22px">63.20</b></div>
+          <div class="step s3" style="padding:10px"><span>Ab Tag 31</span><b class="num" style="font-size:22px">47.40</b></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="fld"><label for="v-from">Von</label><input id="v-from" class="in" type="date" value="2026-11-23"></div>
+          <div class="fld"><label for="v-to">Bis</label><input id="v-to" class="in" type="date" value="2026-12-06"></div>
+        </div>
+        <div class="pp" style="height:auto;padding:12px 14px"><span>Richtpreis für 14 Tage · Ø CHF 71.10 / Tag</span><b class="num">CHF 995.40</b></div>
+      </div>
+
+      <div>
+        <h2 class="h3" style="margin-bottom:12px">Technische Daten</h2>
+        <dl style="margin:0;display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--line)">
+          <div style="padding:14px 0;border-bottom:1px solid var(--line)"><dt class="sm mut">Leistung</dt><dd style="margin:2px 0 0;font:600 22px var(--cond)">150 PS</dd></div>
+          <div style="padding:14px 0;border-bottom:1px solid var(--line)"><dt class="sm mut">Getriebe</dt><dd style="margin:2px 0 0;font:600 22px var(--cond)">Automatik</dd></div>
+          <div style="padding:14px 0;border-bottom:1px solid var(--line)"><dt class="sm mut">Sitzplätze</dt><dd style="margin:2px 0 0;font:600 22px var(--cond)">5</dd></div>
+          <div style="padding:14px 0;border-bottom:1px solid var(--line)"><dt class="sm mut">Antrieb</dt><dd style="margin:2px 0 0;font:600 22px var(--cond)">Benzin</dd></div>
+          <div style="padding:14px 0;border-bottom:1px solid var(--line)"><dt class="sm mut">Baujahr</dt><dd style="margin:2px 0 0;font:600 22px var(--cond)">2024</dd></div>
+          <div style="padding:14px 0;border-bottom:1px solid var(--line)"><dt class="sm mut">Kategorie</dt><dd style="margin:2px 0 0;font:600 22px var(--cond)">Kombi</dd></div>
+        </dl>
+      </div>
+
+      <div>
+        <h2 class="h3" style="margin-bottom:12px">Im Preis enthalten</h2>
+        <ul style="display:flex;flex-direction:column;gap:14px">
+          <li style="display:flex;gap:12px"><span style="color:var(--ruby)"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span><span><b>Vollkasko-Versicherung</b><br><span class="mut">Keine versteckten Zusatzkosten.</span></span></li>
+          <li style="display:flex;gap:12px"><span style="color:var(--ruby)"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span><span><b>Regelmässige Wartung</b><br><span class="mut">Jedes Fahrzeug wird vorab geprüft.</span></span></li>
+          <li style="display:flex;gap:12px"><span style="color:var(--ruby)"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span><span><b>Verlängerung jederzeit</b><br><span class="mut">Preis passt sich der Gesamtdauer an.</span></span></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec bg-w" style="padding:36px 0">
+    <div class="wrap">
+      <h2 class="h2" style="font-size:24px;margin-bottom:16px">Ähnliche Fahrzeuge</h2>
+      <div style="display:flex;gap:14px;overflow-x:auto;margin-right:-20px;padding:0 20px 8px 0">
+        <sc-for list="{{cars}}" as="v" hint-placeholder-count="3">
+          <article class="vcard" style="flex:0 0 76%">
+            <a href="Vehicle-Mobile.dc.html" style="text-decoration:none;color:inherit">
+              <div style="position:relative;aspect-ratio:4/3;display:flex;align-items:flex-end;justify-content:center;overflow:hidden;background:{{v.bg}}">
+                <span class="badge b-ok" style="position:absolute;left:12px;top:12px">Verfügbar</span>
+                <img src="{{v.img}}" alt="" style="width:88%;margin-bottom:10px">
+              </div>
+            </a>
+            <div class="vbody"><h3 class="vname">{{v.name}}</h3><div class="vprice"><span>Ab</span><b class="num">CHF {{v.price}}</b><span>/ Tag</span></div></div>
+          </article>
+        </sc-for>
+      </div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <div class="wrap">
+      <div class="foot-g">
+        <div style="display:flex;flex-direction:column;gap:12px;align-items:flex-start"><img src="/_blob/a82670af88d63b848e66522df4cc6ce8" alt="HoppDrive" style="width:200px;height:auto;display:block"><p class="mut">Kurz- &amp; Langzeitvermietung Schweiz.</p></div>
+        <div><h4>Rechtliches</h4><ul><li><a href="Legal-Desktop.dc.html">Impressum</a></li><li><a href="Legal-Desktop.dc.html">Datenschutz</a></li><li><a href="Legal-Desktop.dc.html">AGB</a></li></ul></div>
+      </div>
+      <div class="foot-bar"><span>© 2026 HoppDrive</span><a href="#" aria-label="Admin-Anmeldung" style="color:inherit">Admin-Anmeldung</a></div>
+    </div>
+  </footer>
+
+  <div class="sticky-cta" style="position:sticky;bottom:0;z-index:5">
+    <div style="display:flex;flex-direction:column;line-height:1.1;min-width:0"><span class="sm mut">Ab</span><b class="num" style="font-size:26px">CHF 79 / Tag</b></div>
+    <a class="btn btn-p btn-lg" href="Home-Mobile-2.dc.html" style="flex:1;min-width:0">Anfragen</a>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":3100}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const estate = '/_blob/24230269e1cfd4b39a93ad59bed30fba';
+    return {
+      cars: [
+        { name: 'Škoda Octavia Combi', price: 65, img: estate, bg: 'linear-gradient(180deg,#EDEDED 0%,#DCDCDC 100%)' },
+        { name: 'VW Passat Variant', price: 79, img: estate, bg: 'linear-gradient(180deg,#F1ECEC 0%,#E2D6D6 100%)' },
+        { name: 'VW Golf Variant', price: 69, img: estate, bg: 'linear-gradient(180deg,#EDEDED 0%,#DCDCDC 100%)' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

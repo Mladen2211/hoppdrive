@@ -6,6 +6,8 @@ import {
   type VehicleType,
 } from '../../../domain';
 import type { ICacheService } from '../../interfaces/ICacheService';
+import { AppError } from '../../errors';
+import { isValidLicensePlate, normalizeLicensePlate } from '../../../domain/services/LicensePlate';
 
 interface UpdateVehicleInput {
   id: string;
@@ -21,6 +23,11 @@ interface UpdateVehicleInput {
     fuelType: 'petrol' | 'diesel' | 'electric' | 'hybrid';
     range?: string;
   };
+  description?: string | null;
+  /** undefined = untouched; '' or null = clear; otherwise stored normalised. */
+  licensePlate?: string | null;
+  /** undefined = untouched; null = clear all translations. */
+  translations?: Record<string, Record<string, unknown>> | null;
   isAvailable?: boolean;
 }
 
@@ -36,6 +43,22 @@ export class UpdateVehicleUseCase {
       throw new Error(`Vehicle with id ${input.id} not found`);
     }
 
+    let licensePlate: string | null | undefined;
+    if (input.licensePlate !== undefined) {
+      licensePlate = normalizeLicensePlate(input.licensePlate) || null;
+      if (licensePlate) {
+        if (!isValidLicensePlate(licensePlate)) {
+          throw new AppError('Ungültiges Kennzeichen.', 422, 'invalid_license_plate', undefined, {
+            licensePlate: ['Ungültiges Kennzeichen.'],
+          });
+        }
+        const owner = await this.vehicleRepo.findByLicensePlate(licensePlate);
+        if (owner && owner.id !== vehicle.id) {
+          throw new AppError('Dieses Kennzeichen ist bereits einem Fahrzeug zugeordnet.', 409, 'license_plate_taken');
+        }
+      }
+    }
+
     vehicle.updateDetails({
       brand: input.brand,
       model: input.model,
@@ -45,6 +68,10 @@ export class UpdateVehicleUseCase {
         ? Money.create(input.basePricePerDay)
         : undefined,
       specs: input.specs ? VehicleSpecs.create(input.specs) : undefined,
+      // undefined = untouched; '' or null = clear
+      description: input.description === undefined ? undefined : input.description?.trim() || null,
+      licensePlate,
+      translations: input.translations,
     });
 
     if (input.isAvailable !== undefined) {

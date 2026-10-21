@@ -1,8 +1,132 @@
 'use client';
 
-import { useRef, useState } from 'react';
+/**
+ * Signature capture.
+ *
+ *  - <SignatureArea>  the inline canvas (dashed box, base line, hint) with an imperative
+ *                     controller; used by the sign page (customer-facing card) and by the dialog below.
+ *  - <SignaturePad>   dialog around it (default export, props unchanged):
+ *                     { onConfirm(dataUrl), onCancel, customerName?, loading? }
+ *
+ * The dataUrl is cropped to the drawn area by an alpha-channel bounding box
+ * (the alpha build of react-signature-canvas has a broken getTrimmedCanvas()).
+ */
+import { PenTool, RotateCcw } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import SignatureCanvas from 'react-signature-canvas';
-import { X, RotateCcw, Check, PenTool } from 'lucide-react';
+import { Button, Modal, cn } from '@/components/ui';
+import { useTranslations } from 'next-intl';
+
+/** Manual trim: crops to the non-transparent pixels plus 10 px padding. */
+function trimCanvasToDataUrl(canvas: HTMLCanvasElement | undefined | null): string {
+  if (!canvas) return '';
+
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return canvas.toDataURL('image/png');
+
+  const { width, height } = canvas;
+  const pixels = ctx.getImageData(0, 0, width, height);
+  const { data } = pixels;
+
+  let top = height, bottom = 0, left = width, right = 0;
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      if (data[(y * width + x) * 4 + 3] > 0) {
+        if (y < top) top = y;
+        if (y > bottom) bottom = y;
+        if (x < left) left = x;
+        if (x > right) right = x;
+      }
+    }
+  }
+
+  if (top >= bottom || left >= right) return canvas.toDataURL('image/png');
+
+  const pad = 10;
+  top = Math.max(0, top - pad);
+  left = Math.max(0, left - pad);
+  bottom = Math.min(height - 1, bottom + pad);
+  right = Math.min(width - 1, right + pad);
+
+  const tw = right - left + 1;
+  const th = bottom - top + 1;
+  const trimmed = document.createElement('canvas');
+  trimmed.width = tw;
+  trimmed.height = th;
+  trimmed.getContext('2d')!.drawImage(canvas, left, top, tw, th, 0, 0, tw, th);
+  return trimmed.toDataURL('image/png');
+}
+
+export interface SignatureController {
+  /** Trimmed base64 PNG of the drawing ('' when nothing was drawn). */
+  getDataUrl: () => string;
+  clear: () => void;
+  isEmpty: () => boolean;
+}
+
+export interface SignatureAreaProps {
+  /** Canvas height in px (default 200). */
+  height?: number;
+  /** Called whenever the empty state changes (true = nothing drawn). */
+  onEmptyChange?: (isEmpty: boolean) => void;
+  /** Receives the controller once the canvas is mounted. */
+  onReady?: (controller: SignatureController) => void;
+  /** Disables drawing (e.g. while saving). */
+  disabled?: boolean;
+  className?: string;
+}
+
+export function SignatureArea({ height = 200, onEmptyChange, onReady, disabled = false, className }: SignatureAreaProps) {
+  const t = useTranslations();
+  const sigRef = useRef<SignatureCanvas | null>(null);
+  const onEmptyChangeRef = useRef(onEmptyChange);
+  onEmptyChangeRef.current = onEmptyChange;
+  const onReadyRef = useRef(onReady);
+  onReadyRef.current = onReady;
+
+  useEffect(() => {
+    onReadyRef.current?.({
+      getDataUrl: () => {
+        const pad = sigRef.current;
+        if (!pad || pad.isEmpty()) return '';
+        return trimCanvasToDataUrl(pad.getCanvas());
+      },
+      clear: () => {
+        sigRef.current?.clear();
+        onEmptyChangeRef.current?.(true);
+      },
+      isEmpty: () => sigRef.current?.isEmpty() ?? true,
+    });
+  }, []);
+
+  return (
+    <div
+      role="group"
+      // A sheet of paper with dark ink: it keeps the light palette in the dark theme as well.
+      data-theme="light"
+      aria-label={t('signaturePad.unterschriftsfeldMitFingerOder')}
+      className={cn(
+        'relative overflow-hidden rounded-xl border-2 border-dashed border-field bg-canvas',
+        disabled && 'pointer-events-none opacity-60',
+        className,
+      )}
+    >
+      <SignatureCanvas
+        ref={sigRef}
+        penColor="#1a1a1a"
+        canvasProps={{
+          className: 'block w-full touch-none',
+          style: { width: '100%', height: `${height}px` },
+        }}
+        onBegin={() => onEmptyChangeRef.current?.(false)}
+      />
+      <span aria-hidden="true" className="pointer-events-none absolute inset-x-[18px] bottom-[30px] border-t-[1.5px] border-line" />
+      <span aria-hidden="true" className="pointer-events-none absolute bottom-2 left-[18px] text-xs text-graphite">
+        {t('signaturePad.mitFingerOderMaus')}
+      </span>
+    </div>
+  );
+}
 
 interface SignaturePadProps {
   /** Called when the user confirms their signature (base64 PNG data URL) */
@@ -21,156 +145,85 @@ export default function SignaturePad({
   customerName,
   loading = false,
 }: SignaturePadProps) {
-  const sigRef = useRef<SignatureCanvas | null>(null);
+  const tt = useTranslations();
+  const t = useTranslations();
+  const controllerRef = useRef<SignatureController | null>(null);
   const [isEmpty, setIsEmpty] = useState(true);
 
   function handleClear() {
-    sigRef.current?.clear();
+    controllerRef.current?.clear();
     setIsEmpty(true);
   }
 
-  /** Manual trim — the alpha version's getTrimmedCanvas() is broken */
-  function getTrimmedDataUrl(): string {
-    const canvas = sigRef.current?.getCanvas();
-    if (!canvas) return '';
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return canvas.toDataURL('image/png');
-
-    const { width, height } = canvas;
-    const pixels = ctx.getImageData(0, 0, width, height);
-    const { data } = pixels;
-
-    let top = height, bottom = 0, left = width, right = 0;
-    for (let y = 0; y < height; y++) {
-      for (let x = 0; x < width; x++) {
-        if (data[(y * width + x) * 4 + 3] > 0) {
-          if (y < top) top = y;
-          if (y > bottom) bottom = y;
-          if (x < left) left = x;
-          if (x > right) right = x;
-        }
-      }
-    }
-
-    if (top >= bottom || left >= right) return canvas.toDataURL('image/png');
-
-    const pad = 10;
-    top = Math.max(0, top - pad);
-    left = Math.max(0, left - pad);
-    bottom = Math.min(height - 1, bottom + pad);
-    right = Math.min(width - 1, right + pad);
-
-    const tw = right - left + 1;
-    const th = bottom - top + 1;
-    const trimmed = document.createElement('canvas');
-    trimmed.width = tw;
-    trimmed.height = th;
-    trimmed.getContext('2d')!.drawImage(canvas, left, top, tw, th, 0, 0, tw, th);
-    return trimmed.toDataURL('image/png');
-  }
-
   function handleConfirm() {
-    if (!sigRef.current || sigRef.current.isEmpty()) return;
-    const dataUrl = getTrimmedDataUrl();
+    const controller = controllerRef.current;
+    if (!controller || controller.isEmpty()) return;
+    const dataUrl = controller.getDataUrl();
     if (dataUrl) onConfirm(dataUrl);
   }
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg animate-in fade-in zoom-in-95 duration-200">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200">
-          <div className="flex items-center gap-2">
-            <PenTool className="w-5 h-5 text-brand-600" />
-            <h2 className="text-lg font-bold text-neutral-900">Vertrag unterschreiben</h2>
-          </div>
-          <button
-            onClick={onCancel}
-            className="p-1.5 rounded-lg hover:bg-neutral-100 transition-colors"
-            title="Schliessen"
-          >
-            <X className="w-5 h-5 text-neutral-500" />
-          </button>
-        </div>
-
-        {/* Body */}
-        <div className="p-6">
-          {customerName && (
-            <p className="text-sm text-neutral-600 mb-3">
-              Unterschrift von <span className="font-semibold text-neutral-900">{customerName}</span>
-            </p>
-          )}
-
-          <p className="text-xs text-neutral-500 mb-3">
-            Bitte unterschreiben Sie im Feld unten. Mit der Unterschrift bestätigen Sie den Mietvertrag.
+    <Modal
+      open
+      onClose={onCancel}
+      dismissible={!loading}
+      title={t('signaturePad.vertragUnterschreiben')}
+      size="md"
+      icon={
+        <span
+          className="flex h-11 w-11 flex-none items-center justify-center rounded-xl bg-ruby-tint text-ruby-fg"
+          aria-hidden="true"
+        >
+          <PenTool size={20} />
+        </span>
+      }
+      footer={
+        <>
+          <Button variant="ghost" onClick={onCancel} disabled={loading}>
+            {t('common.abbrechen')}
+          </Button>
+          <Button onClick={handleConfirm} disabled={isEmpty} loading={loading}>
+            {loading ? tt('signaturePad.wirdGespeichert') : tt('signaturePad.unterschreiben')}
+          </Button>
+        </>
+      }
+    >
+      <div className="flex flex-col gap-3">
+        {customerName && (
+          <p className="text-sm">
+            {t.rich('signaturePad.signatureOf', { name: customerName, b: (chunks) => <span className="font-semibold">{chunks}</span> })}
           </p>
+        )}
+        <p className="sm mut">
+          {t('signaturePad.bitteUnterschreibenSieIm')}
+        </p>
 
-          {/* Signature canvas area */}
-          <div className="relative border-2 border-dashed border-neutral-300 rounded-xl bg-neutral-50 overflow-hidden">
-            <SignatureCanvas
-              ref={sigRef}
-              penColor="#1a1a1a"
-              canvasProps={{
-                className: 'w-full',
-                style: { width: '100%', height: '200px' },
-              }}
-              onBegin={() => setIsEmpty(false)}
-            />
-            {isEmpty && (
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <p className="text-neutral-400 text-sm">Hier unterschreiben…</p>
-              </div>
-            )}
-          </div>
-
-          {/* Legal note */}
-          <p className="text-[11px] text-neutral-400 mt-2">
-            Diese elektronische Unterschrift ist rechtlich bindend gemäss Schweizer OR Art. 14.
-          </p>
-        </div>
-
-        {/* Actions */}
-        <div className="flex items-center justify-between px-6 py-4 border-t border-neutral-200 bg-neutral-50 rounded-b-2xl">
-          <button
-            type="button"
+        <div className="flex items-center justify-between gap-2">
+          <span className="lbl">{t('signaturePad.ihreUnterschrift')}</span>
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={handleClear}
             disabled={isEmpty || loading}
-            className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-neutral-600 hover:bg-neutral-200 rounded-lg transition-colors disabled:opacity-40"
+            iconLeft={<RotateCcw size={16} aria-hidden="true" />}
           >
-            <RotateCcw className="w-4 h-4" />
-            Löschen
-          </button>
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={onCancel}
-              disabled={loading}
-              className="px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-200 rounded-lg transition-colors"
-            >
-              Abbrechen
-            </button>
-            <button
-              type="button"
-              onClick={handleConfirm}
-              disabled={isEmpty || loading}
-              className="flex items-center gap-1.5 px-5 py-2 text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 rounded-lg transition-colors disabled:opacity-50"
-            >
-              {loading ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Wird gespeichert…
-                </>
-              ) : (
-                <>
-                  <Check className="w-4 h-4" />
-                  Unterschreiben
-                </>
-              )}
-            </button>
-          </div>
+            {t('common.loeschen')}
+          </Button>
         </div>
+
+        <SignatureArea
+          height={200}
+          disabled={loading}
+          onEmptyChange={setIsEmpty}
+          onReady={(controller) => {
+            controllerRef.current = controller;
+          }}
+        />
+
+        <p className="text-[12px] text-graphite">
+          {t('signaturePad.dieseElektronischeUnterschrift')}
+        </p>
       </div>
-    </div>
+    </Modal>
   );
 }

@@ -21,6 +21,10 @@ export interface ContactRequestProps {
   desiredEndDate: Date | null;
   privacyConsent: boolean;
   marketingConsent: boolean;
+  /** Discount code typed into the inquiry form (uppercase), applied when the inquiry is approved. */
+  discountCode?: string | null;
+  /** Website language of the visitor ('de' | 'en' | 'fr' | 'it' | 'hr'). */
+  locale?: string | null;
   status: ContactRequestStatus;
   createdAt?: Date;
   updatedAt?: Date;
@@ -36,6 +40,8 @@ export class ContactRequest extends Entity {
   public desiredEndDate: Date | null;
   public readonly privacyConsent: boolean;
   public readonly marketingConsent: boolean;
+  public readonly discountCode: string | null;
+  public readonly locale: string | null;
   public status: ContactRequestStatus;
 
   private constructor(props: ContactRequestProps) {
@@ -51,6 +57,8 @@ export class ContactRequest extends Entity {
     this.desiredEndDate = props.desiredEndDate;
     this.privacyConsent = props.privacyConsent;
     this.marketingConsent = props.marketingConsent;
+    this.discountCode = props.discountCode ?? null;
+    this.locale = props.locale ?? null;
     this.status = props.status;
   }
 

@@ -9,15 +9,40 @@ import {
   type IPricingRuleRepository,
   type IVehicleMaintenanceRepository,
 } from '../../../domain';
+import type { IDiscountPolicy } from '../../interfaces/IDiscountPolicy';
+import { AppError } from '../../errors';
 
-interface CreateBookingInput {
+export interface CreateBookingInput {
   vehicleId: string;
   customerName: string;
   customerEmail?: string;
+  customerPhone?: string;
+  /** Website language of the customer. */
+  customerLocale?: string;
+  /** Pickup / return as ISO date-times (real times; midnight = whole day). */
   startDate: string;
   endDate: string;
+  /** Price BEFORE the discount (computed from the pricing rules when omitted). */
   totalPrice?: number;
   notes?: string;
+  locationId?: string;
+  driverStreet?: string;
+  driverZip?: string;
+  driverCity?: string;
+  driverCountry?: string;
+  /** Calendar day. */
+  driverBirthDate?: Date | null;
+  driverLicenseNumber?: string;
+  driverLicenseCountry?: string;
+  /** Optional discount code; applied on top of totalPrice. */
+  discountCode?: string;
+}
+
+export interface CreateBookingResult {
+  booking: Booking;
+  /** Amount deducted by the discount code (0 when none). */
+  discountAmount: number;
+  discountCodeId: string | null;
 }
 
 export class CreateBookingUseCase {
@@ -26,9 +51,10 @@ export class CreateBookingUseCase {
     private vehicleRepo: IVehicleRepository,
     private pricingRuleRepo: IPricingRuleRepository,
     private maintenanceRepo: IVehicleMaintenanceRepository,
+    private discounts?: IDiscountPolicy,
   ) {}
 
-  async execute(input: CreateBookingInput): Promise<Booking> {
+  async execute(input: CreateBookingInput): Promise<CreateBookingResult> {
     const vehicle = await this.vehicleRepo.findById(input.vehicleId);
     if (!vehicle) {
       throw new Error(`Vehicle ${input.vehicleId} not found`);
@@ -60,18 +86,39 @@ export class CreateBookingUseCase {
       throw new Error('Vehicle is under maintenance for the selected dates');
     }
 
-    // Use admin-supplied price or calculate from pricing rules
-    let totalPrice: Money;
+    // Admin-supplied base price, or calculated from the pricing rules (in the vehicle's currency,
+    // which follows Settings → Währung).
+    const currency = vehicle.basePricePerDay.currency;
+    let basePrice: Money;
     if (input.totalPrice !== undefined && input.totalPrice !== null) {
-      totalPrice = Money.create(input.totalPrice, 'CHF');
+      basePrice = Money.create(input.totalPrice, currency);
     } else {
       const rules = await this.pricingRuleRepo.findAll();
-      const pricing = PricingService.calculate(
-        vehicle.basePricePerDay,
-        dateRange.totalDays,
-        rules,
-      );
-      totalPrice = pricing.totalPrice;
+      basePrice = PricingService.calculate(vehicle.basePricePerDay, dateRange.totalDays, rules).totalPrice;
+    }
+
+    // Optional discount code, applied to the computed price.
+    let totalPrice = basePrice;
+    let discountAmount = 0;
+    let discountCodeId: string | null = null;
+    const code = input.discountCode?.trim();
+    if (code) {
+      if (!this.discounts) throw new Error('Discount codes are not available');
+      const check = await this.discounts.check({
+        code,
+        email: input.customerEmail,
+        days: dateRange.totalDays,
+        baseTotal: basePrice.amount,
+        currency,
+      });
+      if (!check.valid || !check.code) {
+        throw new AppError(check.message ?? 'Der Rabattcode ist ungültig.', 422, 'discount_invalid', { reason: check.reason }, {
+          discountCode: [check.message ?? 'Der Rabattcode ist ungültig.'],
+        });
+      }
+      discountAmount = check.discount;
+      discountCodeId = check.code.id;
+      totalPrice = Money.create(Math.max(0, basePrice.amount - discountAmount), currency);
     }
 
     const booking = Booking.create({
@@ -84,6 +131,25 @@ export class CreateBookingUseCase {
       notes: input.notes ?? null,
     });
 
-    return this.bookingRepo.save(booking, input.customerEmail);
+    const saved = await this.bookingRepo.save(booking, {
+      customerEmail: input.customerEmail,
+      customerPhone: input.customerPhone,
+      customerLocale: input.customerLocale,
+      locationId: input.locationId,
+      driverStreet: input.driverStreet,
+      driverZip: input.driverZip,
+      driverCity: input.driverCity,
+      driverCountry: input.driverCountry,
+      driverBirthDate: input.driverBirthDate,
+      driverLicenseNumber: input.driverLicenseNumber,
+      driverLicenseCountry: input.driverLicenseCountry,
+      discount:
+        discountCodeId && input.customerEmail
+          ? { codeId: discountCodeId, email: input.customerEmail, amount: discountAmount }
+          : discountCodeId
+            ? { codeId: discountCodeId, email: '', amount: discountAmount }
+            : null,
+    });
+    return { booking: saved, discountAmount, discountCodeId };
   }
 }

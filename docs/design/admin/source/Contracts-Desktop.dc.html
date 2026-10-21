@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Verträge Desktop</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./admin.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fira+Sans:wght@400;500;600;700&family=Fira+Sans+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>body{margin:0;background:#F2F2F2}</style>
+</helmet>
+<div class="ad" style="position:relative;min-height:100%">
+<div class="shell">
+
+  <div style="background:#fff;border-right:1px solid var(--line)">
+    <dc-import name="AdminNav" current="Verträge" hint-size="264px,100%"></dc-import>
+  </div>
+
+  <div style="min-width:0;display:flex;flex-direction:column">
+    <header class="top">
+      <label class="search"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM21 21l-4.3-4.3"/></svg><span style="position:absolute;left:-9999px">Suche</span><input type="search" placeholder="Name, E-Mail, Fahrzeug oder Vertrag suchen…"></label>
+      <div style="margin-left:auto;display:flex;gap:12px;align-items:center">
+        <a class="btn btn-p" href="Calendar-Desktop.dc.html"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Neue Buchung</a>
+        <button class="icon-btn" type="button" aria-label="Benachrichtigungen, 4 ungelesen"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><span class="dot">4</span></button>
+      </div>
+    </header>
+
+    <main class="main">
+      <div class="pg-h">
+        <div><h1 class="h1">Verträge und Rechnungen</h1><p>Von der Reservierung bis zur Zahlung, ein Blick pro Buchung</p></div>
+        <div class="tabs" role="tablist" aria-label="Ansicht">
+          <button class="tab" role="tab" aria-selected="true" type="button">Buchungen <small>6</small></button>
+          <button class="tab" role="tab" aria-selected="false" type="button">Rechnungen <small>4</small></button>
+        </div>
+      </div>
+
+      <section class="panel" aria-labelledby="bk-h">
+        <div class="panel-h">
+          <h2 class="h2" id="bk-h">Buchungen</h2>
+          <div class="chips" role="group" aria-label="Status filtern">
+            <button class="chip" type="button" aria-pressed="true">Alle</button>
+            <button class="chip" type="button" aria-pressed="false">Reserviert</button>
+            <button class="chip" type="button" aria-pressed="false">Aktiv</button>
+            <button class="chip" type="button" aria-pressed="false">Erledigt</button>
+            <button class="chip" type="button" aria-pressed="false">Storniert</button>
+          </div>
+        </div>
+        <div class="scroll">
+          <table class="tbl">
+            <thead><tr><th>Kunde</th><th>Fahrzeug und Zeitraum</th><th>Status</th><th>Fortschritt</th><th class="r">Betrag</th><th class="r"><span style="position:absolute;left:-9999px">Aktionen</span></th></tr></thead>
+            <tbody>
+              <sc-for list="{{rows}}" as="r" hint-placeholder-count="6">
+                <tr>
+                  <td><div class="cell-2"><b>{{r.name}}</b><span>{{r.contact}}</span></div></td>
+                  <td><div class="cell-2">{{r.car}}<span class="num">{{r.period}}</span></div></td>
+                  <td><span class="st {{r.cls}}">{{r.status}}</span></td>
+                  <td>
+                    <div class="prog" role="img" aria-label="{{r.alt}}">
+                      <span class="{{r.p1}}"><i>{{r.m1}}</i>Vertrag</span><hr class="{{r.h1}}">
+                      <span class="{{r.p2}}"><i>{{r.m2}}</i>Signiert</span><hr class="{{r.h2}}">
+                      <span class="{{r.p3}}"><i>{{r.m3}}</i>Rechnung</span><hr class="{{r.h3}}">
+                      <span class="{{r.p4}}"><i>{{r.m4}}</i>Bezahlt</span>
+                    </div>
+                  </td>
+                  <td class="r num" style="white-space:nowrap;font-size:16px"><b>{{r.sum}}</b></td>
+                  <td><div class="acts">
+                    <button class="ib pr" type="button" aria-label="Vertrag als PDF herunterladen"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></button>
+                    <button class="ib pr" type="button" aria-label="Link zum Unterschreiben kopieren"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg></button>
+                    <button class="ib" type="button" aria-label="Weitere Aktionen"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12h.01M19 12h.01M5 12h.01"/></svg></button>
+                  </div></td>
+                </tr>
+              </sc-for>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="rg-h">
+        <div class="panel-h">
+          <h2 class="h2" id="rg-h">Rechnungen</h2>
+          <a class="btn btn-g btn-s" href="#"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Rechnung erstellen</a>
+        </div>
+        <div class="scroll">
+          <table class="tbl">
+            <thead><tr><th>Nummer</th><th>Kunde</th><th>Fällig am</th><th>Status</th><th class="r">Betrag</th><th class="r"><span style="position:absolute;left:-9999px">Aktionen</span></th></tr></thead>
+            <tbody>
+              <sc-for list="{{inv}}" as="v" hint-placeholder-count="4">
+                <tr>
+                  <td class="num"><b>{{v.nr}}</b></td>
+                  <td>{{v.name}}</td>
+                  <td class="num">{{v.due}}</td>
+                  <td><span class="st {{v.cls}}">{{v.status}}</span></td>
+                  <td class="r num" style="font-size:16px"><b>{{v.sum}}</b></td>
+                  <td><div class="acts">
+                    <button class="ib pr" type="button" aria-label="Rechnung als PDF herunterladen"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></button>
+                    <button class="btn btn-g btn-s" type="button">{{v.act}}</button>
+                  </div></td>
+                </tr>
+              </sc-for>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1650}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const S = ['', 'done', 'now'];
+    // steps: array of 4 values: 0 todo, 1 done, 2 now
+    const b = (name, contact, car, period, status, cls, steps, sum) => {
+      const c = steps.map(s => S[s]);
+      const m = steps.map(s => (s === 1 ? '✓' : ''));
+      const h = [0, 1, 2].map(i => (steps[i] === 1 ? 'done' : ''));
+      const lab = ['Vertrag', 'Signiert', 'Rechnung', 'Bezahlt'];
+      const alt = steps.map((s, i) => lab[i] + (s === 1 ? ' erledigt' : s === 2 ? ' als Nächstes' : ' offen')).join(', ');
+      return { name, contact, car, period, status, cls, sum, alt, p1: c[0], p2: c[1], p3: c[2], p4: c[3], m1: m[0], m2: m[1], m3: m[2], m4: m[3], h1: h[0], h2: h[1], h3: h[2] };
+    };
+    return {
+      rows: [
+        b('Laura Meier', 'laura.meier@beispiel.ch', 'Škoda Superb Combi', '23.11. – 06.12.', 'Aktiv', 's-green', [1, 1, 1, 2], 'CHF 995.40'),
+        b('Marco Brunner', '+41 79 555 01 12', 'VW Passat Variant', '01.12. – 31.12.', 'Reserviert', 's-blue', [1, 1, 2, 0], 'CHF 1’794.00'),
+        b('Nadia Frei', 'nadia.frei@beispiel.ch', 'Škoda Enyaq iV', '10.11. – 10.02.', 'Aktiv', 's-green', [1, 1, 1, 2], 'CHF 6’197.40'),
+        b('Elena Rossi', 'elena.rossi@beispiel.ch', 'Škoda Kodiaq', '05.12. – 12.12.', 'Reserviert', 's-blue', [1, 2, 0, 0], 'CHF 694.20'),
+        b('Thomas Keller', '+41 78 555 02 31', 'Hyundai Tucson', '02.11. – 09.11.', 'Erledigt', 's-gray', [1, 1, 1, 2], 'CHF 577.20'),
+        b('Jonas Huber', 'jonas.huber@beispiel.ch', 'Škoda Octavia', '15.11. – 18.11.', 'Storniert', 's-red', [0, 0, 0, 0], '–')
+      ],
+      inv: [
+        { nr: 'R-2026-0042', name: 'Laura Meier', due: '07.12.2026', status: 'Offen', cls: 's-amber', sum: 'CHF 995.40', act: 'Als bezahlt markieren' },
+        { nr: 'R-2026-0041', name: 'Marco Brunner', due: '–', status: 'Entwurf', cls: 's-gray', sum: 'CHF 1’794.00', act: 'Senden' },
+        { nr: 'R-2026-0039', name: 'Thomas Keller', due: '16.11.2026', status: 'Überfällig', cls: 's-red', sum: 'CHF 577.20', act: 'Mahnung senden' },
+        { nr: 'R-2026-0033', name: 'Nadia Frei', due: '10.11.2026', status: 'Bezahlt', cls: 's-green', sum: 'CHF 2’065.80', act: 'Quittung' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

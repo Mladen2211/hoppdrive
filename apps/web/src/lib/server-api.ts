@@ -4,6 +4,9 @@
  */
 
 import type { VehicleDto, PricingCalculation } from '@hoppdrive/shared';
+import { DEFAULT_CURRENCY } from '@/lib/format';
+import { DEFAULT_TIERS, normalizeTiers, type PricingTier } from '@/lib/pricing';
+import type { CompanySetting, PublicLocation } from '@/lib/site';
 
 const API_BASE =
   process.env.API_INTERNAL_URL ||
@@ -34,8 +37,21 @@ export interface VehicleDetail {
     isPrimary: boolean;
   }[];
   isAvailable: boolean;
+  /** Computed live by the API (no reserved/active booking or maintenance today). */
+  availableNow?: boolean;
+  /** Optional marketing text maintained in Flotte -> Beschreibung. */
+  description?: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+/**
+ * Appends `?locale=xx` to a CMS endpoint. The API merges the translations of that locale
+ * over the German content (German stays the fallback). Because the locale is part of the
+ * URL, Next's fetch cache keeps one entry per language.
+ */
+function withLocale(endpoint: string, locale: string): string {
+  return `${endpoint}${endpoint.includes('?') ? '&' : '?'}locale=${encodeURIComponent(locale)}`;
 }
 
 async function serverFetch<T>(endpoint: string, revalidate = 60): Promise<T | null> {
@@ -53,12 +69,12 @@ async function serverFetch<T>(endpoint: string, revalidate = 60): Promise<T | nu
   }
 }
 
-export async function getVehicle(id: string): Promise<VehicleDetail | null> {
-  return serverFetch<VehicleDetail>(`/vehicles/${id}`, 60);
+export async function getVehicle(id: string, locale: string): Promise<VehicleDetail | null> {
+  return serverFetch<VehicleDetail>(withLocale(`/vehicles/${id}`, locale), 60);
 }
 
-export async function getAllVehicles(): Promise<VehicleDto[]> {
-  const data = await serverFetch<VehicleDto[]>('/vehicles', 60);
+export async function getAllVehicles(locale: string): Promise<VehicleDto[]> {
+  const data = await serverFetch<VehicleDto[]>(withLocale('/vehicles', locale), 60);
   return data ?? [];
 }
 
@@ -68,14 +84,25 @@ export async function getAllVehicles(): Promise<VehicleDto[]> {
  * ISR revalidation a thrown error keeps the last good page cached, whereas
  * notFound() would replace indexed pages with 404s for the whole outage.
  */
-export async function getAllVehiclesOrThrow(): Promise<VehicleDto[]> {
-  const data = await serverFetch<VehicleDto[]>('/vehicles', 60);
+export async function getAllVehiclesOrThrow(locale: string): Promise<VehicleDto[]> {
+  const data = await serverFetch<VehicleDto[]>(withLocale('/vehicles', locale), 60);
   if (!data) throw new Error('Vehicle API unavailable');
   return data;
 }
 
-export async function getSetting<T = any>(key: string): Promise<T | null> {
-  return serverFetch<T>(`/settings/${key}`, 120);
+export async function getSetting<T = any>(key: string, locale: string): Promise<T | null> {
+  return serverFetch<T>(withLocale(`/settings/${key}`, locale), 120);
+}
+
+/**
+ * Display currency of the whole site (PUBLIC `GET /settings/currency` -> { code: 'CHF' | 'EUR' }).
+ * Every price on the website is formatted with it; CHF when the setting is missing or the API is down.
+ * Not localised, so all languages share one cache entry.
+ */
+export async function getCurrency(): Promise<string> {
+  const data = await serverFetch<{ code?: unknown }>('/settings/currency', 120);
+  const code = typeof data?.code === 'string' ? data.code.trim().toUpperCase() : '';
+  return /^[A-Z]{3}$/.test(code) ? code : DEFAULT_CURRENCY;
 }
 
 export interface TestimonialItem {
@@ -96,13 +123,13 @@ export interface FaqItemData {
   sortOrder: number;
 }
 
-export async function getTestimonials(): Promise<TestimonialItem[]> {
-  const data = await serverFetch<TestimonialItem[]>('/testimonials', 120);
+export async function getTestimonials(locale: string): Promise<TestimonialItem[]> {
+  const data = await serverFetch<TestimonialItem[]>(withLocale('/testimonials', locale), 120);
   return data ?? [];
 }
 
-export async function getFaqItems(): Promise<FaqItemData[]> {
-  const data = await serverFetch<FaqItemData[]>('/faq', 120);
+export async function getFaqItems(locale: string): Promise<FaqItemData[]> {
+  const data = await serverFetch<FaqItemData[]>(withLocale('/faq', locale), 120);
   return data ?? [];
 }
 
@@ -117,8 +144,8 @@ function isPlainObject(value: unknown): value is Record<string, any> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-export async function getHomepageSections(): Promise<HomepageSectionData[]> {
-  const data = await serverFetch<HomepageSectionData[]>('/homepage-sections', 60);
+export async function getHomepageSections(locale: string): Promise<HomepageSectionData[]> {
+  const data = await serverFetch<HomepageSectionData[]>(withLocale('/homepage-sections', locale), 60);
   if (!data) return [];
 
   // Guard against malformed CMS content (e.g. null/array/string instead of an
@@ -147,4 +174,42 @@ export interface LocationConfigData {
  */
 export async function getPricingQuote(vehicleId: string, days: number): Promise<PricingCalculation | null> {
   return serverFetch<PricingCalculation>(`/pricing?vehicleId=${vehicleId}&days=${days}`, 120);
+}
+
+/**
+ * Day-tier discount rules (PUBLIC `GET /pricing/tiers`), the input for the
+ * client-side price helpers in lib/pricing.ts. The seeded tiers are returned
+ * ONLY when the API cannot be reached or answers with something that is not a
+ * tier list; an empty list from the API means "no discounts" and is respected.
+ */
+export async function getPricingTiers(): Promise<PricingTier[]> {
+  const data = await serverFetch<unknown>('/pricing/tiers', 120);
+  return normalizeTiers(data) ?? DEFAULT_TIERS;
+}
+
+/** Active locations incl. phone, e-mail and opening hours (PUBLIC `GET /locations/public`). */
+export async function getPublicLocations(): Promise<PublicLocation[]> {
+  const data = await serverFetch<PublicLocation[]>('/locations/public', 120);
+  return Array.isArray(data) ? data : [];
+}
+
+/** The first active location, or null. */
+export async function getPrimaryLocation(): Promise<PublicLocation | null> {
+  const locations = await getPublicLocations();
+  return locations[0] ?? null;
+}
+
+/** `company` setting ({ name, phone, inquiryEmail }); null when unset or the API is down. */
+export async function getCompany(locale: string): Promise<CompanySetting | null> {
+  return getSetting<CompanySetting>('company', locale);
+}
+
+export interface MaintenanceMode {
+  enabled?: boolean;
+  message?: string;
+}
+
+/** `maintenance_mode` setting ({ enabled, message }); null when unset or the API is down. */
+export async function getMaintenanceMode(locale: string): Promise<MaintenanceMode | null> {
+  return getSetting<MaintenanceMode>('maintenance_mode', locale);
 }

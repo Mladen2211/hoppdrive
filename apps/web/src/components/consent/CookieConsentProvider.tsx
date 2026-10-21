@@ -16,6 +16,8 @@ interface ConsentContextType {
   declineNonEssential: () => void;
   savePreferences: (prefs: Partial<ConsentState>) => void;
   reopenBanner: () => void;
+  /** Hides a reopened banner without changing the stored choice (no-op before the first choice). */
+  closeBanner: () => void;
 }
 
 const ConsentContext = createContext<ConsentContextType | null>(null);
@@ -87,9 +89,14 @@ export function CookieConsentProvider({ children }: { children: ReactNode }) {
     setShowBanner(true);
   }, []);
 
+  const closeBanner = useCallback(() => {
+    // Without a stored choice the banner stays: consent is asked, not assumed.
+    if (consent) setShowBanner(false);
+  }, [consent]);
+
   return (
     <ConsentContext.Provider
-      value={{ consent, showBanner, acceptAll, declineNonEssential, savePreferences, reopenBanner }}
+      value={{ consent, showBanner, acceptAll, declineNonEssential, savePreferences, reopenBanner, closeBanner }}
     >
       {children}
       {showBanner && <CookieBanner />}

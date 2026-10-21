@@ -1,14 +1,29 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import type { Container } from '../../infrastructure/config/container';
-import { createAuthMiddleware } from '../middleware/authMiddleware';
+import { can } from '@hoppdrive/shared';
+import { createAuthMiddleware, type AuthenticatedRequest } from '../middleware/authMiddleware';
+import { createPermissionMiddleware } from '../middleware/permissionMiddleware';
 
 export function searchRoutes(container: Container): Router {
   const router = Router();
   const auth = createAuthMiddleware(container.tokenService);
+  const access = createPermissionMiddleware(container.prisma);
 
-  /** GET /api/search?q=... – Global search across all entities */
-  router.get('/', auth, async (req: Request, res: Response, next: NextFunction) => {
+  /**
+   * GET /api/search?q=... – Global search across all entities (any authenticated role).
+   * Each result group is only searched when the caller's role may see that area, so search
+   * can never reveal data the role has no access to (e.g. inquiries for the editor role).
+   */
+  router.get('/', auth, access.requireAnyRole(), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     try {
+      const role = await access.roleOf(req.adminId!);
+      const canVehicles = can(role, 'fleet', 'view') || can(role, 'calendar', 'view');
+      const canBookings = can(role, 'contracts', 'view') || can(role, 'calendar', 'view');
+      const canInquiries = can(role, 'inquiries', 'view');
+      const canLocations = can(role, 'content', 'view');
+      const canInvoices = can(role, 'contracts', 'view');
+      const none = Promise.resolve([] as any[]);
+
       const q = (req.query.q as string || '').trim();
       if (!q || q.length < 2) {
         res.json({ success: true, data: { vehicles: [], bookings: [], inquiries: [], locations: [], invoices: [] } });
@@ -19,7 +34,7 @@ export function searchRoutes(container: Container): Router {
 
       // Run all searches in parallel
       const [vehicles, bookings, inquiries, locations, invoices] = await Promise.all([
-        container.prisma.vehicle.findMany({
+        canVehicles ? container.prisma.vehicle.findMany({
           where: {
             OR: [
               { brand: { contains: q, mode: 'insensitive' } },
@@ -28,8 +43,8 @@ export function searchRoutes(container: Container): Router {
           },
           take: 5,
           select: { id: true, brand: true, model: true, type: true, isAvailable: true },
-        }),
-        container.prisma.booking.findMany({
+        }) : none,
+        canBookings ? container.prisma.booking.findMany({
           where: {
             OR: [
               { customerName: { contains: q, mode: 'insensitive' } },
@@ -39,8 +54,8 @@ export function searchRoutes(container: Container): Router {
           take: 5,
           include: { vehicle: { select: { brand: true, model: true } } },
           orderBy: { createdAt: 'desc' },
-        }),
-        container.prisma.contactRequest.findMany({
+        }) : none,
+        canInquiries ? container.prisma.contactRequest.findMany({
           where: {
             OR: [
               { fullName: { contains: q, mode: 'insensitive' } },
@@ -51,8 +66,8 @@ export function searchRoutes(container: Container): Router {
           take: 5,
           select: { id: true, fullName: true, email: true, status: true, createdAt: true },
           orderBy: { createdAt: 'desc' },
-        }),
-        container.prisma.location.findMany({
+        }) : none,
+        canLocations ? container.prisma.location.findMany({
           where: {
             OR: [
               { name: { contains: q, mode: 'insensitive' } },
@@ -62,8 +77,8 @@ export function searchRoutes(container: Container): Router {
           },
           take: 5,
           select: { id: true, name: true, city: true, isActive: true },
-        }) as Promise<any>,
-        container.prisma.invoice.findMany({
+        }) as Promise<any> : none,
+        canInvoices ? container.prisma.invoice.findMany({
           where: {
             OR: [
               { invoiceNumber: { contains: q, mode: 'insensitive' } },
@@ -73,7 +88,7 @@ export function searchRoutes(container: Container): Router {
           take: 5,
           select: { id: true, invoiceNumber: true, customerName: true, total: true, currency: true, status: true },
           orderBy: { createdAt: 'desc' },
-        }) as Promise<any>,
+        }) as Promise<any> : none,
       ]);
 
       res.json({

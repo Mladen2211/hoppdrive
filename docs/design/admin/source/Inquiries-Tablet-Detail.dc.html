@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Anfrage Detail</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./admin.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fira+Sans:wght@400;500;600;700&family=Fira+Sans+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>body{margin:0;background:#5B5E61}</style>
+</helmet>
+<div class="ad" style="min-height:100%;background:#5B5E61;padding:0;display:flex;justify-content:flex-start;align-items:stretch">
+<aside class="drawer" role="dialog" aria-modal="true" aria-label="Anfrage von Sarah Zürcher" style="width:480px;max-width:100%;border:0;min-height:900px">
+    <div class="drawer-h">
+      <div><h2 class="h2">Sarah Zürcher</h2><div style="margin-top:6px;display:flex;gap:8px;align-items:center"><span class="st s-amber">Neu</span><span class="sm mut">Eingang vor 2 Tagen</span></div></div>
+      <button class="ib" type="button" aria-label="Detail schliessen"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div class="drawer-b">
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <a class="btn btn-g btn-s" href="#">sarah.zuercher@beispiel.ch</a>
+        <a class="btn btn-g btn-s" href="#">+41 79 555 03 47</a>
+      </div>
+      <dl style="display:grid;grid-template-columns:110px 1fr;gap:10px 12px">
+        <dt class="mut">Fahrzeug</dt><dd><b>Škoda Superb Combi</b></dd>
+        <dt class="mut">Zeitraum</dt><dd class="num" style="font-size:16px">07.12. – 20.12. (14 Tage)</dd>
+        <dt class="mut">Abholung</dt><dd>[Standort], vormittags</dd>
+      </dl>
+      <div>
+        <div class="lbl" style="margin-bottom:6px">Nachricht</div>
+        <p style="background:var(--paper);border-radius:12px;padding:12px 14px">Wir brauchen den Wagen für zwei Wochen über die Festtage, mit Platz für zwei Kindersitze. Ist eine Dachbox möglich?</p>
+      </div>
+      <div style="border:1.5px solid var(--line);border-radius:14px;padding:14px 16px">
+        <div style="display:flex;justify-content:space-between;align-items:baseline"><b>Richtpreis</b><b class="num" style="font-size:26px">CHF 995.40</b></div>
+        <div class="sm mut" style="margin-top:6px">7 Tage × 79.00 + 7 Tage × 63.20 (20 % ab Tag 8)</div>
+      </div>
+      <button class="btn btn-g btn-b" type="button" style="color:var(--err);border-color:#E3B1AD">Ablehnen mit Begründung</button>
+    </div>
+    <div class="drawer-f">
+      <button class="btn btn-p" type="button" style="flex:1">In Buchung umwandeln</button>
+      <button class="btn btn-o" type="button">Beantwortet</button>
+    </div>
+  </aside>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":480,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

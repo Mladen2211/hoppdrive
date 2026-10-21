@@ -12,4 +12,8 @@ export interface IContactRequestRepository {
   delete(id: string): Promise<void>;
   deleteOlderThan(months: number): Promise<number>;
   count(status?: ContactRequestStatus): Promise<number>;
+  /** Number of requests per status over ALL requests (every status key is present). */
+  countByStatus(): Promise<Record<ContactRequestStatus, number>>;
+  /** Number of requests created at or after `since`, regardless of status. */
+  countCreatedSince(since: Date): Promise<number>;
 }

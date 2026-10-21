@@ -1,862 +1,419 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
-import { ChevronLeft, ChevronRight, Plus, X, Calendar, User, Car, FileText, DollarSign, PenTool, Download, Mail, CheckCircle, Tablet, Wrench, Trash2 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { useAdminAuth } from '@/hooks/useAdminAuth';
-import { api } from '@/lib/api';
+import { ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
 import dynamic from 'next/dynamic';
+import { useRouter } from 'next/navigation';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import {
+  Alert,
+  Button,
+  IconButton,
+  PageHeader,
+  Panel,
+  Select,
+  SkeletonRows,
+  Tabs,
+  useConfirm,
+  useMediaQuery,
+  useToast,
+} from '@/components/ui';
+import { useNewBooking, useOnBookingChange } from '@/components/NewBookingModal';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
+import { useCan } from '@/hooks/usePermission';
+import { api } from '@/lib/api';
+import { fetchBookings } from '@/lib/bookings';
+import {
+  agendaGroups,
+  buildItems,
+  ganttVehicles,
+  monthDays,
+  upcomingBookings,
+  vehicleLabel,
+  type CalBooking,
+  type CalInquiry,
+  type CalItem,
+  type CalMaintenance,
+  type CalVehicle,
+} from '@/lib/calendar-model';
+import { contractFilename } from '@/lib/booking';
+import { triggerBlobDownload } from '@/lib/download';
+import { errorText } from '@/lib/errors';
+import { fmtDate, monthName, toInputDate } from '@/lib/format';
+import { AgendaView } from './AgendaView';
+import { DayDrawer } from './DayDrawer';
+import { GanttView } from './GanttView';
+import { MonthGridView } from './MonthGridView';
+import { NextBookings, bookingOpenDay } from './NextBookings';
+import { useTranslations } from 'next-intl';
+import { tr } from '@/i18n/active';
 
 const SignaturePad = dynamic(() => import('@/components/SignaturePad'), { ssr: false });
 
-interface Vehicle {
-  id: string;
-  brand: string;
-  model: string;
-  isAvailable: boolean;
-}
-
-interface Booking {
-  id: string;
-  vehicleId: string;
-  customerName: string;
-  customerEmail?: string | null;
-  startDate: string;
-  endDate: string;
-  status: string;
-  notes?: string | null;
-  totalPrice?: number;
-  currency?: string;
-  contractStatus?: string;
-  signedAt?: string | null;
-}
-
-interface MaintenancePeriod {
-  id: string;
-  vehicleId: string;
-  startDate: string;
-  endDate: string;
-  reason: string;
-  notes: string | null;
-}
-
-const MAINTENANCE_REASON_LABELS: Record<string, string> = {
-  repair: 'Reparatur', accident: 'Unfall', other: 'Sonstiges',
-};
-
-const EMPTY_FORM = {
-  vehicleId: '',
-  customerName: '',
-  customerEmail: '',
-  startDate: '',
-  endDate: '',
-  priceMode: 'total' as 'total' | 'perDay',
-  priceValue: '',
-  notes: '',
-};
-
-function getDaysInMonth(year: number, month: number) {
-  return new Date(year, month + 1, 0).getDate();
-}
-
-function getFirstDayOfMonth(year: number, month: number) {
-  return (new Date(year, month, 1).getDay() + 6) % 7;
-}
-
-function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString('de-CH', { day: '2-digit', month: '2-digit', year: 'numeric' });
-}
-
-const MONTH_NAMES = [
-  'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
-  'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember',
-];
-
-const DAY_NAMES = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
-
-const STATUS_COLORS: Record<string, string> = {
-  reserved: 'bg-yellow-100 text-yellow-800',
-  active: 'bg-green-100 text-green-800',
-  completed: 'bg-neutral-100 text-neutral-600',
-  cancelled: 'bg-red-100 text-red-700',
-};
+type DesktopView = 'fahrzeuge' | 'monat';
+type MobileView = 'agenda' | 'fahrzeuge';
 
 export default function AvailabilityPage() {
+  const tt = useTranslations();
+  const t = useTranslations();
   const router = useRouter();
-  const { token } = useAdminAuth();
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [bookings, setBookings] = useState<Booking[]>([]);
-  const [maintenancePeriods, setMaintenancePeriods] = useState<MaintenancePeriod[]>([]);
-  const [selectedVehicle, setSelectedVehicle] = useState<string>('all');
-  const [loading, setLoading] = useState(true);
+  const { token, role } = useAdminAuth();
+  const { toast } = useToast();
+  const confirm = useConfirm();
+  const newBooking = useNewBooking();
+  const isTabletUp = useMediaQuery('(min-width: 768px)');
+  const canSign = useCan('contracts', 'edit');
+  const canDownload = useCan('contracts', 'view');
+  const canDeleteMaintenance = useCan('fleet', 'edit');
+  const canSeeInquiries = useCan('inquiries', 'view');
 
-  // Calendar state
+  // Data
+  const [vehicles, setVehicles] = useState<CalVehicle[]>([]);
+  const [bookings, setBookings] = useState<CalBooking[]>([]);
+  const [maintenance, setMaintenance] = useState<CalMaintenance[]>([]);
+  const [inquiries, setInquiries] = useState<CalInquiry[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  // View state
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth());
+  const [vehicleFilter, setVehicleFilter] = useState('all');
+  const [desktopView, setDesktopView] = useState<DesktopView>('fahrzeuge');
+  const [mobileView, setMobileView] = useState<MobileView>('agenda');
+  const [selected, setSelected] = useState<{ dayKey: string; itemKey: string | null } | null>(null);
 
-  // Modal state
-  const [showModal, setShowModal] = useState(false);
-  const [form, setForm] = useState(EMPTY_FORM);
-  const [saving, setSaving] = useState(false);
-  const [formError, setFormError] = useState('');
-
-  // Day detail state
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
-
-  // Signature state
-  const [showSignature, setShowSignature] = useState(false);
-  const [signingBookingId, setSigningBookingId] = useState<string | null>(null);
-  const [signingCustomerName, setSigningCustomerName] = useState('');
-  const [signingCustomerEmail, setSigningCustomerEmail] = useState('');
+  // Signing and downloads
+  const [signing, setSigning] = useState<CalBooking | null>(null);
   const [signingLoading, setSigningLoading] = useState(false);
+  const [busyId, setBusyId] = useState<string | null>(null);
 
-  async function fetchData() {
-    try {
-      const [vehicleData, bookingData, maintenanceData] = await Promise.all([
-        api.getVehicles(),
-        api.getBookings(),
+  // ── Loading ───────────────────────────────────────────────────
+
+  const load = useCallback(
+    async (silent = false) => {
+      if (!token || !role) return; // wait for the role: it decides whether inquiries may be read
+      if (!silent) setLoading(true);
+      const [vehicleRes, bookingRes, maintenanceRes, pendingRes, reviewedRes] = await Promise.allSettled([
+        api.getAllVehicles(),
+        fetchBookings(),
         api.getMaintenance(),
+        // Open inquiries paint dashed amber bars. Roles without access to inquiries simply get none.
+        canSeeInquiries ? api.getContactRequests({ status: 'pending', pageSize: 100 }) : Promise.resolve(null),
+        canSeeInquiries ? api.getContactRequests({ status: 'reviewed', pageSize: 100 }) : Promise.resolve(null),
       ]);
-      setVehicles(vehicleData);
-      setBookings(bookingData.items || bookingData || []);
-      setMaintenancePeriods(maintenanceData);
-    } catch (err) {
-      console.error('Failed to load availability data', err);
-    } finally {
-      setLoading(false);
-    }
-  }
 
-  async function handleDeleteMaintenance(id: string) {
-    if (!confirm('Diesen Wartungszeitraum wirklich löschen?')) return;
-    try {
-      await api.deleteMaintenance(id);
-      setMaintenancePeriods((prev) => prev.filter((p) => p.id !== id));
-    } catch (err) {
-      console.error('Failed to delete maintenance period', err);
-    }
-  }
+      if (vehicleRes.status === 'fulfilled' && bookingRes.status === 'fulfilled' && maintenanceRes.status === 'fulfilled') {
+        setVehicles(vehicleRes.value as CalVehicle[]);
+        setBookings(bookingRes.value.items as CalBooking[]);
+        setMaintenance(maintenanceRes.value as CalMaintenance[]);
+        setLoadError(null);
+      } else if (!silent) {
+        const failed = [vehicleRes, bookingRes, maintenanceRes].find((r) => r.status === 'rejected') as PromiseRejectedResult | undefined;
+        setLoadError(errorText(failed?.reason, tr('availability.dieKalenderdatenKonntenNicht')));
+      }
+
+      const open: CalInquiry[] = [];
+      let inquiryFailed = false;
+      for (const res of [pendingRes, reviewedRes]) {
+        if (res.status === 'fulfilled') {
+          if (res.value) open.push(...(res.value.items as CalInquiry[]));
+        } else inquiryFailed = true;
+      }
+      if (!inquiryFailed || !silent) setInquiries(open);
+      setLoading(false);
+    },
+    [token, role, canSeeInquiries],
+  );
 
   useEffect(() => {
-    if (!token) return;
-    fetchData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token]);
+    void load();
+  }, [load]);
 
-  function prevMonth() {
-    if (month === 0) { setMonth(11); setYear(year - 1); }
-    else setMonth(month - 1);
-  }
+  // A booking was created or signed through the global "Neue Buchung" dialog.
+  useOnBookingChange(() => void load(true));
 
-  function nextMonth() {
-    if (month === 11) { setMonth(0); setYear(year + 1); }
-    else setMonth(month + 1);
-  }
+  // ── Derived data ──────────────────────────────────────────────
 
-  function openNewBooking(prefillDate?: string) {
-    setForm({
-      ...EMPTY_FORM,
-      startDate: prefillDate || '',
-      endDate: prefillDate || '',
-    });
-    setFormError('');
-    setShowModal(true);
-  }
+  const todayKey = toInputDate(new Date());
 
-  // Compute days from form dates
-  const formDays = useMemo(() => {
-    if (!form.startDate || !form.endDate) return 0;
-    const s = new Date(form.startDate);
-    const e = new Date(form.endDate);
-    if (e < s) return 0;
-    return Math.ceil((e.getTime() - s.getTime()) / (1000 * 60 * 60 * 24)) || 1;
-  }, [form.startDate, form.endDate]);
+  const items: CalItem[] = useMemo(
+    () => buildItems({ vehicles, bookings, maintenance, inquiries, vehicleFilter }),
+    [vehicles, bookings, maintenance, inquiries, vehicleFilter],
+  );
+  const rowVehicles = useMemo(() => ganttVehicles(vehicles, items, vehicleFilter), [vehicles, items, vehicleFilter]);
+  const days = useMemo(() => monthDays(year, month), [year, month]);
+  const agenda = useMemo(() => agendaGroups(items, days), [items, days]);
+  const upcoming = useMemo(() => upcomingBookings(bookings, vehicleFilter, todayKey), [bookings, vehicleFilter, todayKey]);
+  const vehicleOptions = useMemo(
+    () => [...vehicles].sort((a, b) => vehicleLabel(a).localeCompare(vehicleLabel(b), 'de')),
+    [vehicles],
+  );
 
-  // Compute the derived price (the field not being edited)
-  const derivedPrice = useMemo(() => {
-    const val = parseFloat(form.priceValue);
-    if (!val || val <= 0 || formDays <= 0) return '';
-    if (form.priceMode === 'total') {
-      return (val / formDays).toFixed(2);
-    } else {
-      return (val * formDays).toFixed(2);
-    }
-  }, [form.priceValue, form.priceMode, formDays]);
+  // ── Navigation ────────────────────────────────────────────────
 
-  // Get the totalPrice to send to API
-  function getFormTotalPrice(): number | undefined {
-    const val = parseFloat(form.priceValue);
-    if (!val || val <= 0) return undefined;
-    if (form.priceMode === 'total') return Math.round(val * 100) / 100;
-    return Math.round(val * formDays * 100) / 100;
-  }
+  const prevMonth = () => {
+    if (month === 0) {
+      setMonth(11);
+      setYear((y) => y - 1);
+    } else setMonth((m) => m - 1);
+  };
+  const nextMonth = () => {
+    if (month === 11) {
+      setMonth(0);
+      setYear((y) => y + 1);
+    } else setMonth((m) => m + 1);
+  };
+  const goToday = () => {
+    const d = new Date();
+    setYear(d.getFullYear());
+    setMonth(d.getMonth());
+  };
 
-  async function handleCreateBooking(e: React.FormEvent) {
-    e.preventDefault();
-    if (!form.vehicleId || !form.customerName.trim() || !form.startDate || !form.endDate) {
-      setFormError('Bitte alle Pflichtfelder ausfüllen.');
-      return;
-    }
-    if (new Date(form.endDate) < new Date(form.startDate)) {
-      setFormError('Enddatum muss nach Startdatum liegen.');
-      return;
-    }
+  const openDay = useCallback((dayKey: string, itemKey?: string) => setSelected({ dayKey, itemKey: itemKey ?? null }), []);
+  const openNewBooking = useCallback((dayKey?: string) => newBooking.open(dayKey ? { date: dayKey } : undefined), [newBooking]);
 
-    setSaving(true);
-    setFormError('');
+  // ── Actions ───────────────────────────────────────────────────
+
+  async function downloadContract(booking: CalBooking) {
+    setBusyId(booking.id);
     try {
-      const newBooking = await api.createBooking({
-        vehicleId: form.vehicleId,
-        customerName: form.customerName.trim(),
-        customerEmail: form.customerEmail.trim() || undefined,
-        startDate: new Date(form.startDate).toISOString(),
-        endDate: new Date(form.endDate).toISOString(),
-        totalPrice: getFormTotalPrice(),
-        notes: form.notes.trim() || undefined,
-      });
-      setShowModal(false);
-
-      // Refresh bookings
-      const bookingData = await api.getBookings();
-      setBookings(bookingData.items || bookingData || []);
-
-      // Offer to sign contract immediately
-      openSignaturePad(newBooking.id, form.customerName.trim(), form.customerEmail.trim());
-      setForm(EMPTY_FORM);
-    } catch (err: any) {
-      setFormError(err.message || 'Buchung konnte nicht erstellt werden.');
+      triggerBlobDownload(await api.downloadContract(booking.id), contractFilename(booking.id));
+    } catch (err) {
+      toast.error(tr('common.vertragKonnteNichtHeruntergela'), errorText(err));
     } finally {
-      setSaving(false);
+      setBusyId(null);
     }
   }
 
-  function openSignaturePad(bookingId: string, customerName: string, customerEmail?: string) {
-    setSigningBookingId(bookingId);
-    setSigningCustomerName(customerName);
-    setSigningCustomerEmail(customerEmail || '');
-    setShowSignature(true);
-  }
-
-  async function handleSignContract(signatureDataUrl: string) {
-    if (!signingBookingId) return;
+  async function handleSign(signatureDataUrl: string) {
+    if (!signing) return;
     setSigningLoading(true);
     try {
-      await api.finalizeContract(signingBookingId, {
-        signature: signatureDataUrl,
-        customerEmail: signingCustomerEmail || undefined,
-      });
-      setShowSignature(false);
-      setSigningBookingId(null);
-      // Refresh bookings
-      const bookingData = await api.getBookings();
-      setBookings(bookingData.items || bookingData || []);
-    } catch (err: any) {
-      alert(err.message || 'Vertrag konnte nicht signiert werden.');
+      await api.finalizeContract(signing.id, { signature: signatureDataUrl, customerEmail: signing.customerEmail || undefined });
+      toast.success(tr('common.vertragSigniert'), signing.customerEmail ? tr('common.derVertragWurdePer') : tr('availability.vertragVonGespeichert', { customerName: signing.customerName }));
+      setSigning(null);
+      void load(true);
+    } catch (err) {
+      toast.error(tr('common.vertragKonnteNichtSigniert'), errorText(err));
     } finally {
       setSigningLoading(false);
     }
   }
 
-  async function handleDownloadContract(bookingId: string) {
-    try {
-      const blob = await api.downloadContract(bookingId);
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `HoppDrive-Vertrag-${bookingId.substring(0, 8).toUpperCase()}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-    } catch (err: any) {
-      alert(err.message || 'Vertrag konnte nicht heruntergeladen werden.');
-    }
+  function quickSign(booking: CalBooking) {
+    // The signature pad is a full-screen layer of its own: close the day panel first so the two never fight over focus.
+    setSelected(null);
+    setSigning(booking);
   }
 
-  const bookedDates = useMemo(() => {
-    const map = new Map<string, { booking: Booking; vehicle: Vehicle | undefined }[]>();
+  async function deleteMaintenance(item: Extract<CalItem, { kind: 'maintenance' }>) {
+    const period = item.maintenance;
+    const done = await confirm({
+      title: tr('availability.wartungszeitraumLoeschen'),
+      description: `${item.vehicleName}, ${fmtDate(period.startDate)} – ${fmtDate(period.endDate)}`,
+      warning: tr('availability.dasFahrzeugIstDanach'),
+      confirmLabel: tr('availability.wartungLoeschen'),
+      icon: <Trash2 size={20} />,
+      onConfirm: async () => {
+        try {
+          await api.deleteMaintenance(period.id);
+        } catch (err) {
+          throw new Error(errorText(err, tr('availability.derWartungszeitraumKonnteNicht')));
+        }
+        setMaintenance((prev) => prev.filter((p) => p.id !== period.id));
+      },
+    });
+    if (done) toast.success(tr('availability.wartungGeloescht'), item.vehicleName);
+  }
 
-    const relevantBookings =
-      selectedVehicle === 'all'
-        ? bookings
-        : bookings.filter((b) => b.vehicleId === selectedVehicle);
+  // ── Render ────────────────────────────────────────────────────
 
-    for (const booking of relevantBookings) {
-      if (booking.status === 'cancelled') continue;
-      const start = new Date(booking.startDate);
-      const end = new Date(booking.endDate);
-      const current = new Date(start);
+  const monthTitle = `${monthName(month)} ${year}`;
 
-      while (current <= end) {
-        const key = current.toISOString().split('T')[0];
-        const vehicle = vehicles.find((v) => v.id === booking.vehicleId);
-        const existing = map.get(key) || [];
-        existing.push({ booking, vehicle });
-        map.set(key, existing);
-        current.setDate(current.getDate() + 1);
+  const vehicleSelect = (
+    <Select aria-label={t('availability.fahrzeugFiltern')} value={vehicleFilter} onChange={(e) => setVehicleFilter(e.target.value)} className="w-[220px] max-md:w-full">
+      <option value="all">{t('availability.alleFahrzeuge')}</option>
+      {vehicleOptions.map((v) => (
+        <option key={v.id} value={v.id}>
+          {vehicleLabel(v)}
+        </option>
+      ))}
+    </Select>
+  );
+
+  const monthNav = (
+    <div className="flex items-center justify-between gap-1.5 max-md:w-full">
+      <IconButton variant="outline" aria-label={t('availability.vorherigerMonat')} onClick={prevMonth}>
+        <ChevronLeft size={20} aria-hidden="true" />
+      </IconButton>
+      <b className="h2 min-w-[150px] text-center" aria-live="polite">
+        {monthTitle}
+      </b>
+      <IconButton variant="outline" aria-label={t('availability.naechsterMonat')} onClick={nextMonth}>
+        <ChevronRight size={20} aria-hidden="true" />
+      </IconButton>
+    </div>
+  );
+
+  const desktopControls = (
+    <>
+      {monthNav}
+      <Button variant="ghost" onClick={goToday}>
+        {t('common.heute')}
+      </Button>
+      <Tabs
+        aria-label={t('availability.ansicht')}
+        value={desktopView}
+        onChange={(id) => setDesktopView(id as DesktopView)}
+        tabs={[
+          { id: 'fahrzeuge', label: tt('availability.fahrzeuge') },
+          { id: 'monat', label: tt('availability.monat') },
+        ]}
+      />
+      {vehicleSelect}
+    </>
+  );
+
+  const errorBlock = loadError ? (
+    <Alert
+      tone="err"
+      title={t('availability.kalenderKonnteNichtGeladen')}
+      action={
+        <Button variant="outline" size="sm" onClick={() => void load()}>
+          {t('common.erneutVersuchen')}
+        </Button>
       }
-    }
+    >
+      {loadError}
+    </Alert>
+  ) : null;
 
-    return map;
-  }, [bookings, vehicles, selectedVehicle]);
+  const nextBookingsPanel = (
+    <NextBookings
+      bookings={upcoming}
+      vehicles={vehicles}
+      canCreate={newBooking.canCreate}
+      onCreate={() => openNewBooking()}
+      onOpen={(booking) => {
+        const dayKey = bookingOpenDay(booking, todayKey);
+        const [y, m] = dayKey.split('-').map(Number);
+        setYear(y);
+        setMonth(m - 1);
+        openDay(dayKey, `booking:${booking.id}`);
+      }}
+    />
+  );
 
-  const maintenanceDates = useMemo(() => {
-    const map = new Map<string, { period: MaintenancePeriod; vehicle: Vehicle | undefined }[]>();
+  const ganttPanel = (
+    <GanttView year={year} month={month} vehicles={rowVehicles} items={items} todayKey={todayKey} onOpen={openDay} />
+  );
 
-    const relevant =
-      selectedVehicle === 'all'
-        ? maintenancePeriods
-        : maintenancePeriods.filter((p) => p.vehicleId === selectedVehicle);
-
-    for (const period of relevant) {
-      const start = new Date(period.startDate);
-      const end = new Date(period.endDate);
-      const current = new Date(start);
-
-      while (current <= end) {
-        const key = current.toISOString().split('T')[0];
-        const vehicle = vehicles.find((v) => v.id === period.vehicleId);
-        const existing = map.get(key) || [];
-        existing.push({ period, vehicle });
-        map.set(key, existing);
-        current.setDate(current.getDate() + 1);
-      }
-    }
-
-    return map;
-  }, [maintenancePeriods, vehicles, selectedVehicle]);
-
-  const daysInMonth = getDaysInMonth(year, month);
-  const firstDay = getFirstDayOfMonth(year, month);
-  const today = new Date().toISOString().split('T')[0];
-
-  // Bookings/maintenance for the selected date (day-detail panel)
-  const selectedDateEntries = selectedDate ? (bookedDates.get(selectedDate) || []) : [];
-  const selectedDateMaintenance = selectedDate ? (maintenanceDates.get(selectedDate) || []) : [];
-
+  let content: ReactNode;
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-2 border-brand-600 border-t-transparent" />
-      </div>
+    content = (
+      <>
+        <Panel className="overflow-hidden" aria-busy="true">
+          <SkeletonRows rows={5} avatar={false} pill={false} className="px-5 py-2" label={t('availability.kalenderWirdGeladen')} />
+        </Panel>
+        {isTabletUp && (
+          <Panel className="overflow-hidden" aria-busy="true">
+            <SkeletonRows rows={4} avatar={false} pill={false} className="px-5 py-2" label={t('availability.monatsuebersichtWirdGeladen')} />
+          </Panel>
+        )}
+      </>
+    );
+  } else if (loadError) {
+    content = null;
+  } else if (!isTabletUp) {
+    content =
+      mobileView === 'agenda' ? (
+        <AgendaView
+          groups={agenda}
+          month={month}
+          year={year}
+          canCreate={newBooking.canCreate}
+          onCreate={() => openNewBooking()}
+          onOpen={openDay}
+        />
+      ) : (
+        <>
+          {ganttPanel}
+          {nextBookingsPanel}
+        </>
+      );
+  } else if (desktopView === 'monat') {
+    content = (
+      <>
+        <MonthGridView year={year} month={month} items={items} todayKey={todayKey} maxChips={4} roomy onOpen={openDay} />
+        {nextBookingsPanel}
+      </>
+    );
+  } else {
+    content = (
+      <>
+        {ganttPanel}
+        <MonthGridView year={year} month={month} items={items} todayKey={todayKey} onOpen={openDay} />
+        {nextBookingsPanel}
+      </>
     );
   }
 
   return (
-    <div>
-      {/* ── Header ────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-        <h1 className="text-2xl font-bold text-neutral-900">Verfügbarkeitskalender</h1>
-        <div className="flex items-center gap-3">
-          <select
-            value={selectedVehicle}
-            onChange={(e) => setSelectedVehicle(e.target.value)}
-            className="border border-neutral-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-          >
-            <option value="all">Alle Fahrzeuge</option>
-            {vehicles.map((v) => (
-              <option key={v.id} value={v.id}>
-                {v.brand} {v.model}
-              </option>
-            ))}
-          </select>
-          <button
-            onClick={() => openNewBooking()}
-            className="flex items-center gap-2 px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Neue Buchung
-          </button>
-        </div>
+    <div className="flex flex-col gap-5 md:gap-6">
+      <div className="max-md:hidden">
+        <PageHeader title={t('availability.kalender')} subtitle={t('availability.belegungAnfragenUndWartung')} actions={desktopControls} />
       </div>
+      <h1 className="sr-only md:hidden">{t('availability.kalender')}</h1>
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        {/* ── Calendar ────────────────────────── */}
-        <div className="xl:col-span-2 bg-white rounded-xl shadow-sm border border-neutral-200 p-6">
-          <div className="flex items-center justify-between mb-6">
-            <button onClick={prevMonth} className="p-2 rounded-lg hover:bg-neutral-100 transition-colors">
-              <ChevronLeft className="w-5 h-5" />
-            </button>
-            <h2 className="text-lg font-bold">{MONTH_NAMES[month]} {year}</h2>
-            <button onClick={nextMonth} className="p-2 rounded-lg hover:bg-neutral-100 transition-colors">
-              <ChevronRight className="w-5 h-5" />
-            </button>
-          </div>
-
-          <div className="grid grid-cols-7 gap-1 mb-2">
-            {DAY_NAMES.map((d) => (
-              <div key={d} className="text-center text-xs font-semibold text-neutral-500 py-1">{d}</div>
-            ))}
-          </div>
-
-          <div className="grid grid-cols-7 gap-1">
-            {Array.from({ length: firstDay }).map((_, i) => (
-              <div key={`empty-${i}`} className="h-20" />
-            ))}
-
-            {Array.from({ length: daysInMonth }).map((_, i) => {
-              const day = i + 1;
-              const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-              const entries = bookedDates.get(dateStr) || [];
-              const maintenanceEntries = maintenanceDates.get(dateStr) || [];
-              const isToday = dateStr === today;
-              const hasBookings = entries.length > 0;
-              const hasMaintenance = maintenanceEntries.length > 0;
-              const isSelected = dateStr === selectedDate;
-              const totalEntries = entries.length + maintenanceEntries.length;
-
-              return (
-                <button
-                  key={day}
-                  onClick={() => setSelectedDate(dateStr === selectedDate ? null : dateStr)}
-                  className={`h-20 border rounded-lg p-1.5 text-xs text-left transition-colors ${
-                    isSelected
-                      ? 'border-brand-600 ring-2 ring-brand-300 bg-brand-50'
-                      : isToday
-                      ? 'border-brand-500 bg-brand-50'
-                      : hasMaintenance && !hasBookings
-                      ? 'border-amber-300 bg-[repeating-linear-gradient(135deg,theme(colors.amber.50),theme(colors.amber.50)_6px,theme(colors.amber.100)_6px,theme(colors.amber.100)_12px)] hover:border-amber-400'
-                      : hasBookings
-                      ? 'border-orange-200 bg-orange-50 hover:border-orange-300'
-                      : 'border-neutral-200 hover:bg-neutral-50'
-                  }`}
-                >
-                  <div className={`font-semibold mb-0.5 ${isToday ? 'text-brand-600' : 'text-neutral-700'}`}>
-                    {day}
-                  </div>
-                  {maintenanceEntries.slice(0, 1).map(({ period, vehicle }, idx) => (
-                    <div
-                      key={`m-${idx}`}
-                      className="text-[10px] leading-tight text-amber-700 truncate font-medium"
-                      title={`Wartung: ${vehicle?.brand ?? ''} ${vehicle?.model ?? ''} — ${MAINTENANCE_REASON_LABELS[period.reason] || period.reason}`}
-                    >
-                      🔧 {vehicle ? `${vehicle.brand} ${vehicle.model.slice(0, 4)}` : 'Wartung'}
-                    </div>
-                  ))}
-                  {entries.slice(0, hasMaintenance ? 1 : 2).map(({ booking, vehicle }, idx) => (
-                    <div
-                      key={idx}
-                      className="text-[10px] leading-tight text-orange-700 truncate"
-                      title={`${vehicle?.brand ?? ''} ${vehicle?.model ?? ''} — ${booking.customerName}`}
-                    >
-                      {vehicle ? `${vehicle.brand} ${vehicle.model.slice(0, 4)}` : 'Gebucht'}
-                    </div>
-                  ))}
-                  {totalEntries > 2 && (
-                    <div className="text-[10px] text-neutral-400">+{totalEntries - 2}</div>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Legend */}
-          <div className="flex items-center gap-6 mt-4 text-xs text-neutral-500">
-            <div className="flex items-center gap-1.5">
-              <div className="w-3 h-3 rounded border border-brand-500 bg-brand-50" />
-              <span>Heute</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-3 h-3 rounded border border-orange-200 bg-orange-50" />
-              <span>Gebucht</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-3 h-3 rounded border border-amber-300 bg-[repeating-linear-gradient(135deg,theme(colors.amber.50),theme(colors.amber.50)_3px,theme(colors.amber.100)_3px,theme(colors.amber.100)_6px)]" />
-              <span>Wartung</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-3 h-3 rounded border border-neutral-200" />
-              <span>Verfügbar</span>
-            </div>
-          </div>
-        </div>
-
-        {/* ── Right Panel: Day Detail / Upcoming ── */}
-        <div className="bg-white rounded-xl shadow-sm border border-neutral-200 p-6">
-          {selectedDate ? (
-            <>
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-bold text-neutral-900">
-                  {new Date(selectedDate + 'T00:00:00').toLocaleDateString('de-CH', {
-                    weekday: 'long',
-                    day: 'numeric',
-                    month: 'long',
-                    year: 'numeric',
-                  })}
-                </h3>
-                <button
-                  onClick={() => openNewBooking(selectedDate)}
-                  className="p-1.5 rounded-lg bg-brand-50 text-brand-600 hover:bg-brand-100 transition-colors"
-                  title="Neue Buchung an diesem Tag"
-                >
-                  <Plus className="w-4 h-4" />
-                </button>
-              </div>
-
-              {selectedDateMaintenance.length > 0 && (
-                <div className="space-y-2 mb-4">
-                  {selectedDateMaintenance.map(({ period, vehicle }) => (
-                    <div key={period.id} className="border border-amber-200 bg-amber-50 rounded-lg p-3">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="flex items-center gap-1.5 text-sm font-semibold text-amber-900">
-                          <Wrench className="w-3.5 h-3.5" />
-                          {vehicle ? `${vehicle.brand} ${vehicle.model}` : 'Unbekannt'}
-                        </span>
-                        <button
-                          onClick={() => handleDeleteMaintenance(period.id)}
-                          className="text-amber-700 hover:text-amber-900"
-                          title="Wartung entfernen"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                      <div className="text-xs text-amber-800 space-y-0.5">
-                        <div className="flex items-center gap-1">
-                          <Calendar className="w-3 h-3" />
-                          {fmtDate(period.startDate)} – {fmtDate(period.endDate)}
-                        </div>
-                        <div>{MAINTENANCE_REASON_LABELS[period.reason] || period.reason}</div>
-                        {period.notes && (
-                          <div className="flex items-start gap-1 mt-1">
-                            <FileText className="w-3 h-3 mt-0.5 shrink-0" />
-                            <span className="text-amber-700">{period.notes}</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {selectedDateEntries.length === 0 ? (
-                <div className="text-center py-8">
-                  <Calendar className="w-10 h-10 text-neutral-300 mx-auto mb-2" />
-                  <p className="text-sm text-neutral-500">Keine Buchungen</p>
-                  <button
-                    onClick={() => openNewBooking(selectedDate)}
-                    className="mt-3 text-sm text-brand-600 hover:text-brand-700 font-medium"
-                  >
-                    + Buchung hinzufügen
-                  </button>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {selectedDateEntries.map(({ booking, vehicle }, idx) => (
-                    <div key={idx} className="border border-neutral-200 rounded-lg p-3">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-sm font-semibold text-neutral-900">
-                          {booking.customerName}
-                        </span>
-                        <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${STATUS_COLORS[booking.status] || 'bg-neutral-100 text-neutral-600'}`}>
-                          {booking.status}
-                        </span>
-                      </div>
-                      <div className="text-xs text-neutral-500 space-y-0.5">
-                        <div className="flex items-center gap-1">
-                          <Car className="w-3 h-3" />
-                          {vehicle ? `${vehicle.brand} ${vehicle.model}` : 'Unbekannt'}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Calendar className="w-3 h-3" />
-                          {fmtDate(booking.startDate)} – {fmtDate(booking.endDate)}
-                        </div>
-                        {(booking.totalPrice != null && booking.totalPrice > 0) && (
-                          <div className="flex items-center gap-1 text-green-700 font-medium">
-                            <DollarSign className="w-3 h-3" />
-                            {Number(booking.totalPrice).toFixed(2)} {booking.currency || 'CHF'}
-                          </div>
-                        )}
-                        {booking.customerEmail && (
-                          <div className="flex items-center gap-1">
-                            <Mail className="w-3 h-3" />
-                            {booking.customerEmail}
-                          </div>
-                        )}
-                        {booking.notes && (
-                          <div className="flex items-start gap-1 mt-1">
-                            <FileText className="w-3 h-3 mt-0.5 shrink-0" />
-                            <span className="text-neutral-400">{booking.notes}</span>
-                          </div>
-                        )}
-                      </div>
-                      {/* Contract actions */}
-                      {booking.status !== 'cancelled' && (
-                        <div className="mt-2 pt-2 border-t border-neutral-100 flex items-center gap-2">
-                          {booking.contractStatus === 'SIGNED' ? (
-                            <>
-                              <span className="flex items-center gap-1 text-[10px] text-green-700 font-medium">
-                                <CheckCircle className="w-3 h-3" />
-                                Signiert
-                              </span>
-                              <button
-                                onClick={() => handleDownloadContract(booking.id)}
-                                className="flex items-center gap-1 text-[10px] font-medium text-brand-600 hover:text-brand-700 ml-auto"
-                              >
-                                <Download className="w-3 h-3" />
-                                PDF
-                              </button>
-                            </>
-                          ) : (
-                            <>
-                              <button
-                                onClick={() => router.push(`/contracts/${booking.id}/sign`)}
-                                className="flex items-center gap-1 text-[10px] font-medium text-brand-600 hover:text-brand-700"
-                                title="Auf Gerät unterschreiben (Kunde)"
-                              >
-                                <Tablet className="w-3 h-3" />
-                                Auf Gerät
-                              </button>
-                              <button
-                                onClick={() => openSignaturePad(booking.id, booking.customerName, booking.customerEmail || '')}
-                                className="flex items-center gap-1 text-[10px] font-medium text-brand-600 hover:text-brand-700 ml-auto"
-                                title="Schnell hier unterschreiben"
-                              >
-                                <PenTool className="w-3 h-3" />
-                                Schnell
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </>
-          ) : (
-            <>
-              <h3 className="font-bold text-neutral-900 mb-4">Nächste Buchungen</h3>
-              {bookings
-                .filter((b) => b.status !== 'cancelled' && new Date(b.endDate) >= new Date())
-                .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
-                .slice(0, 8)
-                .map((booking) => {
-                  const vehicle = vehicles.find((v) => v.id === booking.vehicleId);
-                  return (
-                    <div key={booking.id} className="flex items-center gap-3 py-2 border-b border-neutral-100 last:border-0">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-neutral-900 truncate">{booking.customerName}</p>
-                        <p className="text-xs text-neutral-500 truncate">
-                          {vehicle ? `${vehicle.brand} ${vehicle.model}` : '–'} · {fmtDate(booking.startDate)} – {fmtDate(booking.endDate)}
-                        </p>
-                      </div>
-                      <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full shrink-0 ${STATUS_COLORS[booking.status] || 'bg-neutral-100 text-neutral-600'}`}>
-                        {booking.status}
-                      </span>
-                    </div>
-                  );
-                })}
-              {bookings.filter((b) => b.status !== 'cancelled' && new Date(b.endDate) >= new Date()).length === 0 && (
-                <div className="text-center py-8">
-                  <Calendar className="w-10 h-10 text-neutral-300 mx-auto mb-2" />
-                  <p className="text-sm text-neutral-500">Noch keine Buchungen.</p>
-                  <button
-                    onClick={() => openNewBooking()}
-                    className="mt-3 text-sm text-brand-600 hover:text-brand-700 font-medium"
-                  >
-                    Erste Buchung erstellen
-                  </button>
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* ── New Booking Modal ────────────────── */}
-      {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200">
-              <h2 className="text-lg font-bold text-neutral-900">Neue Buchung</h2>
-              <button onClick={() => setShowModal(false)} className="p-1 rounded-lg hover:bg-neutral-100 transition-colors">
-                <X className="w-5 h-5 text-neutral-500" />
-              </button>
-            </div>
-
-            <form onSubmit={handleCreateBooking} className="p-6 space-y-4">
-              {formError && (
-                <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
-                  {formError}
-                </div>
-              )}
-
-              {/* Vehicle */}
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-1">
-                  <Car className="w-4 h-4 inline mr-1" />
-                  Fahrzeug *
-                </label>
-                <select
-                  value={form.vehicleId}
-                  onChange={(e) => setForm({ ...form, vehicleId: e.target.value })}
-                  className="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-                  required
-                >
-                  <option value="">Fahrzeug wählen…</option>
-                  {vehicles.map((v) => (
-                    <option key={v.id} value={v.id}>
-                      {v.brand} {v.model}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Customer Name */}
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-1">
-                  <User className="w-4 h-4 inline mr-1" />
-                  Kundenname *
-                </label>
-                <input
-                  type="text"
-                  value={form.customerName}
-                  onChange={(e) => setForm({ ...form, customerName: e.target.value })}
-                  placeholder="Max Mustermann"
-                  className="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-                  required
-                />
-              </div>
-
-              {/* Customer Email */}
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-1">
-                  <Mail className="w-4 h-4 inline mr-1" />
-                  E-Mail
-                </label>
-                <input
-                  type="email"
-                  value={form.customerEmail}
-                  onChange={(e) => setForm({ ...form, customerEmail: e.target.value })}
-                  placeholder="kunde@beispiel.ch"
-                  className="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-                />
-                <p className="text-[11px] text-neutral-400 mt-0.5">
-                  Für Vertragsversand per E-Mail (optional)
-                </p>
-              </div>
-
-              {/* Date Range */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-1">
-                    <Calendar className="w-4 h-4 inline mr-1" />
-                    Von *
-                  </label>
-                  <input
-                    type="date"
-                    value={form.startDate}
-                    onChange={(e) => setForm({ ...form, startDate: e.target.value })}
-                    className="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-1">
-                    Bis *
-                  </label>
-                  <input
-                    type="date"
-                    value={form.endDate}
-                    min={form.startDate || undefined}
-                    onChange={(e) => setForm({ ...form, endDate: e.target.value })}
-                    className="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-                    required
-                  />
-                </div>
-              </div>
-
-              {formDays > 0 && (
-                <p className="text-xs text-neutral-500">
-                  Mietdauer: <span className="font-semibold">{formDays} {formDays === 1 ? 'Tag' : 'Tage'}</span>
-                </p>
-              )}
-
-              {/* Price */}
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-1">
-                  <DollarSign className="w-4 h-4 inline mr-1" />
-                  Preis (CHF)
-                </label>
-                <div className="flex items-center gap-2">
-                  <select
-                    value={form.priceMode}
-                    onChange={(e) => setForm({ ...form, priceMode: e.target.value as 'total' | 'perDay', priceValue: '' })}
-                    className="border border-neutral-300 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 shrink-0"
-                  >
-                    <option value="total">Gesamtpreis</option>
-                    <option value="perDay">Pro Tag</option>
-                  </select>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={form.priceValue}
-                    onChange={(e) => setForm({ ...form, priceValue: e.target.value })}
-                    placeholder={form.priceMode === 'total' ? 'z.B. 1500.00' : 'z.B. 150.00'}
-                    className="flex-1 border border-neutral-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-                  />
-                </div>
-                {derivedPrice && formDays > 0 && (
-                  <p className="text-xs text-neutral-500 mt-1">
-                    {form.priceMode === 'total'
-                      ? `= CHF ${derivedPrice} pro Tag`
-                      : `= CHF ${derivedPrice} gesamt`}
-                  </p>
-                )}
-                <p className="text-[11px] text-neutral-400 mt-0.5">
-                  Leer lassen für automatische Preisberechnung
-                </p>
-              </div>
-
-              {/* Notes */}
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-1">
-                  <FileText className="w-4 h-4 inline mr-1" />
-                  Notizen
-                </label>
-                <textarea
-                  value={form.notes}
-                  onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                  rows={3}
-                  placeholder="Optionale Notizen zur Buchung…"
-                  className="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 resize-none"
-                />
-              </div>
-
-              {/* Actions */}
-              <div className="flex items-center justify-end gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowModal(false)}
-                  className="px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-100 rounded-lg transition-colors"
-                >
-                  Abbrechen
-                </button>
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="px-5 py-2 text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 rounded-lg transition-colors disabled:opacity-50"
-                >
-                  {saving ? 'Speichern…' : 'Buchung erstellen'}
-                </button>
-              </div>
-            </form>
+      {!isTabletUp && (
+        <div className="flex flex-col gap-3.5">
+          {monthNav}
+          <Tabs
+            aria-label={t('availability.ansicht')}
+            value={mobileView}
+            onChange={(id) => setMobileView(id as MobileView)}
+            className="w-full [&>.tab]:flex-1 [&>.tab]:justify-center"
+            tabs={[
+              { id: 'agenda', label: tt('availability.agenda') },
+              { id: 'fahrzeuge', label: tt('availability.fahrzeuge') },
+            ]}
+          />
+          <div className="flex gap-2">
+            <div className="min-w-0 flex-1">{vehicleSelect}</div>
+            <Button variant="ghost" onClick={goToday}>
+              {t('common.heute')}
+            </Button>
           </div>
         </div>
       )}
 
-      {/* ── Signature Modal ──────────────────── */}
-      {showSignature && signingBookingId && (
+      {errorBlock}
+      {content}
+
+      <DayDrawer
+        dayKey={selected?.dayKey ?? null}
+        highlightKey={selected?.itemKey ?? null}
+        items={items}
+        canCreate={newBooking.canCreate}
+        canSign={canSign}
+        canDownload={canDownload}
+        canDeleteMaintenance={canDeleteMaintenance}
+        busyId={busyId}
+        onClose={() => setSelected(null)}
+        onCreate={(dayKey) => openNewBooking(dayKey)}
+        onDeleteMaintenance={(item) => void deleteMaintenance(item)}
+        onDownload={(booking) => void downloadContract(booking)}
+        onSignOnDevice={(booking) => router.push(`/contracts/${booking.id}/sign`)}
+        onQuickSign={quickSign}
+      />
+
+      {signing && (
         <SignaturePad
-          customerName={signingCustomerName}
+          customerName={signing.customerName}
           loading={signingLoading}
-          onConfirm={handleSignContract}
-          onCancel={() => {
-            setShowSignature(false);
-            setSigningBookingId(null);
-          }}
+          onConfirm={handleSign}
+          onCancel={() => setSigning(null)}
         />
       )}
     </div>

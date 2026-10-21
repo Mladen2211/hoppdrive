@@ -1,8 +1,45 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { Plus, Pencil, Trash2, Star, Eye, EyeOff, GripVertical } from 'lucide-react';
+import { Pencil, Plus, Star, Trash2 } from 'lucide-react';
+import type { AppLocale, TestimonialTranslation, TranslatableLocale, Translations } from '@hoppdrive/shared';
+import { useCallback, useEffect, useId, useMemo, useState, type FormEvent } from 'react';
+import {
+  Alert,
+  Button,
+  Cell2,
+  EmptyState,
+  Field,
+  IconButton,
+  Input,
+  MobileCard,
+  Modal,
+  Panel,
+  Select,
+  SkeletonRows,
+  SkeletonTableRows,
+  Switch,
+  Table,
+  TBody,
+  Td,
+  Th,
+  THead,
+  Textarea,
+  Tr,
+  useConfirm,
+  useToast,
+} from '@/components/ui';
+import { ContentHeader } from '@/components/content/ContentHeader';
+import { LanguageNote, LanguageTabs } from '@/components/content/LanguageTabs';
+import { Stars } from '@/components/content/Stars';
+import { TranslatedField } from '@/components/content/TranslatedField';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
+import { useCan } from '@/hooks/usePermission';
 import { api } from '@/lib/api';
+import { orUserError } from '@/lib/content-errors';
+import { errorText } from '@/lib/errors';
+import { TRANSLATABLE_LOCALES, cleanTranslations, stateOf, type TranslationState } from '@/lib/translations';
+import { useTranslations } from 'next-intl';
+import { tr } from '@/i18n/active';
 
 interface Testimonial {
   id: string;
@@ -13,256 +50,417 @@ interface Testimonial {
   avatarUrl: string | null;
   isActive: boolean;
   sortOrder: number;
+  translations?: Translations<TestimonialTranslation> | null;
 }
 
+interface FormState {
+  name: string;
+  location: string;
+  text: string;
+  rating: string;
+  sortOrder: string;
+  isActive: boolean;
+  avatarUrl: string;
+  translations: Translations<TestimonialTranslation>;
+}
+
+const emptyForm = (nextOrder: number): FormState => ({
+  name: '',
+  location: '',
+  text: '',
+  rating: '5',
+  sortOrder: String(nextOrder),
+  isActive: true,
+  avatarUrl: '',
+  translations: {},
+});
+
+const toForm = (item: Testimonial): FormState => ({
+  name: item.name,
+  location: item.location ?? '',
+  text: item.text,
+  rating: String(item.rating ?? 5),
+  sortOrder: String(item.sortOrder ?? 0),
+  isActive: item.isActive,
+  avatarUrl: item.avatarUrl ?? '',
+  translations: item.translations ?? {},
+});
+
 export default function TestimonialsPage() {
+  const t = useTranslations();
+  const { token } = useAdminAuth();
+  const { toast } = useToast();
+  const confirm = useConfirm();
+  const canEdit = useCan('content', 'edit');
+
   const [items, setItems] = useState<Testimonial[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false);
-  const [editing, setEditing] = useState<Testimonial | null>(null);
-  const [saving, setSaving] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [modal, setModal] = useState<{ editing: Testimonial | null } | null>(null);
 
   const load = useCallback(async () => {
+    setLoadError(null);
     try {
-      const data = await api.getTestimonials();
-      setItems(data);
-    } catch {
-      // ignore
+      setItems(await api.getTestimonials());
+    } catch (err) {
+      setLoadError(errorText(err, tr('testimonials.dieBewertungenKonntenNicht')));
     } finally {
       setLoading(false);
     }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    if (token) void load();
+  }, [token, load]);
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Bewertung wirklich löschen?')) return;
+  // A sorted copy: never sort state in place (and never during render of the source array).
+  const sorted = useMemo(() => [...items].sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name)), [items]);
+  const nextOrder = items.reduce((max, i) => Math.max(max, i.sortOrder ?? 0), 0) + 1;
+
+  async function handleDelete(item: Testimonial) {
+    const ok = await confirm({
+      title: tr('testimonials.bewertungVonLoeschen', { name: item.name }),
+      description: tr('testimonials.dieBewertungVerschwindetVon'),
+      confirmLabel: tr('testimonials.bewertungLoeschen'),
+      icon: <Trash2 size={20} />,
+      onConfirm: () => orUserError(api.deleteTestimonial(item.id), tr('testimonials.dieBewertungKonnteNicht')),
+    });
+    if (!ok) return;
+    setItems((prev) => prev.filter((i) => i.id !== item.id));
+    toast.success(tr('testimonials.bewertungGeloescht'));
+  }
+
+  async function toggleActive(item: Testimonial, next: boolean) {
+    // Optimistic: flip first, roll back when the request fails.
+    setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, isActive: next } : i)));
     try {
-      await api.deleteTestimonial(id);
-      setItems((prev) => prev.filter((i) => i.id !== id));
-    } catch {
-      alert('Fehler beim Löschen');
+      const updated = await api.updateTestimonial(item.id, { isActive: next });
+      setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, ...updated } : i)));
+    } catch (err) {
+      setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, isActive: item.isActive } : i)));
+      toast.error(tr('common.sichtbarkeitNichtGeaendert'), errorText(err));
     }
-  };
+  }
 
-  const toggleActive = async (item: Testimonial) => {
-    try {
-      const updated = await api.updateTestimonial(item.id, { isActive: !item.isActive });
-      setItems((prev) => prev.map((i) => (i.id === item.id ? updated : i)));
-    } catch {
-      alert('Fehler beim Aktualisieren');
-    }
-  };
+  const rowSwitch = (item: Testimonial) => (
+    <Switch
+      checked={item.isActive}
+      disabled={!canEdit}
+      onChange={(next) => void toggleActive(item, next)}
+      aria-label={t('testimonials.bewertungVon', { name: item.name, value: item.isActive ? 'ausblenden' : t('testimonials.aufDerWebsiteAnzeigen') })}
+    />
+  );
 
-  const handleSave = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setSaving(true);
-    const form = new FormData(e.currentTarget);
-    const data = {
-      name: form.get('name') as string,
-      location: (form.get('location') as string) || undefined,
-      text: form.get('text') as string,
-      rating: parseInt(form.get('rating') as string) || 5,
-      avatarUrl: (form.get('avatarUrl') as string) || undefined,
-      isActive: form.get('isActive') === 'on',
-      sortOrder: parseInt(form.get('sortOrder') as string) || 0,
-    };
-
-    try {
-      if (editing) {
-        const updated = await api.updateTestimonial(editing.id, data);
-        setItems((prev) => prev.map((i) => (i.id === editing.id ? updated : i)));
-      } else {
-        const created = await api.createTestimonial(data);
-        setItems((prev) => [...prev, created]);
-      }
-      setShowModal(false);
-      setEditing(null);
-    } catch {
-      alert('Fehler beim Speichern');
-    } finally {
-      setSaving(false);
-    }
-  };
+  const addButton = canEdit ? (
+    <Button size="sm" onClick={() => setModal({ editing: null })} iconLeft={<Plus size={18} aria-hidden="true" />}>
+      {t('testimonials.bewertungHinzufuegen')}
+    </Button>
+  ) : null;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-neutral-900">Kundenstimmen</h1>
-          <p className="text-sm text-neutral-500 mt-1">Testimonials für die Webseite verwalten</p>
-        </div>
-        <button
-          onClick={() => { setEditing(null); setShowModal(true); }}
-          className="flex items-center gap-2 bg-brand-600 text-white px-4 py-2.5 rounded-lg text-sm font-semibold hover:bg-brand-700 transition-colors"
-        >
-          <Plus className="w-4 h-4" /> Hinzufügen
-        </button>
-      </div>
+    <div className="flex flex-col gap-5 md:gap-6">
+      <ContentHeader active="testimonials" ownCount={loading || loadError ? null : items.length} />
 
-      {loading ? (
-        <div className="space-y-3">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="h-20 bg-neutral-100 rounded-xl animate-pulse" />
-          ))}
-        </div>
-      ) : items.length === 0 ? (
-        <div className="text-center py-16 text-neutral-400">
-          Noch keine Kundenstimmen vorhanden. Klicken Sie auf &ldquo;Hinzufügen&rdquo;, um eine zu erstellen.
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {items.sort((a, b) => a.sortOrder - b.sortOrder).map((item) => (
-            <div
-              key={item.id}
-              className={`bg-white border rounded-xl p-5 flex items-start gap-4 ${
-                item.isActive ? 'border-neutral-200' : 'border-neutral-200 opacity-50'
-              }`}
-            >
-              <GripVertical className="w-4 h-4 text-neutral-300 mt-1 flex-shrink-0" />
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="font-semibold text-sm">{item.name}</span>
-                  {item.location && (
-                    <span className="text-xs text-neutral-400">· {item.location}</span>
-                  )}
-                  <div className="flex gap-0.5 ml-2">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <Star
-                        key={i}
-                        className={`w-3 h-3 ${i < item.rating ? 'fill-amber-400 text-amber-400' : 'text-neutral-200'}`}
-                      />
-                    ))}
-                  </div>
-                </div>
-                <p className="text-sm text-neutral-600 line-clamp-2">&ldquo;{item.text}&rdquo;</p>
-              </div>
-              <div className="flex items-center gap-1 flex-shrink-0">
-                <button
-                  onClick={() => toggleActive(item)}
-                  className="p-2 hover:bg-neutral-100 rounded-lg transition-colors"
-                  title={item.isActive ? 'Deaktivieren' : 'Aktivieren'}
-                >
-                  {item.isActive ? <Eye className="w-4 h-4 text-green-600" /> : <EyeOff className="w-4 h-4 text-neutral-400" />}
-                </button>
-                <button
-                  onClick={() => { setEditing(item); setShowModal(true); }}
-                  className="p-2 hover:bg-neutral-100 rounded-lg transition-colors"
-                >
-                  <Pencil className="w-4 h-4 text-neutral-500" />
-                </button>
-                <button
-                  onClick={() => handleDelete(item.id)}
-                  className="p-2 hover:bg-red-50 rounded-lg transition-colors"
-                >
-                  <Trash2 className="w-4 h-4 text-red-500" />
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
+      {loadError && (
+        <Alert
+          tone="err"
+          title={t('testimonials.bewertungenKonntenNichtGeladen')}
+          action={
+            <Button variant="outline" size="sm" onClick={() => void load()}>
+              {t('common.erneutVersuchen')}
+            </Button>
+          }
+        >
+          {loadError}
+        </Alert>
       )}
 
-      {/* Modal */}
-      {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 p-6">
-            <h2 className="text-lg font-bold mb-4">
-              {editing ? 'Bewertung bearbeiten' : 'Neue Bewertung'}
-            </h2>
-            <form onSubmit={handleSave} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-1">Name *</label>
-                  <input
-                    required
-                    name="name"
-                    defaultValue={editing?.name || ''}
-                    className="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-1">Ort</label>
-                  <input
-                    name="location"
-                    defaultValue={editing?.location || ''}
-                    className="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-1">Bewertungstext *</label>
-                <textarea
-                  required
-                  name="text"
-                  rows={3}
-                  defaultValue={editing?.text || ''}
-                  className="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-                />
-              </div>
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-1">Sterne</label>
-                  <select
-                    name="rating"
-                    defaultValue={editing?.rating ?? 5}
-                    className="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-                  >
-                    {[5, 4, 3, 2, 1].map((r) => (
-                      <option key={r} value={r}>{r} Stern{r > 1 ? 'e' : ''}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-1">Reihenfolge</label>
-                  <input
-                    name="sortOrder"
-                    type="number"
-                    defaultValue={editing?.sortOrder ?? 0}
-                    className="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-                  />
-                </div>
-                <div className="flex items-end">
-                  <label className="flex items-center gap-2 text-sm pb-2">
-                    <input
-                      name="isActive"
-                      type="checkbox"
-                      defaultChecked={editing?.isActive ?? true}
-                      className="rounded border-neutral-300 text-brand-600 focus:ring-brand-500"
-                    />
-                    Aktiv
-                  </label>
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-1">Avatar URL (optional)</label>
-                <input
-                  name="avatarUrl"
-                  defaultValue={editing?.avatarUrl || ''}
-                  className="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-                  placeholder="https://..."
-                />
-              </div>
-              <div className="flex justify-end gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => { setShowModal(false); setEditing(null); }}
-                  className="px-4 py-2 text-sm font-medium text-neutral-600 hover:bg-neutral-100 rounded-lg transition-colors"
-                >
-                  Abbrechen
-                </button>
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="px-5 py-2 text-sm font-semibold text-white bg-brand-600 rounded-lg hover:bg-brand-700 disabled:opacity-50 transition-colors"
-                >
-                  {saving ? 'Speichern...' : 'Speichern'}
-                </button>
-              </div>
-            </form>
-          </div>
+      <Panel aria-labelledby="reviews-h" className="overflow-hidden">
+        <div className="panel-h">
+          <h2 className="h2" id="reviews-h">
+            {t('common.bewertungen')}
+          </h2>
+          {addButton}
         </div>
+
+        {loading ? (
+          <>
+            <div className="max-md:hidden">
+              <Table aria-label={t('testimonials.bewertungenWerdenGeladen')}>
+                <TBody>
+                  <SkeletonTableRows rows={4} columns={4} />
+                </TBody>
+              </Table>
+            </div>
+            <div className="p-4 md:hidden">
+              <SkeletonRows rows={3} avatar={false} />
+            </div>
+          </>
+        ) : sorted.length === 0 && !loadError ? (
+          <EmptyState
+            icon={<Star size={32} />}
+            title={t('testimonials.nochKeineBewertungen')}
+            text={t('testimonials.kundenstimmenErscheinenAufDer')}
+            actions={addButton}
+          />
+        ) : (
+          <>
+            <div className="max-md:hidden">
+              <Table aria-label={t('common.bewertungen')}>
+                <THead>
+                  <Tr>
+                    <Th>{t('common.name')}</Th>
+                    <Th>{t('testimonials.sterne')}</Th>
+                    <Th>{t('testimonials.text')}</Th>
+                    <Th>{t('testimonials.aufWebsite')}</Th>
+                    <Th align="right">
+                      <span className="sr-only">{t('common.aktionen')}</span>
+                    </Th>
+                  </Tr>
+                </THead>
+                <TBody>
+                  {sorted.map((item) => (
+                    <Tr key={item.id}>
+                      <Td className={item.isActive ? undefined : 'text-graphite'}>
+                        <Cell2 primary={item.name} secondary={item.location || undefined} />
+                      </Td>
+                      <Td>
+                        <Stars rating={item.rating} />
+                      </Td>
+                      <Td className="max-w-[520px]">
+                        <span className={`line-clamp-2 ${item.isActive ? '' : 'text-graphite'}`}>{item.text}</span>
+                      </Td>
+                      <Td>{rowSwitch(item)}</Td>
+                      <Td>
+                        {canEdit && (
+                          <div className="acts">
+                            <IconButton className="pr" aria-label={t('testimonials.bewertungVonBearbeiten', { name: item.name })} onClick={() => setModal({ editing: item })}>
+                              <Pencil size={20} aria-hidden="true" />
+                            </IconButton>
+                            <IconButton aria-label={t('testimonials.bewertungVonLoeschen2', { name: item.name })} onClick={() => void handleDelete(item)}>
+                              <Trash2 size={20} aria-hidden="true" />
+                            </IconButton>
+                          </div>
+                        )}
+                      </Td>
+                    </Tr>
+                  ))}
+                </TBody>
+              </Table>
+            </div>
+
+            <div className="flex flex-col gap-3 p-4 md:hidden">
+              {sorted.map((item) => (
+                <MobileCard
+                  key={item.id}
+                  title={item.name}
+                  subtitle={item.location || undefined}
+                  status={<Stars rating={item.rating} />}
+                  actions={
+                    <>
+                      <div className="mr-auto flex items-center gap-2">
+                        {rowSwitch(item)}
+                        <span className="sm mut">{t('testimonials.aufWebsite')}</span>
+                      </div>
+                      {canEdit && (
+                        <>
+                          <IconButton aria-label={t('testimonials.bewertungVonBearbeiten', { name: item.name })} onClick={() => setModal({ editing: item })}>
+                            <Pencil size={20} aria-hidden="true" />
+                          </IconButton>
+                          <IconButton aria-label={t('testimonials.bewertungVonLoeschen2', { name: item.name })} onClick={() => void handleDelete(item)}>
+                            <Trash2 size={20} aria-hidden="true" />
+                          </IconButton>
+                        </>
+                      )}
+                    </>
+                  }
+                >
+                  <p className={`line-clamp-4 ${item.isActive ? '' : 'text-graphite'}`}>{item.text}</p>
+                </MobileCard>
+              ))}
+            </div>
+          </>
+        )}
+      </Panel>
+
+      {modal && (
+        <TestimonialModal
+          editing={modal.editing}
+          nextOrder={nextOrder}
+          onClose={() => setModal(null)}
+          onSaved={(saved, wasNew) => {
+            setItems((prev) => (wasNew ? [...prev, saved] : prev.map((i) => (i.id === saved.id ? { ...i, ...saved } : i))));
+            setModal(null);
+            toast.success(wasNew ? tr('testimonials.bewertungHinzugefuegt') : tr('testimonials.bewertungGespeichert'));
+          }}
+        />
       )}
     </div>
+  );
+}
+
+function TestimonialModal({
+  editing,
+  nextOrder,
+  onClose,
+  onSaved,
+}: {
+  editing: Testimonial | null;
+  nextOrder: number;
+  onClose: () => void;
+  onSaved: (saved: Testimonial, wasNew: boolean) => void;
+}) {
+  const t = useTranslations();
+  const formId = useId();
+  const [form, setForm] = useState<FormState>(() => (editing ? toForm(editing) : emptyForm(nextOrder)));
+  const [errors, setErrors] = useState<{ name?: string; text?: string }>({});
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [lang, setLang] = useState<AppLocale>('de');
+
+  const set = <K extends keyof FormState>(key: K, value: FormState[K]) => setForm((f) => ({ ...f, [key]: value }));
+  const setTranslation = (locale: TranslatableLocale, patch: Partial<TestimonialTranslation>) =>
+    setForm((f) => ({ ...f, translations: { ...f.translations, [locale]: { ...f.translations[locale], ...patch } } }));
+
+  const states: Partial<Record<AppLocale, TranslationState>> = {};
+  for (const locale of TRANSLATABLE_LOCALES) {
+    const entry = form.translations[locale];
+    states[locale] = stateOf([
+      { base: form.text, value: entry?.text },
+      { base: form.location, value: entry?.location },
+    ]);
+  }
+
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const next: typeof errors = {};
+    if (!form.name.trim()) next.name = tr('testimonials.bitteGebenSieEinen');
+    if (!form.text.trim()) next.text = tr('testimonials.bitteGebenSieDen');
+    setErrors(next);
+    if (Object.keys(next).length > 0) {
+      setLang('de'); // German is required: show the empty field
+      return;
+    }
+
+    setSaving(true);
+    setError(null);
+    const rating = parseInt(form.rating, 10) || 5;
+    const sortOrder = parseInt(form.sortOrder, 10) || 0;
+    const translations = cleanTranslations(form.translations) as Translations<TestimonialTranslation> | null;
+    try {
+      if (editing) {
+        const saved = await api.updateTestimonial(editing.id, {
+          name: form.name.trim(),
+          location: form.location.trim() || null,
+          text: form.text.trim(),
+          rating,
+          avatarUrl: form.avatarUrl.trim() || null,
+          isActive: form.isActive,
+          sortOrder,
+          translations,
+        });
+        onSaved(saved, false);
+      } else {
+        const saved = await api.createTestimonial({
+          name: form.name.trim(),
+          location: form.location.trim() || undefined,
+          text: form.text.trim(),
+          rating,
+          avatarUrl: form.avatarUrl.trim() || undefined,
+          isActive: form.isActive,
+          sortOrder,
+          ...(translations ? { translations } : {}),
+        });
+        onSaved(saved, true);
+      }
+    } catch (err) {
+      setError(errorText(err, tr('testimonials.dieBewertungKonnteNicht2')));
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Modal
+      open
+      onClose={onClose}
+      dismissible={!saving}
+      size="md"
+      title={editing ? t('testimonials.bewertungBearbeiten') : t('testimonials.bewertungHinzufuegen')}
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose} disabled={saving}>
+            {t('common.abbrechen')}
+          </Button>
+          <Button type="submit" form={formId} loading={saving}>
+            {t('common.speichern')}
+          </Button>
+        </>
+      }
+    >
+      <form id={formId} onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
+        {error && <Alert tone="err">{error}</Alert>}
+        <div className="flex flex-col gap-2">
+          <LanguageTabs value={lang} onChange={setLang} states={states} idPrefix="tm-lang" />
+          <LanguageNote locale={lang} />
+        </div>
+        {lang === 'de' ? (
+          <>
+            <div className="grid grid-cols-2 gap-4 max-sm:grid-cols-1">
+              <Field label={t('common.name')} error={errors.name} required>
+                <Input value={form.name} onChange={(e) => set('name', e.target.value)} data-autofocus />
+              </Field>
+              <Field label={t('testimonials.ort')}>
+                <Input value={form.location} onChange={(e) => set('location', e.target.value)} />
+              </Field>
+            </div>
+            <Field label={t('testimonials.bewertungstext')} error={errors.text} required>
+              <Textarea rows={4} value={form.text} onChange={(e) => set('text', e.target.value)} />
+            </Field>
+            <div className="grid grid-cols-2 gap-4 max-sm:grid-cols-1">
+              <Field label={t('testimonials.sterne')}>
+                <Select value={form.rating} onChange={(e) => set('rating', e.target.value)}>
+                  {[5, 4, 3, 2, 1].map((r) => (
+                    <option key={r} value={r}>
+                      {r} {t('testimonials.sternN', { count: r })}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              <Field label={t('testimonials.reihenfolge')} hint={t('testimonials.kleinereZahlenErscheinenZuerst')}>
+                <Input type="number" value={form.sortOrder} onChange={(e) => set('sortOrder', e.target.value)} />
+              </Field>
+            </div>
+            <Field label={t('testimonials.avatarURLOptional')}>
+              <Input value={form.avatarUrl} onChange={(e) => set('avatarUrl', e.target.value)} placeholder={t('testimonials.https')} inputMode="url" />
+            </Field>
+            <Switch
+              checked={form.isActive}
+              onChange={(v) => set('isActive', v)}
+              label={t('common.aktiv')}
+              description={t('testimonials.aktiveBewertungenErscheinenAuf')}
+            />
+          </>
+        ) : (
+          <>
+            <TranslatedField
+              locale={lang}
+              label={t('testimonials.bewertungstext')}
+              base={form.text}
+              value={form.translations[lang as TranslatableLocale]?.text}
+              multiline
+              rows={4}
+              onChange={(v) => setTranslation(lang as TranslatableLocale, { text: v })}
+            />
+            <TranslatedField
+              locale={lang}
+              label={t('testimonials.ort')}
+              base={form.location}
+              value={form.translations[lang as TranslatableLocale]?.location}
+              onChange={(v) => setTranslation(lang as TranslatableLocale, { location: v })}
+            />
+          </>
+        )}
+      </form>
+    </Modal>
   );
 }

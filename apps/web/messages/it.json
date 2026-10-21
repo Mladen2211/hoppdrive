@@ -1,0 +1,724 @@
+{
+  "common": {
+    "errorBoundary": "Non è stato possibile caricare questa sezione.",
+    "close": "Chiudi",
+    "loadingVehicle": "Caricamento del veicolo",
+    "breadcrumb": "Percorso di navigazione"
+  },
+  "labels": {
+    "type": {
+      "sedan": "Berlina",
+      "suv": "SUV",
+      "estate": "Station wagon",
+      "coupe": "Coupé",
+      "convertible": "Cabriolet",
+      "electric": "Veicolo elettrico",
+      "van": "Van"
+    },
+    "fuel": {
+      "petrol": "Benzina",
+      "diesel": "Diesel",
+      "electric": "Elettrico",
+      "hybrid": "Ibrido"
+    },
+    "transmission": {
+      "automatic": "Automatico",
+      "manual": "Manuale"
+    },
+    "spec": {
+      "hp": "{hp} CV",
+      "seats": "{count, plural, one {# posto} other {# posti}}"
+    }
+  },
+  "category": {
+    "estate": {
+      "label": "Station wagon",
+      "rent": "Noleggio station wagon"
+    },
+    "suv": {
+      "label": "SUV",
+      "rent": "Noleggio SUV"
+    },
+    "sedan": {
+      "label": "Berlina",
+      "rent": "Noleggio berlina"
+    },
+    "van": {
+      "label": "Van",
+      "rent": "Noleggio van"
+    },
+    "electric": {
+      "label": "Auto elettrica",
+      "rent": "Noleggio auto elettrica"
+    },
+    "coupe": {
+      "label": "Coupé",
+      "rent": "Noleggio coupé"
+    },
+    "convertible": {
+      "label": "Cabriolet",
+      "rent": "Noleggio cabriolet"
+    }
+  },
+  "categoryIntro": {
+    "estate": "La station wagon è l’eroe del quotidiano per famiglie e grandi viaggiatori: tanto spazio nel bagagliaio, comoda sulle lunghe distanze e comunque abbastanza agile per la città. Da HoppDrive noleggiate station wagon di marche note – ideali per traslochi, vacanze o per il trasporto di oggetti ingombranti.",
+    "suv": "I SUV offrono una posizione di seduta rialzata, molto spazio e una guida sicura su ogni strada – in città come sui passi alpini. La nostra flotta di SUV è adatta a famiglie, gite in montagna e a tutti coloro che apprezzano un po’ più di spazio e di altezza da terra.",
+    "sedan": "Le berline convincono con una guida tranquilla, un grande bagagliaio e un aspetto elegante – perfette per i viaggi d’affari o per lunghi tragitti rilassati. Da HoppDrive noleggiate berline a tariffe giornaliere trasparenti, casco completa inclusa.",
+    "van": "I van offrono il massimo spazio per passeggeri e bagagli e sono la prima scelta per gruppi numerosi, famiglie o gite di società. I nostri van si noleggiano in modo flessibile – da un singolo fine settimana a un utilizzo di diversi mesi.",
+    "electric": "I veicoli elettrici circolano senza emissioni locali e in silenzio – ideali per scoprire la Svizzera con attenzione al CO2. Da HoppDrive noleggiate auto elettriche con casco completa inclusa, senza infrastruttura di ricarica propria né costi di acquisto.",
+    "coupe": "Le coupé uniscono un design sportivo a una guida diretta – per chi non vuole rinunciare al piacere di guidare nemmeno con un’auto a noleggio. La carrozzeria a due porte porta stile in ogni viaggio, dalla gita del fine settimana all’occasione speciale.",
+    "convertible": "Una cabriolet trasforma ogni viaggio in un’esperienza – guidare a cielo aperto sotto il sole, lungo un lago svizzero o attraverso le Alpi. Noleggiate una cabriolet da HoppDrive per una gita speciale o per la settimana di vacanza."
+  },
+  "fleetCategory": {
+    "estate": "Station wagon",
+    "suv": "SUV",
+    "sedan": "Berline",
+    "van": "Van",
+    "coupe": "Coupé",
+    "convertible": "Cabriolet",
+    "electric": "Elettriche",
+    "hybrid": "Ibride"
+  },
+  "nav": {
+    "fleet": "La nostra flotta",
+    "pricing": "Tariffe",
+    "faq": "FAQ",
+    "location": "Sede",
+    "home": "Pagina iniziale di HoppDrive",
+    "main": "Navigazione principale",
+    "mobile": "Navigazione mobile",
+    "menu": "Menu",
+    "toggle": "Mostra o nascondi la navigazione",
+    "closeMenu": "Chiudi la navigazione",
+    "cta": "Invia richiesta",
+    "questions": "Domande? Scriveteci."
+  },
+  "language": {
+    "label": "Lingua",
+    "switchLabel": "Scegli la lingua",
+    "current": "Lingua attuale: {name}"
+  },
+  "footer": {
+    "logoAlt": "HoppDrive – noleggio auto a breve e lungo termine in Svizzera",
+    "tagline": "Conveniente, flessibile, casco completa inclusa.",
+    "vehicles": "Veicoli",
+    "allVehicles": "Tutti i veicoli",
+    "legal": "Informazioni legali",
+    "imprint": "Note legali",
+    "privacy": "Protezione dei dati",
+    "terms": "Condizioni generali",
+    "cookieSettings": "Impostazioni dei cookie",
+    "contact": "Contatto",
+    "locationHours": "Sede e orari di apertura",
+    "copyright": "© {year} Euro-Abschleppservice GmbH. Tutti i diritti riservati.",
+    "adminTitle": "Admin",
+    "adminAria": "Accesso amministratore",
+    "language": "Lingua"
+  },
+  "maintenance": {
+    "defaultMessage": "Il nostro sito web è temporaneamente non raggiungibile a causa di lavori di manutenzione. Riprovate più tardi.",
+    "title": "Torniamo subito.",
+    "urgent": "Rispondiamo volentieri alle domande urgenti via e-mail:"
+  },
+  "cookie": {
+    "dialogLabel": "Informativa sui cookie",
+    "title": "Cookie su HoppDrive",
+    "text": "Utilizziamo i cookie per migliorare la vostra esperienza e analizzare il nostro traffico. Facendo clic su «Accetta» acconsentite all’uso dei cookie ai sensi della LPD svizzera e del GDPR dell’UE. Maggiori informazioni nella <link>dichiarazione sulla protezione dei dati</link>.",
+    "accept": "Accetta",
+    "declineNonEssential": "Solo quelli necessari",
+    "manage": "Gestisci le impostazioni",
+    "settingsTitle": "Impostazioni dei cookie",
+    "save": "Salva le impostazioni",
+    "necessary": "Necessari",
+    "necessaryDescription": "Indispensabili per il funzionamento del sito. Sempre attivi.",
+    "analytics": "Statistiche",
+    "analyticsDescription": "Google Analytics: ci aiuta a capire quali pagine vengono utilizzate.",
+    "marketing": "Marketing",
+    "marketingDescription": "Brevo: contenuti pubblicitari e offerte personalizzate."
+  },
+  "hero": {
+    "badge": "Noleggio a breve e lungo termine in Svizzera",
+    "heading": "Viaggiate a un prezzo conveniente,",
+    "headingHighlight": "noleggiate con flessibilità.",
+    "description": "Veicoli affidabili come Škoda Superb, VW Passat e altri – da {price} al giorno. Più a lungo noleggiate, più risparmiate. Casco completa inclusa.",
+    "ctaPrimary": "Scopri la flotta",
+    "ctaSecondary": "Verifica la disponibilità",
+    "trustCover": "Casco completa inclusa",
+    "trustFlexible": "Noleggiabile da 1 giorno",
+    "trustDiscount": "Fino al {percent} % di sconto lungo termine",
+    "imageAlt": "Auto moderna su una strada svizzera – HoppDrive, noleggio auto conveniente",
+    "from": "Da",
+    "perDay": "al giorno",
+    "coverShort": ", casco completa incl.",
+    "descriptionNoPrice": "Veicoli affidabili come Škoda Superb, VW Passat e altri. Più a lungo noleggiate, più risparmiate. Casco completa inclusa.",
+    "carousel": {
+      "label": "Veicoli della nostra flotta",
+      "roleDescription": "carosello",
+      "slideRole": "diapositiva",
+      "slideLabel": "{current} di {total}",
+      "previous": "Veicolo precedente",
+      "next": "Veicolo successivo",
+      "goTo": "Mostra il veicolo {number}: {name}",
+      "dots": "Scegli un veicolo",
+      "pause": "Metti in pausa la rotazione automatica",
+      "play": "Avvia la rotazione automatica",
+      "live": "{name}, {current} di {total}",
+      "fromPerDay": "da {price} / giorno"
+    }
+  },
+  "why": {
+    "label": "Perché HoppDrive",
+    "heading": "Prezzi chiari, auto curate, un solo interlocutore",
+    "priceTitle": "Prezzi imbattibili",
+    "priceText": "Da {price} al giorno, e ogni settimana la tariffa giornaliera diventa più conveniente.",
+    "coverTitle": "Casco completa inclusa",
+    "coverText": "La copertura assicurativa è compresa nel prezzo, senza costi aggiuntivi nascosti.",
+    "maintenanceTitle": "Manutenzione impeccabile",
+    "maintenanceText": "Ogni veicolo viene controllato e sottoposto a manutenzione regolarmente prima di arrivare da voi.",
+    "serviceTitle": "Servizio personale",
+    "serviceText": "Dalla richiesta alla riconsegna parlate sempre con le stesse persone.",
+    "priceTextNoPrice": "Ogni settimana la tariffa giornaliera diventa più conveniente."
+  },
+  "how": {
+    "label": "Come funziona",
+    "heading": "In strada in tre passi",
+    "step": "Passo {number}: ",
+    "chooseTitle": "Scegliere il veicolo",
+    "chooseText": "Sfogliate la nostra flotta e trovate l’auto giusta per le vostre esigenze.",
+    "requestTitle": "Richiedere senza impegno",
+    "requestText": "Inviateci una richiesta gratuita con le date desiderate, risponderemo il prima possibile.",
+    "driveTitle": "Partire",
+    "driveText": "Firmate il contratto, ritirate le chiavi ed eccovi in viaggio, a un prezzo conveniente e con flessibilità."
+  },
+  "pricing": {
+    "label": "Tariffe",
+    "heading": "Più a lungo noleggiate, meno pagate al giorno",
+    "descriptionVehicle": "Lo sconto vale per ogni giorno a partire dal rispettivo scaglione. L’esempio mostra il modello {name} con un prezzo base di {price}.",
+    "description": "Lo sconto vale per ogni giorno a partire dal rispettivo scaglione. Tutti i prezzi includono la casco completa.",
+    "tierStandard": "Tariffa giornaliera standard per esigenze a breve termine.",
+    "tierDiscount": "Sconto automatico del {percent}% sulla tariffa giornaliera per ogni giorno di questo scaglione.",
+    "tierBadge": "{percent}% DI SCONTO",
+    "tierRange": "Giorno {from} – {to}",
+    "tierFrom": "Dal giorno {from}",
+    "tierDay": "Giorno {day}",
+    "includedTitle": "Sempre incluso – senza supplemento",
+    "included": [
+      "Assicurazione casco completa",
+      "Manutenzione e service",
+      "Assistenza in caso di guasto 24 ore su 24, 7 giorni su 7",
+      "Contratti trasparenti"
+    ]
+  },
+  "ladder": {
+    "ariaLabel": "Scala dei prezzi: {summary}",
+    "fullPrice": "prezzo pieno",
+    "minus": "meno {percent} per cento",
+    "zeroPercent": "0 %",
+    "standard": "Tariffa standard",
+    "standardShort": "Standard",
+    "discount": "{percent} % di sconto"
+  },
+  "calculator": {
+    "title": "Prezzo per la vostra durata di noleggio",
+    "unavailable": "Il calcolatore dei prezzi al momento non è disponibile. Vi comunicheremo volentieri il prezzo per la vostra durata di noleggio nella risposta alla richiesta.",
+    "cta": "Richiedi con questi dati",
+    "vehicle": "Veicolo",
+    "vehicleOption": "{name} · {price} / giorno",
+    "duration": "Durata del noleggio",
+    "days": "{days, plural, one {# giorno} other {# giorni}}",
+    "total": "Prezzo totale",
+    "average": "Ø {price} al giorno. ",
+    "noteCard": "Prezzo indicativo dal calcolo dei prezzi; fa fede la conferma via e-mail.",
+    "noteSidebar": "Prezzo indicativo; fa fede la conferma via e-mail.",
+    "proofFree": "Gratuito e senza impegno",
+    "proofCover": "Casco completa inclusa"
+  },
+  "quick": {
+    "ariaLabel": "Richiesta rapida",
+    "vehicle": "Veicolo",
+    "anyVehicle": "Nessun veicolo in particolare",
+    "vehicleOption": "{name} · da {price}",
+    "from": "Dal",
+    "to": "Al",
+    "dateOrderError": "La fine non può essere precedente all’inizio.",
+    "cta": "Verifica la disponibilità"
+  },
+  "estimate": {
+    "label": "Prezzo indicativo",
+    "labelDays": "Prezzo indicativo · {days, plural, one {# giorno} other {# giorni}}",
+    "labelForDays": "Prezzo indicativo per {days, plural, one {# giorno} other {# giorni}}",
+    "invalidSub": "La fine non può essere precedente all’inizio.",
+    "averageSub": "Ø {perDay} / giorno, {hint}",
+    "fromPerDay": "Da {price} / giorno",
+    "pickPeriod": "Scegliete l’inizio e la fine per ottenere un prezzo indicativo.",
+    "pickVehicleAndPeriod": "Scegliete il veicolo e il periodo per ottenere un prezzo indicativo.",
+    "discountFromDay": "sconto dal giorno {day}",
+    "noDiscount": "senza sconto"
+  },
+  "contact": {
+    "label": "Gratuito e senza impegno",
+    "heading": "Invia richiesta",
+    "description": "Diteci di cosa avete bisogno. Vi rispondiamo con disponibilità e prezzo.",
+    "cta": "Invia richiesta",
+    "formAria": "Richiesta di noleggio",
+    "legend": "I vostri dati",
+    "fields": {
+      "fullName": "Nome",
+      "phone": "Telefono",
+      "email": "E-mail",
+      "message": "Messaggio",
+      "privacyConsent": "Protezione dei dati",
+      "desiredStartDate": "Inizio",
+      "desiredEndDate": "Data di fine",
+      "discountCode": "Codice sconto"
+    },
+    "labels": {
+      "fullName": "Nome",
+      "phone": "Telefono",
+      "email": "E-mail",
+      "vehicle": "Veicolo di interesse",
+      "start": "Inizio desiderato",
+      "end": "Fine desiderata",
+      "message": "Messaggio",
+      "discountCode": "Codice sconto"
+    },
+    "placeholders": {
+      "fullName": "Mario Rossi",
+      "phone": "+41 79 123 45 67",
+      "email": "mario@esempio.ch",
+      "message": "Vorrei noleggiare un veicolo a partire dal...",
+      "discountCode": "ad es. HD-AB12-CD34"
+    },
+    "anyVehicle": "Nessun veicolo in particolare",
+    "errors": {
+      "fullName": {
+        "empty": "Inserite il vostro nome.",
+        "invalid": "Inserite il vostro nome."
+      },
+      "phone": {
+        "empty": "Inserite il vostro numero di telefono.",
+        "invalid": "Il numero di telefono è troppo corto (almeno 7 caratteri)."
+      },
+      "email": {
+        "empty": "Inserite il vostro indirizzo e-mail.",
+        "invalid": "Inserite un indirizzo e-mail completo, ad es. laura@esempio.ch."
+      },
+      "message": {
+        "empty": "Scriveteci brevemente di cosa avete bisogno.",
+        "invalid": "Scriveteci brevemente di cosa avete bisogno."
+      },
+      "privacyConsent": {
+        "empty": "Senza il vostro consenso non possiamo elaborare la richiesta.",
+        "invalid": "Senza il vostro consenso non possiamo elaborare la richiesta."
+      },
+      "desiredStartDate": {
+        "empty": "Controllate l’inizio desiderato.",
+        "invalid": "Controllate l’inizio desiderato."
+      },
+      "desiredEndDate": {
+        "empty": "Controllate la fine desiderata.",
+        "invalid": "La fine non può essere precedente all’inizio."
+      },
+      "discountCode": {
+        "empty": "Correggete il codice sconto oppure lasciate il campo vuoto.",
+        "invalid": "Correggete il codice sconto oppure lasciate il campo vuoto."
+      }
+    },
+    "summaryTitle": "{count, plural, one {# dato deve ancora essere corretto} other {# dati devono ancora essere corretti}}.",
+    "failedTitle": "La richiesta non è stata inviata.",
+    "resend": "Invia di nuovo",
+    "orWriteTo": "Oppure scrivete a",
+    "failureNetwork": "Il server al momento non è raggiungibile. I vostri dati sono ancora presenti.",
+    "failureTooMany": "Sono state ricevute troppe richieste. Riprovate tra qualche minuto. I vostri dati sono ancora presenti.",
+    "failureGeneric": "Si è verificato un errore durante l’invio. I vostri dati sono ancora presenti.",
+    "picked": "Veicolo ripreso dalla vostra selezione: <b>{name}</b>",
+    "change": "Modifica",
+    "privacyLabel": "Ho letto la <link>dichiarazione sulla protezione dei dati<sr> (si apre in una nuova scheda)</sr></link> e acconsento al trattamento dei miei dati.",
+    "privacyDetail": "Acconsento al trattamento dei miei dati personali (nome, e-mail, telefono) per l’elaborazione di questa richiesta. I dati vengono trattati in modo sicuro e possono essere trasmessi al nostro fornitore di servizi e-mail (Brevo).",
+    "marketingLabel": "Acconsento a ricevere e-mail pubblicitarie su offerte speciali e nuovi veicoli.",
+    "optional": "(facoltativo)",
+    "marketingDetail": "Posso annullare l’iscrizione in qualsiasi momento.",
+    "sending": "Invio della richiesta…",
+    "readyHint": "Il pulsante diventa attivo non appena nome, e-mail e protezione dei dati sono compilati.",
+    "dontClose": "Non chiudete la pagina.",
+    "asideTitle": "Cosa succede dopo l’invio",
+    "nextConfirmTitle": "Conferma via e-mail",
+    "nextConfirmText": "Ricevete subito una copia della vostra richiesta.",
+    "nextCheckTitle": "Verifichiamo la disponibilità",
+    "nextCheckText": "Rispondiamo il prima possibile con prezzo e offerta.",
+    "nextHandoverTitle": "Consegna sul posto",
+    "nextHandoverText": "Firmare il contratto di noleggio, ritirare le chiavi.",
+    "successTitle": "Grazie. La vostra richiesta è arrivata.",
+    "successTitleNamed": "Grazie, {name}. La vostra richiesta è arrivata.",
+    "successText": "Vi risponderemo il prima possibile all’indirizzo <addr>{email}</addr>.",
+    "summaryVehicle": "Veicolo",
+    "summaryPeriod": "Periodo",
+    "summaryEstimate": "Prezzo indicativo",
+    "summaryDays": "({days, plural, one {# giorno} other {# giorni}})",
+    "afterConfirmTitle": "Conferma via e-mail",
+    "afterConfirmText": "Controllate anche la cartella dello spam.",
+    "afterCheckTitle": "Verifichiamo la disponibilità",
+    "afterCheckText": "Successivamente riceverete prezzo e offerta.",
+    "moreVehicles": "Vedi altri veicoli",
+    "toHome": "Torna alla pagina iniziale",
+    "discount": {
+      "hint": "Avete un codice? Lo includiamo nella vostra offerta.",
+      "check": "Verifica",
+      "checkAria": "Verifica il codice sconto",
+      "checking": "Verifica del codice in corso…",
+      "valid": "Codice valido: {label}",
+      "percentOff": "−{percent}%",
+      "unavailable": "Al momento non è stato possibile verificare il codice. Potete comunque inviarlo con la richiesta, lo verificheremo durante l’elaborazione.",
+      "pillSub": "Sconto del codice {label} incluso, Ø {perDay} / giorno",
+      "summaryCode": "Codice sconto",
+      "reasons": {
+        "not_found": "Questo codice non è valido. Controllate l’ortografia.",
+        "inactive": "Questo codice non è più attivo.",
+        "not_started": "Questo codice non è ancora valido.",
+        "expired": "Questo codice è scaduto.",
+        "exhausted": "Questo codice è già stato utilizzato troppe volte.",
+        "email_limit": "Questo codice è già stato utilizzato con questo indirizzo e-mail.",
+        "min_days": "Questo codice vale solo per un noleggio più lungo.",
+        "wrong_recipient": "Questo codice è destinato a un altro indirizzo e-mail.",
+        "email_required": "Inserite sopra il vostro indirizzo e-mail, così possiamo verificare il codice.",
+        "currency_mismatch": "Questo codice non vale per la valuta attuale.",
+        "generic": "Questo codice non può essere applicato."
+      },
+      "priceWas": "Invece di",
+      "priceNow": "ora"
+    }
+  },
+  "social": {
+    "label": "Opinioni dei clienti",
+    "heading": "Cosa dicono i nostri clienti",
+    "stars": "{value} stelle su 5",
+    "fallback": {
+      "one": {
+        "name": "Marco S.",
+        "location": "Zurigo",
+        "text": "Molto semplice e conveniente. Ho avuto la VW Passat per 3 mesi – meglio di qualsiasi contratto di leasing."
+      },
+      "two": {
+        "name": "Laura M.",
+        "location": "Basilea",
+        "text": "Servizio cordiale e auto curatissima. La casco completa inclusa è un grande vantaggio."
+      },
+      "three": {
+        "name": "Thomas K.",
+        "location": "Berna",
+        "text": "Perfetto per il mio periodo di transizione. Lo sconto sul lungo termine è stato davvero vantaggioso – consigliato!"
+      }
+    }
+  },
+  "faq": {
+    "label": "Domande frequenti",
+    "heading": "Da sapere prima di inviare la richiesta",
+    "askTitle": "Manca la vostra domanda?",
+    "askText": "Scriveteci, risponderemo il prima possibile.",
+    "askCta": "Fare una domanda",
+    "discountSentence": " Per noleggi più lunghi beneficiate di sconti automatici: {parts}.",
+    "discountPart": "{percent}% da {days} giorni",
+    "discountPartMax": "fino al {percent}% da {days} giorni",
+    "fallback": {
+      "priceQuestion": "Quanto costa il noleggio da HoppDrive?",
+      "priceAnswer": "Le nostre auto a noleggio partono da {price} al giorno.{discounts}",
+      "insuranceQuestion": "L’assicurazione è inclusa?",
+      "insuranceAnswer": "Sì, a ogni noleggio è inclusa un’assicurazione casco completa. Non ci sono costi aggiuntivi nascosti per la copertura assicurativa.",
+      "durationQuestion": "Per quanto tempo posso noleggiare un veicolo?",
+      "durationAnswer": "Potete noleggiare i nostri veicoli da 1 giorno fino a diversi mesi. Più lunga è la durata del noleggio, più conveniente è la tariffa giornaliera.",
+      "documentsQuestion": "Di quali documenti ho bisogno?",
+      "documentsAnswer": "Occorrono una patente di guida valida e un documento d’identità (passaporto o carta d’identità). Il contratto di noleggio viene firmato sul posto al momento della consegna.",
+      "extendQuestion": "Posso prolungare la durata del noleggio?",
+      "extendAnswer": "Sì, una proroga è possibile in qualsiasi momento, basta contattarci. Il prezzo si adegua automaticamente alla nuova durata complessiva.",
+      "pickupQuestion": "Dove posso ritirare il veicolo?",
+      "pickupAnswer": "La consegna del veicolo avviene presso la nostra sede. L’indirizzo esatto e le indicazioni stradali vengono comunicati dopo la conferma della prenotazione.",
+      "priceAnswerNoPrice": "Il prezzo dipende dal veicolo e dalla durata del noleggio.{discounts}"
+    }
+  },
+  "map": {
+    "kicker": "Sede",
+    "defaultTitle": "Dove trovarci",
+    "pickup": "Ritiro e riconsegna",
+    "hours": "Orari di apertura",
+    "email": "E-mail",
+    "phone": "Telefono",
+    "route": "Pianifica il percorso"
+  },
+  "fleet": {
+    "label": "La nostra flotta",
+    "headingCount": "{count, plural, one {# veicolo} other {# veicoli}}, noleggiabili da 1 giorno",
+    "headingEmpty": "Auto a noleggio convenienti per ogni occasione",
+    "filterAria": "Filtra per categoria di veicolo",
+    "all": "Tutti",
+    "emptyTitle": "Al momento nessun veicolo disponibile",
+    "emptyText": "Ripassate più tardi oppure chiedeteci direttamente.",
+    "emptyCta": "Invia richiesta",
+    "liveCount": "{count, plural, one {# veicolo} other {# veicoli}}",
+    "priceAside": "Prezzo e richiesta",
+    "viewAll": "{count, plural, one {Vedi il veicolo} other {Vedi tutti i # veicoli}}"
+  },
+  "vehicleCard": {
+    "available": "Disponibile",
+    "reserved": "Riservato",
+    "from": "Da",
+    "perDay": "/ giorno",
+    "month": "30 giorni in totale: <num>{price}</num>",
+    "details": "Dettagli",
+    "detailsAria": "Dettagli di {name}",
+    "inquire": "Richiedi",
+    "inquireAria": "Richiedi {name}",
+    "photoSoon": "Foto in arrivo"
+  },
+  "gallery": {
+    "roleDescription": "Galleria di immagini",
+    "groupLabel": "Immagini di {name}",
+    "previous": "Immagine precedente",
+    "next": "Immagine successiva",
+    "counter": "{current} / {total}",
+    "live": "Immagine {current} di {total}",
+    "thumbnail": "Immagine {number}"
+  },
+  "vehiclePanel": {
+    "aria": "Prezzo e richiesta",
+    "reservedTitle": "Veicolo riservato.",
+    "reservedText": "Guardate veicoli simili oppure chiedeteci un altro periodo.",
+    "from": "Da",
+    "perDay": "/ giorno",
+    "ladderTitle": "Tariffa giornaliera in base alla durata del noleggio",
+    "duration": "Durata del noleggio",
+    "discount": "Sconto",
+    "perDayColumn": "Al giorno",
+    "dateFrom": "Dal",
+    "dateTo": "Al",
+    "dateOrderError": "La fine non può essere precedente all’inizio.",
+    "averagePerDay": "Ø {price} / giorno",
+    "cta": "Richiedi questo veicolo",
+    "ctaNote": "Gratuito e senza impegno. Veicolo e date vengono riportati nel modulo.",
+    "stickyCta": "Richiedi"
+  },
+  "browser": {
+    "filterTitle": "Filtri",
+    "reset": "Reimposta",
+    "fuel": "Alimentazione",
+    "seats": "Posti a sedere",
+    "seatsAny": "Indifferente",
+    "seatsFive": "5 o più",
+    "seatsSeven": "7 o più",
+    "maxPrice": "Prezzo max. al giorno",
+    "maxPriceValue": "{price} al giorno",
+    "onlyAvailable": "Solo veicoli disponibili",
+    "activeFilters": "{count, plural, one {# filtro attivo} other {# filtri attivi}}",
+    "sortLabel": "Ordina",
+    "sortPriceAsc": "Prezzo crescente",
+    "sortPriceDesc": "Prezzo decrescente",
+    "sortName": "Nome A–Z",
+    "count": "<b>{shown}</b> di {total} {total, plural, one {veicolo} other {veicoli}}",
+    "loadMore": "Carica altri {count} {count, plural, one {veicolo} other {veicoli}}",
+    "emptyAllTitle": "Al momento non ci sono veicoli disponibili",
+    "emptyAllText": "Ripassate più tardi oppure chiedeteci direttamente.",
+    "emptyAllCta": "Invia richiesta",
+    "emptyFilterTitle": "Nessun veicolo corrispondente",
+    "emptyFilterText": "Provate un altro filtro oppure guardate tutta la flotta.",
+    "emptyFilterCta": "Reimposta i filtri",
+    "sheetCancel": "Annulla",
+    "sheetShow": "Mostra {count} {count, plural, one {veicolo} other {veicoli}}"
+  },
+  "categoryChips": {
+    "aria": "Categorie di veicoli",
+    "all": "Tutti"
+  },
+  "fleetPage": {
+    "crumbHome": "Pagina iniziale",
+    "crumbFleet": "Veicoli",
+    "title": "Auto a noleggio in Svizzera – la nostra flotta",
+    "description": "Tutti i veicoli a noleggio di HoppDrive in un colpo d’occhio: berline, SUV, station wagon, van e auto elettriche. Tariffe giornaliere convenienti, sconto automatico sul lungo termine, casco completa inclusa.",
+    "lead": "Dalla berlina economica al van spazioso: sfogliate l’intera flotta e trovate il veicolo giusto per il vostro prossimo viaggio. Tutti i prezzi includono la casco completa, con sconto automatico per i noleggi più lunghi."
+  },
+  "categoryPage": {
+    "title": "{category} in Svizzera",
+    "titleWithPrice": "{category} in Svizzera da {price}/giorno",
+    "description": "{category} in Svizzera da HoppDrive. Noleggio flessibile a breve e lungo termine, fino al 40% di sconto sul lungo termine, casco completa inclusa.",
+    "descriptionWithPrice": "{category} in Svizzera da HoppDrive a partire da {price} al giorno. Noleggio flessibile a breve e lungo termine, fino al 40% di sconto sul lungo termine, casco completa inclusa.",
+    "priceLine": "Da <num>{price}</num> al giorno, con casco completa e sconto automatico sul lungo termine inclusi.",
+    "back": "Vedi tutti i veicoli"
+  },
+  "vehiclePage": {
+    "crumbHome": "Pagina iniziale",
+    "crumbFleet": "Veicoli",
+    "backToFleet": "Tutti i veicoli",
+    "notFoundTitle": "Veicolo non trovato",
+    "metaTitle": "Noleggio {name} da {price}/giorno",
+    "metaDescription": "Noleggiate {name} ({year}) a un prezzo conveniente – {type} da {hp} CV, {seats} posti. Da {price}/giorno, fino al 40% di sconto sul lungo termine. Casco completa inclusa. Richiedete ora senza impegno da HoppDrive.",
+    "imageAlt": "{name} – noleggio a lungo termine HoppDrive",
+    "specsTitle": "Dati tecnici",
+    "specPower": "Potenza",
+    "specTransmission": "Cambio",
+    "specSeats": "Posti a sedere",
+    "specDrive": "Alimentazione",
+    "specRange": "Autonomia",
+    "specYear": "Anno di costruzione",
+    "specCategory": "Categoria",
+    "aboutTitle": "Informazioni su questo veicolo",
+    "kind": {
+      "sedan": "una berlina",
+      "suv": "un SUV",
+      "estate": "una station wagon",
+      "coupe": "una coupé",
+      "convertible": "una cabriolet",
+      "electric": "un veicolo elettrico",
+      "van": "un van"
+    },
+    "transmissionLongAutomatic": "cambio automatico",
+    "transmissionLongManual": "cambio manuale",
+    "fuelElectricRange": "Viaggia in modalità puramente elettrica con un’autonomia di {range}.",
+    "fuelElectric": "Viaggia in modalità puramente elettrica.",
+    "fuelHybrid": "Dispone di un’economica propulsione ibrida.",
+    "fuelOther": "Funziona a {fuel}.",
+    "proseDiscount": " fino al {percent}%",
+    "prose": "{name} ({year}) è {kind} da {hp} CV, con {transmission} e {seats} posti. {fuelSentence} Prezzo di noleggio da {price} al giorno; con una durata più lunga la tariffa giornaliera scende automaticamente{discount} – l’assicurazione casco completa e l’assistenza in caso di guasto sono sempre incluse.",
+    "includedTitle": "Incluso nel prezzo",
+    "defaultFeatures": {
+      "coverTitle": "Assicurazione casco completa",
+      "coverText": "Nessun costo aggiuntivo nascosto per la copertura assicurativa.",
+      "maintenanceTitle": "Manutenzione regolare",
+      "maintenanceText": "Ogni veicolo viene controllato prima di arrivare da voi.",
+      "extendTitle": "Proroga in qualsiasi momento",
+      "extendText": "Il prezzo si adegua automaticamente alla nuova durata complessiva."
+    },
+    "examplesTitle": "Esempi di prezzo",
+    "exampleDuration": "Durata del noleggio",
+    "exampleTotal": "Prezzo totale",
+    "exampleDiscount": "Sconto",
+    "exampleDays": "{days, plural, one {# giorno} other {# giorni}}",
+    "similarTitle": "Veicoli simili",
+    "similarAll": "Tutti i veicoli",
+    "jsonldDescription": "Noleggiate {name} ({year}) a un prezzo conveniente in Svizzera. {type} da {hp} CV. Da {price}/giorno.",
+    "propPower": "Potenza",
+    "propTransmission": "Cambio",
+    "propSeats": "Posti",
+    "propDrive": "Alimentazione",
+    "propRange": "Autonomia",
+    "propYear": "Anno di costruzione",
+    "unitHp": "CV",
+    "fuelPetrol": "Funziona a benzina.",
+    "fuelDiesel": "Funziona a diesel."
+  },
+  "legal": {
+    "navLabel": "Pagine legali",
+    "home": "Pagina iniziale",
+    "note": "Fa fede la versione tedesca.",
+    "pages": {
+      "impressum": "Note legali",
+      "privacy": "Protezione dei dati",
+      "agb": "Condizioni generali"
+    },
+    "impressum": {
+      "title": "Note legali",
+      "metaDescription": "Note legali e informazioni sull’azienda HoppDrive – il vostro noleggio auto conveniente in Svizzera.",
+      "company": "Dati dell’azienda",
+      "contact": "Contatto",
+      "emailLabel": "E-mail",
+      "phoneLabel": "Telefono",
+      "representative": "Persona autorizzata a rappresentare l’azienda",
+      "register": "Registro di commercio",
+      "vat": "Numero IVA",
+      "disclaimer": "Esclusione di responsabilità",
+      "dataQuestions": "Per domande sui vostri dati scrivete a info@hoppdrive.ch."
+    },
+    "privacy": {
+      "title": "Dichiarazione sulla protezione dei dati",
+      "metaTitle": "Protezione dei dati",
+      "metaDescription": "Dichiarazione sulla protezione dei dati di HoppDrive ai sensi della LPD e del GDPR. Scoprite come proteggiamo i vostri dati.",
+      "lastUpdated": "Ultimo aggiornamento: {date}",
+      "emailLabel": "E-mail",
+      "phoneLabel": "Telefono",
+      "controller": "1. Titolare del trattamento",
+      "data": "2. Dati raccolti",
+      "dataContact": "a) Dati inseriti nel modulo di contatto",
+      "dataAuto": "b) Dati raccolti automaticamente",
+      "dataCookies": "c) Cookie e analisi (solo con consenso)",
+      "processors": "3. Responsabili del trattamento (fornitori terzi)",
+      "retention": "4. Periodo di conservazione",
+      "rights": "5. I vostri diritti",
+      "security": "6. Misure di sicurezza",
+      "complaints": "7. Diritto di reclamo"
+    },
+    "agb": {
+      "title": "Condizioni generali",
+      "metaTitle": "Condizioni generali",
+      "metaDescription": "Condizioni generali di HoppDrive – il vostro noleggio auto conveniente in Svizzera.",
+      "intro": "Di seguito trovate le nostre condizioni generali complete in formato PDF.",
+      "download": "Scarica le condizioni generali in PDF",
+      "iframeTitle": "Condizioni generali – HoppDrive"
+    }
+  },
+  "notFound": {
+    "title": "Pagina non trovata",
+    "heading": "Questa pagina non esiste",
+    "text": "Il link è obsoleto oppure il veicolo non fa più parte della nostra flotta.",
+    "allVehicles": "Tutti i veicoli",
+    "home": "Torna alla pagina iniziale"
+  },
+  "unsubscribe": {
+    "metaTitle": "Annulla l’iscrizione",
+    "metaDescription": "Annullare l’iscrizione a newsletter e offerte di HoppDrive.",
+    "title": "Annulla l’iscrizione",
+    "home": "Torna alla pagina iniziale",
+    "loading": "Verifica del link in corso…",
+    "readyTitle": "Annulla l’iscrizione alle e-mail promozionali",
+    "readyText": "Non desiderate più ricevere offerte e novità di HoppDrive via e-mail?",
+    "emailLine": "Indirizzo interessato: {email}",
+    "serviceNote": "Continuerete a ricevere le e-mail di servizio relative ai vostri contratti di noleggio.",
+    "submit": "Annulla l’iscrizione",
+    "submitting": "Annullamento in corso…",
+    "doneTitle": "L’iscrizione è stata annullata.",
+    "doneText": "Non riceverete più e-mail promozionali. Continuerete a ricevere le e-mail di servizio relative ai vostri contratti di noleggio.",
+    "alreadyTitle": "L’iscrizione è già stata annullata.",
+    "alreadyText": "A questo indirizzo non vengono più inviate e-mail promozionali. Continuerete a ricevere le e-mail di servizio relative ai vostri contratti di noleggio.",
+    "invalidTitle": "Questo link non è valido o è scaduto.",
+    "invalidText": "Aprite di nuovo il link dell’ultima e-mail. Se continua a non funzionare, scriveteci e annulleremo l’iscrizione manualmente.",
+    "errorTitle": "Purtroppo non ha funzionato.",
+    "errorText": "Il server al momento non è raggiungibile. Riprovate tra qualche minuto.",
+    "retry": "Riprova"
+  },
+  "meta": {
+    "keywords": [
+      "noleggio auto Svizzera",
+      "auto a noleggio economiche",
+      "noleggio auto lungo termine Svizzera",
+      "noleggio auto breve termine",
+      "noleggiare auto a buon prezzo",
+      "noleggio Škoda Svizzera",
+      "noleggio VW Svizzera",
+      "noleggio auto tariffa giornaliera",
+      "noleggio auto lungo termine sconto",
+      "HoppDrive",
+      "noleggio station wagon",
+      "noleggio SUV economico",
+      "noleggio auto familiare Svizzera",
+      "car rental Switzerland",
+      "cheap car rental Switzerland",
+      "long term car rental",
+      "auto a noleggio Svizzera",
+      "noleggio auto Zurigo",
+      "auto a noleggio lungo termine economica",
+      "noleggio auto lungo termine casco completa"
+    ],
+    "ogTitle": "HoppDrive – Noleggio auto conveniente in Svizzera | Da {price}/giorno",
+    "ogDescription": "Noleggio auto conveniente a breve e lungo termine in Svizzera. Škoda Superb, Octavia, VW Passat e altri. Prezzi dinamici con fino al 40% di sconto sul noleggio a lungo termine. Casco completa inclusa.",
+    "ogImageAlt": "HoppDrive – Noleggio auto conveniente in Svizzera",
+    "twitterDescription": "Škoda, VW, Toyota e altri da {price}/giorno. Fino al 40% di sconto sul lungo termine. Casco completa inclusa.",
+    "homeTitle": "HoppDrive – Noleggio auto conveniente in Svizzera | Auto a noleggio da {price}/giorno",
+    "homeDescription": "HoppDrive – noleggio auto conveniente a breve e lungo termine in Svizzera. Škoda, VW, Toyota e altri da {price}/giorno. Fino al 40% di sconto sul lungo termine. Casco completa inclusa. Richiedete ora senza impegno!",
+    "homeTitleNoPrice": "HoppDrive – Noleggio auto conveniente in Svizzera | Breve e lungo termine",
+    "homeDescriptionNoPrice": "HoppDrive – noleggio auto conveniente a breve e lungo termine in Svizzera. Škoda, VW, Toyota e altri. Fino al 40% di sconto sul lungo termine. Casco completa inclusa. Richiedete ora senza impegno!",
+    "ogTitleNoPrice": "HoppDrive – Noleggio auto conveniente in Svizzera",
+    "twitterDescriptionNoPrice": "Škoda, VW, Toyota e altri. Fino al 40% di sconto sul lungo termine. Casco completa inclusa."
+  },
+  "jsonld": {
+    "organizationDescription": "Noleggio conveniente a breve e lungo termine in Svizzera. Škoda, VW, Toyota e altri, casco completa inclusa.",
+    "priceRange": "{min} – {max} / giorno",
+    "crumbHome": "Pagina iniziale",
+    "crumbFleet": "Veicoli"
+  }
+}

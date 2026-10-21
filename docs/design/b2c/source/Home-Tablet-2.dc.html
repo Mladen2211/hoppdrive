@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Startseite Tablet 2</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./b2c.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fira+Sans:wght@400;500;600;700;800&family=Fira+Sans+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>body{margin:0;background:#F2F2F2}</style>
+</helmet>
+<div class="hd t">
+
+  <section class="sec bg-w">
+    <div class="wrap">
+      <div class="sec-head"><span class="kick">So funktioniert's</span><h2 class="h2">In drei Schritten losfahren</h2></div>
+      <div class="how">
+        <div class="hw" style="flex-direction:row;gap:20px;align-items:flex-start"><div class="n" style="flex:none">1</div><div style="display:flex;flex-direction:column;gap:6px"><h3 class="h3">Fahrzeug wählen</h3><p class="mut">Durchstöbern Sie unsere Flotte und finden Sie das passende Auto für Ihre Bedürfnisse.</p></div></div>
+        <div class="hw" style="flex-direction:row;gap:20px;align-items:flex-start"><div class="n" style="flex:none">2</div><div style="display:flex;flex-direction:column;gap:6px"><h3 class="h3">Unverbindlich anfragen</h3><p class="mut">Senden Sie uns eine kostenlose Anfrage mit Ihren Wunschdaten, wir antworten schnellstmöglich.</p></div></div>
+        <div class="hw" style="flex-direction:row;gap:20px;align-items:flex-start"><div class="n" style="flex:none">3</div><div style="display:flex;flex-direction:column;gap:6px"><h3 class="h3">Losfahren</h3><p class="mut">Vertrag unterschreiben, Schlüssel erhalten, und schon sind Sie günstig und flexibel unterwegs.</p></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="wrap">
+      <div class="sec-head"><span class="kick">Kundenstimmen</span><h2 class="h2">Was Mieterinnen und Mieter sagen</h2></div>
+      <div class="tgrid">
+        <sc-for list="{{reviews}}" as="r" hint-placeholder-count="3">
+          <figure class="tc">
+            <div class="stars" role="img" aria-label="5 von 5 Sternen">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"/></svg>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"/></svg>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"/></svg>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"/></svg>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"/></svg>
+            </div>
+            <blockquote style="margin:0;font-size:18px;line-height:1.55">{{r.text}}</blockquote>
+            <figcaption style="display:flex;align-items:center;gap:12px;margin-top:auto"><div class="av" aria-hidden="true">{{r.initial}}</div><div><b>{{r.name}}</b><div class="sm mut">{{r.city}}</div></div></figcaption>
+          </figure>
+        </sc-for>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec bg-w" id="faq">
+    <div class="wrap">
+      <div class="faq-grid">
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <span class="kick">Häufige Fragen</span>
+          <h2 class="h2">Gut zu wissen, bevor Sie anfragen</h2>
+        </div>
+        <div class="acc">
+          <details open><summary>Was kostet die Miete bei HoppDrive?<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary><p>Unsere Mietwagen starten ab CHF 59 pro Tag. Bei längerer Mietdauer profitieren Sie von automatischen Rabatten: 20% ab 8 Tagen und bis zu 40% ab 31 Tagen.</p></details>
+          <details><summary>Ist eine Versicherung inklusive?<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary><p>Ja, bei jeder Anmietung ist eine Vollkasko-Versicherung inklusive.</p></details>
+          <details><summary>Wie lange kann ich ein Fahrzeug mieten?<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary><p>Ab 1 Tag bis zu mehreren Monaten.</p></details>
+          <details><summary>Welche Dokumente brauche ich?<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary><p>Gültiger Führerschein und Identitätsausweis (Pass oder ID).</p></details>
+          <details><summary>Kann ich die Mietdauer verlängern?<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary><p>Ja, jederzeit, einfach Kontakt aufnehmen.</p></details>
+          <details><summary>Wo kann ich das Fahrzeug abholen?<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary><p>An unserem Standort, die genaue Adresse erhalten Sie nach der Bestätigung.</p></details>
+        </div>
+        <div class="help" style="flex-direction:row;align-items:center;justify-content:space-between;flex-wrap:wrap">
+          <div><b>Ihre Frage fehlt?</b><div class="mut">Schreiben Sie uns, wir antworten schnellstmöglich.</div></div>
+          <a class="btn btn-o" href="#contact-form">Frage stellen</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" id="location">
+    <div class="wrap">
+      <div class="loc">
+        <div class="info" style="gap:22px">
+          <span class="kick">Standort</span>
+          <h2 class="h2">Hier finden Sie uns</h2>
+          <ul class="info" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px">
+            <li><div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg></div><div><b>Abholung und Rückgabe</b><div class="mut">[Strasse Nr., PLZ Ort]</div></div></li>
+            <li><div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div><div><b>Öffnungszeiten</b><div class="mut">[Mo–Fr, Zeiten eintragen]</div></div></li>
+            <li><div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg></div><div><b>E-Mail</b><div class="mut">info@hoppdrive.ch</div></div></li>
+            <li><div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92Z"/></svg></div><div><b>Telefon</b><div class="mut">[+41 .. ... .. ..]</div></div></li>
+          </ul>
+        </div>
+        <div class="map" role="img" aria-label="Kartenplatzhalter mit Standortmarker">
+          <svg class="bg" viewBox="0 0 640 400" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+            <rect width="640" height="400" fill="#E6E9E4"/>
+            <path d="M-20 300 C120 260 220 340 360 300 S560 230 680 270 L680 330 C560 290 420 370 340 350 S120 310 -20 350Z" fill="#C9D9E3"/>
+            <rect x="40" y="40" width="130" height="90" rx="14" fill="#D5E2CF"/><rect x="470" y="60" width="120" height="80" rx="14" fill="#D5E2CF"/>
+            <g stroke="#fff" stroke-width="12" fill="none" stroke-linecap="round"><path d="M-10 190 L650 170"/><path d="M200 -10 L260 410"/><path d="M420 -10 L380 410"/></g>
+            <g stroke="#fff" stroke-width="6" fill="none" stroke-linecap="round"><path d="M-10 90 L650 70"/><path d="M80 -10 L120 410"/><path d="M540 -10 L580 410"/><path d="M-10 260 L650 250"/></g>
+          </svg>
+          <div class="pin"><i></i></div>
+          <div class="maplbl"><b>HoppDrive</b> · Kartenplatzhalter</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec bg-w" id="contact-form">
+    <div class="wrap">
+      <div class="sec-head"><span class="kick">Kostenlos &amp; unverbindlich</span><h2 class="h2">Anfrage senden</h2><p class="lead">Sagen Sie uns, was Sie brauchen. Wir melden uns mit Verfügbarkeit und Preis.</p></div>
+      <div class="formwrap">
+        <form class="card" aria-label="Mietanfrage">
+          <div class="fgrid">
+            <div class="fld"><label for="f-name">Name</label><input id="f-name" class="in" type="text" placeholder="Max Muster"></div>
+            <div class="fld"><label for="f-phone">Telefon</label><input id="f-phone" class="in" type="tel" placeholder="+41 79 123 45 67"></div>
+            <div class="fld full"><label for="f-mail">E-Mail</label><input id="f-mail" class="in" type="email" placeholder="max@beispiel.ch"></div>
+            <div class="fld full"><label for="f-car">Fahrzeug von Interesse</label><select id="f-car" class="in"><option>Škoda Superb Combi</option><option>Kein bestimmtes Fahrzeug</option></select></div>
+            <div class="fld"><label for="f-from">Gewünschter Beginn</label><input id="f-from" class="in" type="date" value="2026-11-23"></div>
+            <div class="fld"><label for="f-to">Gewünschtes Ende</label><input id="f-to" class="in" type="date" value="2026-12-06"></div>
+            <div class="fld full"><label for="f-msg">Nachricht</label><textarea id="f-msg" class="in" placeholder="Ich möchte ein Fahrzeug mieten ab..."></textarea></div>
+            <label class="chk full"><input type="checkbox"><span>Ich habe die <a href="Legal-Desktop.dc.html">Datenschutzerklärung</a> gelesen und stimme der Verarbeitung meiner Angaben zu.</span></label>
+            <label class="chk full"><input type="checkbox"><span>Ich bin damit einverstanden, Werbe-E-Mails über Sonderangebote und neue Fahrzeuge zu erhalten. <span class="mut">(optional)</span></span></label>
+            <div class="full"><button class="btn btn-p btn-lg btn-b" type="button">Anfrage senden</button></div>
+          </div>
+        </form>
+        <aside class="card after" style="display:flex;flex-direction:column;gap:20px">
+          <h3 class="h3">Wie es nach dem Absenden weitergeht</h3>
+          <ul style="display:flex;flex-direction:column;gap:18px">
+            <li><div class="n">1</div><div><b>Bestätigung per E-Mail</b><div class="sm mut">Sie erhalten sofort eine Kopie Ihrer Anfrage.</div></div></li>
+            <li><div class="n">2</div><div><b>Wir prüfen die Verfügbarkeit</b><div class="sm mut">Wir antworten schnellstmöglich mit Preis und Angebot.</div></div></li>
+            <li><div class="n">3</div><div><b>Übergabe vor Ort</b><div class="sm mut">Mietvertrag unterschreiben, Schlüssel erhalten.</div></div></li>
+          </ul>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <div class="wrap">
+      <div class="foot-g">
+        <div style="display:flex;flex-direction:column;gap:14px;align-items:flex-start"><img src="/_blob/a82670af88d63b848e66522df4cc6ce8" alt="HoppDrive" style="width:250px;height:auto;display:block"><p class="mut" style="max-width:32ch">Günstig, flexibel, Vollkasko inklusive.</p></div>
+        <div><h4>Fahrzeuge</h4><ul><li><a href="Fleet-Desktop.dc.html">Alle Fahrzeuge</a></li><li><a href="Fleet-Desktop.dc.html">Kombi mieten</a></li><li><a href="Fleet-Desktop.dc.html">SUV mieten</a></li><li><a href="Fleet-Desktop.dc.html">Limousinen mieten</a></li></ul></div>
+        <div><h4>Rechtliches</h4><ul><li><a href="Legal-Desktop.dc.html">Impressum</a></li><li><a href="Legal-Desktop.dc.html">Datenschutz</a></li><li><a href="Legal-Desktop.dc.html">AGB</a></li></ul></div>
+        <div><h4>Kontakt</h4><ul><li><a href="#contact-form">info@hoppdrive.ch</a></li><li><a href="#location">Standort &amp; Öffnungszeiten</a></li></ul></div>
+      </div>
+      <div class="foot-bar"><span>© 2026 HoppDrive. Alle Rechte vorbehalten.</span><a href="#" aria-label="Admin-Anmeldung" style="color:inherit">Admin-Anmeldung</a></div>
+    </div>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":820,"height":5400}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      reviews: [
+        { initial: 'M', name: 'Marco S.', city: 'Zürich', text: 'Sehr unkompliziert und günstig. Hatte den VW Passat für 3 Monate – besser als jeder Leasingvertrag.' },
+        { initial: 'L', name: 'Laura M.', city: 'Basel', text: 'Freundlicher Service und das Auto war top gepflegt. Vollkasko inklusive ist ein grosser Pluspunkt.' },
+        { initial: 'T', name: 'Thomas K.', city: 'Bern', text: 'Perfekt für meine Überbrückungszeit. Der Langzeitrabatt hat sich wirklich gelohnt – klare Empfehlung!' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

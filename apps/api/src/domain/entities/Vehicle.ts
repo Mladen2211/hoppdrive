@@ -29,6 +29,11 @@ export interface VehicleProps {
   specs: VehicleSpecs;
   images: VehicleImage[];
   isAvailable: boolean;
+  description?: string | null;
+  /** Normalised plate (uppercase, no spaces / dots / dashes), see domain/services/LicensePlate. */
+  licensePlate?: string | null;
+  /** Per-locale content, e.g. { en: { description } }. German lives in the normal fields. */
+  translations?: Record<string, Record<string, unknown>> | null;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -42,6 +47,9 @@ export class Vehicle extends Entity {
   public specs: VehicleSpecs;
   public images: VehicleImage[];
   public isAvailable: boolean;
+  public description: string | null;
+  public licensePlate: string | null;
+  public translations: Record<string, Record<string, unknown>> | null;
 
   private constructor(props: VehicleProps) {
     super(props.id, props.createdAt, props.updatedAt);
@@ -53,6 +61,9 @@ export class Vehicle extends Entity {
     this.specs = props.specs;
     this.images = props.images;
     this.isAvailable = props.isAvailable;
+    this.description = props.description ?? null;
+    this.licensePlate = props.licensePlate ?? null;
+    this.translations = props.translations ?? null;
   }
 
   static create(props: VehicleProps): Vehicle {
@@ -88,7 +99,12 @@ export class Vehicle extends Entity {
   }
 
   updateDetails(
-    partial: Partial<Pick<VehicleProps, 'brand' | 'model' | 'type' | 'year' | 'basePricePerDay' | 'specs'>>,
+    partial: Partial<
+      Pick<
+        VehicleProps,
+        'brand' | 'model' | 'type' | 'year' | 'basePricePerDay' | 'specs' | 'description' | 'licensePlate' | 'translations'
+      >
+    >,
   ): void {
     if (partial.brand !== undefined) this.brand = partial.brand;
     if (partial.model !== undefined) this.model = partial.model;
@@ -96,6 +112,9 @@ export class Vehicle extends Entity {
     if (partial.year !== undefined) this.year = partial.year;
     if (partial.basePricePerDay !== undefined) this.basePricePerDay = partial.basePricePerDay;
     if (partial.specs !== undefined) this.specs = partial.specs;
+    if (partial.description !== undefined) this.description = partial.description ?? null;
+    if (partial.licensePlate !== undefined) this.licensePlate = partial.licensePlate ?? null;
+    if (partial.translations !== undefined) this.translations = partial.translations ?? null;
     this.updatedAt = new Date();
   }
 

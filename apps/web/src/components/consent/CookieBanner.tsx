@@ -1,93 +1,113 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { useState } from 'react';
-import { ShieldAlert, ChevronDown, ChevronUp } from 'lucide-react';
+import { Button, Sheet, Switch } from '@/components/ui';
+import { Link } from '@/i18n/navigation';
 import { useConsent } from './CookieConsentProvider';
 
+/**
+ * Cookie consent (design board "Mobil Menü Cookies Zustände", states 2 and 3):
+ *  - a bottom bar/sheet with "Akzeptieren" and "Nur notwendige" side by side
+ *    and equally prominent (no dark patterns), plus "Einstellungen verwalten";
+ *  - a settings sheet with three switches (Notwendig is always on), pre-filled
+ *    from the stored consent when the banner is reopened from the footer.
+ * The bar is deliberately not a blocking overlay: the site stays usable.
+ */
 export function CookieBanner() {
-  const { acceptAll, declineNonEssential, savePreferences } = useConsent();
-  const [showDetails, setShowDetails] = useState(false);
-  const [analytics, setAnalytics] = useState(false);
-  const [marketing, setMarketing] = useState(false);
+  const t = useTranslations('cookie');
+  const tCommon = useTranslations('common');
+  const { consent, acceptAll, declineNonEssential, savePreferences, closeBanner } = useConsent();
+  // Reopened from the footer (a choice already exists): go straight to the settings.
+  const reopened = consent !== null;
+  const [settingsOpen, setSettingsOpen] = useState(reopened);
+  const [analytics, setAnalytics] = useState(consent?.analytics ?? false);
+  const [marketing, setMarketing] = useState(consent?.marketing ?? false);
+
+  function closeSettings() {
+    if (reopened) closeBanner();
+    else setSettingsOpen(false);
+  }
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 p-4 sm:p-6 bg-white border-t border-neutral-200 shadow-2xl">
-      <div className="max-w-6xl mx-auto">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-2">
-              <ShieldAlert className="w-5 h-5 text-brand-600" />
-              <h3 className="font-semibold text-lg">Datenschutz &amp; Cookies</h3>
+    <>
+      {!reopened && (
+        <div
+          role="dialog"
+          aria-label={t('dialogLabel')}
+          className="fixed inset-x-0 bottom-0 z-[60] rounded-t-20 border-t border-line bg-white px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-5 shadow-[0_-10px_30px_rgba(0,0,0,.12)] md:px-6"
+        >
+          <div className="mx-auto flex max-w-[1280px] items-center gap-5 max-lg:flex-col max-lg:items-stretch max-lg:gap-3.5 3xl:max-w-[1680px]">
+            <div className="flex-1">
+              <b className="text-lg">{t('title')}</b>
+              <p className="mt-1.5 text-sm leading-[1.45] text-graphite">
+                {t.rich('text', {
+                  link: (chunks) => (
+                    <Link href="/privacy" className="font-medium text-ruby-dark underline underline-offset-2">
+                      {chunks}
+                    </Link>
+                  ),
+                })}
+              </p>
             </div>
-            <p className="text-sm text-neutral-600">
-              Wir verwenden Cookies, um Ihre Erfahrung zu verbessern und unseren Traffic zu analysieren.
-              Mit Klick auf &quot;Akzeptieren&quot; stimmen Sie der Verwendung von Cookies gemäss dem
-              Schweizer DSG und der EU-DSGVO zu.
-            </p>
-          </div>
 
-          <div className="flex flex-col sm:flex-row w-full md:w-auto gap-3 shrink-0">
-            {/* Decline & Accept buttons must be equally prominent (no dark patterns) */}
-            <button
-              onClick={declineNonEssential}
-              className="px-6 py-2.5 rounded-md border border-neutral-300 text-neutral-700 hover:bg-neutral-100 transition-colors text-sm font-medium"
-            >
-              Nicht-essenzielle ablehnen
-            </button>
-            <button
-              onClick={acceptAll}
-              className="px-6 py-2.5 rounded-md bg-brand-600 text-white hover:bg-brand-700 transition-colors text-sm font-medium shadow-sm"
-            >
-              Alle Cookies akzeptieren
-            </button>
+            <div className="flex flex-none flex-wrap gap-2.5 max-lg:flex-col">
+              {/* Accept and "only necessary" are equally prominent: same size, same row */}
+              <div className="grid grid-cols-2 gap-2.5 md:flex">
+                <Button onClick={acceptAll}>{t('accept')}</Button>
+                <Button variant="outline" onClick={declineNonEssential}>
+                  {t('declineNonEssential')}
+                </Button>
+              </div>
+              <Button variant="ghost" onClick={() => setSettingsOpen(true)}>
+                {t('manage')}
+              </Button>
+            </div>
           </div>
         </div>
+      )}
 
-        {/* Granular Preferences Toggle */}
-        <button
-          onClick={() => setShowDetails(!showDetails)}
-          className="mt-3 text-sm text-brand-600 hover:text-brand-700 flex items-center gap-1"
-        >
-          Einstellungen verwalten
-          {showDetails ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-        </button>
-
-        {showDetails && (
-          <div className="mt-4 p-4 bg-neutral-50 rounded-lg border border-neutral-200 space-y-3">
-            <label className="flex items-center gap-3 text-sm">
-              <input type="checkbox" checked disabled className="w-4 h-4 rounded" />
-              <span className="font-medium">Essenziell</span>
-              <span className="text-neutral-500">— Immer aktiv (für die Funktion der Website erforderlich)</span>
-            </label>
-            <label className="flex items-center gap-3 text-sm">
-              <input
-                type="checkbox"
-                checked={analytics}
-                onChange={(e) => setAnalytics(e.target.checked)}
-                className="w-4 h-4 rounded"
-              />
-              <span className="font-medium">Analyse</span>
-              <span className="text-neutral-500">— Google Analytics (Traffic-Analyse)</span>
-            </label>
-            <label className="flex items-center gap-3 text-sm">
-              <input
-                type="checkbox"
-                checked={marketing}
-                onChange={(e) => setMarketing(e.target.checked)}
-                className="w-4 h-4 rounded"
-              />
-              <span className="font-medium">Marketing</span>
-              <span className="text-neutral-500">— Brevo (Werbeinhalte)</span>
-            </label>
-            <button
-              onClick={() => savePreferences({ analytics, marketing })}
-              className="mt-2 px-4 py-2 bg-neutral-900 text-white rounded-md text-sm font-medium hover:bg-neutral-800 transition-colors"
-            >
-              Einstellungen speichern
-            </button>
+      <Sheet
+        open={settingsOpen}
+        onClose={closeSettings}
+        title={t('settingsTitle')}
+        closeLabel={tCommon('close')}
+        footer={
+          <Button size="lg" fullWidth onClick={() => savePreferences({ analytics, marketing })}>
+            {t('save')}
+          </Button>
+        }
+      >
+        <div className="flex flex-col">
+          <div className="border-b border-line py-1">
+            <Switch
+              checked
+              disabled
+              labelPosition="left"
+              label={t('necessary')}
+              description={t('necessaryDescription')}
+            />
           </div>
-        )}
-      </div>
-    </div>
+          <div className="border-b border-line py-1">
+            <Switch
+              checked={analytics}
+              onChange={setAnalytics}
+              labelPosition="left"
+              label={t('analytics')}
+              description={t('analyticsDescription')}
+            />
+          </div>
+          <div className="border-b border-line py-1">
+            <Switch
+              checked={marketing}
+              onChange={setMarketing}
+              labelPosition="left"
+              label={t('marketing')}
+              description={t('marketingDescription')}
+            />
+          </div>
+        </div>
+      </Sheet>
+    </>
   );
 }

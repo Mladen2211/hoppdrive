@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Alle Fahrzeuge Mobil</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./b2c.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fira+Sans:wght@400;500;600;700;800&family=Fira+Sans+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>body{margin:0;background:#F2F2F2}</style>
+</helmet>
+<div class="hd m">
+
+  <header class="nav">
+    <div class="wrap nav-in">
+      <a href="Home-Mobile.dc.html" aria-label="HoppDrive Startseite"><img class="nav-logo" src="/_blob/c58998c5c84da27dee7cde4d98723e61" alt="HoppDrive"></a>
+      <button class="ico-btn" type="button" aria-label="Navigation umschalten" aria-expanded="false" style="margin-left:auto"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    </div>
+  </header>
+
+  <section style="padding:20px 0 8px">
+    <div class="wrap">
+      <nav class="crumbs" aria-label="Brotkrumen"><a href="Home-Mobile.dc.html">Start</a><span aria-hidden="true">/</span><span aria-current="page">Alle Fahrzeuge</span></nav>
+      <h1 class="disp" style="font-size:34px;margin-top:10px">Alle Fahrzeuge</h1>
+      <p class="mut" style="margin-top:8px">12 Fahrzeuge für Kurz- und Langzeitmiete.</p>
+    </div>
+  </section>
+
+  <div style="position:sticky;top:0;z-index:5;background:var(--paper);padding:12px 0;border-bottom:1px solid var(--line-s)">
+    <div class="wrap" style="display:flex;flex-direction:column;gap:12px">
+      <div class="chips scroll" role="group" aria-label="Kategorie" style="margin-right:-20px;padding-right:20px">
+        <button class="chip" type="button" aria-pressed="true">Alle <small>12</small></button>
+        <button class="chip" type="button" aria-pressed="false">Kombi <small>6</small></button>
+        <button class="chip" type="button" aria-pressed="false">SUV <small>5</small></button>
+        <button class="chip" type="button" aria-pressed="false">Limousinen <small>1</small></button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <button class="btn btn-o" type="button" style="gap:10px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4"/></svg>Filter <span class="badge b-ruby" style="height:22px;padding:0 8px">2</span></button>
+        <label class="fld" style="min-width:0"><span class="sr" style="position:absolute;left:-9999px">Sortieren</span><select class="in" style="height:48px" aria-label="Sortieren"><option>Preis aufsteigend</option><option>Preis absteigend</option><option>Name A–Z</option></select></label>
+      </div>
+    </div>
+  </div>
+
+  <section style="padding:20px 0 40px">
+    <div class="wrap">
+      <p style="margin-bottom:14px" aria-live="polite"><b>4</b> von 12 Fahrzeugen</p>
+      <div class="vgrid">
+        <sc-for list="{{cars}}" as="v" hint-placeholder-count="4">
+          <article class="vcard">
+            <a href="Vehicle-Mobile.dc.html" style="text-decoration:none;color:inherit">
+              <div style="position:relative;aspect-ratio:4/3;display:flex;align-items:flex-end;justify-content:center;overflow:hidden;background:{{v.bg}}">
+                <span class="badge {{v.bcls}}" style="position:absolute;left:12px;top:12px">{{v.badge}}</span>
+                <span style="position:absolute;right:10px;top:10px;font-size:11px;color:#55595C;background:rgba(255,255,255,.85);padding:2px 8px;border-radius:999px">Foto folgt</span>
+                <img src="{{v.img}}" alt="" style="width:88%;margin-bottom:10px">
+              </div>
+            </a>
+            <div class="vbody">
+              <h3 class="vname">{{v.name}}</h3>
+              <ul class="vspecs"><li>{{v.ps}}</li><li>Automatik</li><li>{{v.seats}}</li><li>{{v.fuel}}</li></ul>
+              <div class="vprice"><span>Ab</span><b class="num">CHF {{v.price}}</b><span>/ Tag</span></div>
+              <p class="vsub">30 Tage zusammen: CHF {{v.month}}</p>
+              <div class="vact"><a class="btn btn-o" href="Vehicle-Mobile.dc.html">Details</a><a class="btn btn-p" href="Home-Mobile-2.dc.html">Anfragen</a></div>
+            </div>
+          </article>
+        </sc-for>
+        <!-- loading skeleton for next page -->
+        <article class="vcard" aria-hidden="true">
+          <div class="skel" style="aspect-ratio:4/3;border-radius:0"></div>
+          <div class="vbody"><div class="skel" style="height:22px;width:70%"></div><div class="skel" style="height:16px;width:90%"></div><div class="skel" style="height:30px;width:45%"></div><div class="skel" style="height:46px;width:100%"></div></div>
+        </article>
+      </div>
+      <div style="margin-top:24px"><button class="btn btn-o btn-lg btn-b" type="button">Weitere 8 Fahrzeuge laden</button></div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <div class="wrap">
+      <div class="foot-g">
+        <div style="display:flex;flex-direction:column;gap:12px;align-items:flex-start"><img src="/_blob/a82670af88d63b848e66522df4cc6ce8" alt="HoppDrive" style="width:200px;height:auto;display:block"><p class="mut">Günstig, flexibel, Vollkasko inklusive.</p></div>
+        <div><h4>Rechtliches</h4><ul><li><a href="Legal-Desktop.dc.html">Impressum</a></li><li><a href="Legal-Desktop.dc.html">Datenschutz</a></li><li><a href="Legal-Desktop.dc.html">AGB</a></li></ul></div>
+        <div><h4>Kontakt</h4><ul><li><a href="Home-Mobile-2.dc.html">info@hoppdrive.ch</a></li></ul></div>
+      </div>
+      <div class="foot-bar"><span>© 2026 HoppDrive</span><a href="#" aria-label="Admin-Anmeldung" style="color:inherit">Admin-Anmeldung</a></div>
+    </div>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":3200}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const sedan = '/_blob/73471dc831e127e26f5ecba3b8e32d1b';
+    const suv = '/_blob/154ed80a79c5e4a0801ef4bd139489ea';
+    const estate = '/_blob/24230269e1cfd4b39a93ad59bed30fba';
+    const grey = 'linear-gradient(180deg,#EDEDED 0%,#DCDCDC 100%)';
+    const rose = 'linear-gradient(180deg,#F1ECEC 0%,#E2D6D6 100%)';
+    const ok = { badge: 'Verfügbar', bcls: 'b-ok' };
+    const off = { badge: 'Reserviert', bcls: 'b-off' };
+    return {
+      cars: [
+        { name: 'Škoda Octavia', ps: '150 PS', seats: '5 Sitze', fuel: 'Benzin', price: 59, month: '1’499', img: sedan, bg: rose, ...ok },
+        { name: 'SEAT Leon Sportstourer', ps: '150 PS', seats: '5 Sitze', fuel: 'Benzin', price: 59, month: '1’499', img: estate, bg: grey, ...ok },
+        { name: 'Škoda Octavia Combi', ps: '150 PS', seats: '5 Sitze', fuel: 'Benzin', price: 65, month: '1’651', img: estate, bg: grey, ...ok },
+        { name: 'Škoda Karoq', ps: '150 PS', seats: '5 Sitze', fuel: 'Benzin', price: 69, month: '1’753', img: suv, bg: grey, ...off }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

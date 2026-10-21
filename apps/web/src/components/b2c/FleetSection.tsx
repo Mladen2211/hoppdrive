@@ -1,10 +1,14 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import Link from 'next/link';
-import { SlidersHorizontal } from 'lucide-react';
-import { VehicleCard, type VehicleCardData } from './VehicleCard';
-import { useSelectedVehicle } from './SelectedVehicleContext';
+import { SearchX } from 'lucide-react';
+import { useTranslations } from 'next-intl';
+import { useMemo, useState } from 'react';
+import { EmptyState } from '@/components/b2c/EmptyState';
+import { PriceCalculator } from '@/components/b2c/PriceCalculator';
+import { useSelectedVehicle } from '@/components/b2c/SelectedVehicleContext';
+import { VehicleGrid } from '@/components/b2c/VehicleGrid';
+import { Button, Chip } from '@/components/ui';
+import { fleetCategories, type VehicleCardData } from '@/lib/vehicles';
 import type { FleetContent } from '@/types/homepage-sections';
 
 export type { FleetContent };
@@ -15,116 +19,106 @@ interface FleetSectionProps {
   content?: FleetContent;
 }
 
-type FilterKey = 'all' | 'sedan' | 'suv' | 'estate' | 'van' | 'electric';
+/**
+ * Cards beyond these counts are hidden per breakpoint (display: none; the
+ * links stay in the document): 4 on mobile, 6 on tablet, 8 on desktop, all on
+ * ultra-wide. "Alle N Fahrzeuge ansehen" leads to the complete list.
+ */
+function homeCap(index: number): string | undefined {
+  const classes: string[] = [];
+  if (index >= 4) classes.push('max-md:hidden');
+  if (index >= 6) classes.push('md:max-lg:hidden');
+  if (index >= 8) classes.push('lg:max-3xl:hidden');
+  return classes.length > 0 ? classes.join(' ') : undefined;
+}
 
-const FILTER_OPTIONS: { key: FilterKey; label: string }[] = [
-  { key: 'all', label: 'Alle' },
-  { key: 'sedan', label: 'Limousinen' },
-  { key: 'suv', label: 'SUV' },
-  { key: 'estate', label: 'Kombi' },
-  { key: 'van', label: 'Van' },
-  { key: 'electric', label: 'Elektro' },
-];
-
-export function FleetSection({ vehicles, loading, content }: FleetSectionProps) {
+export function FleetSection({ vehicles, content }: FleetSectionProps) {
+  const t = useTranslations('fleet');
+  const tCategory = useTranslations('fleetCategory');
   const c = content || {};
-  const label = c.label ?? 'Unsere Flotte';
-  const heading = c.heading ?? 'Günstige Mietwagen für jeden Anlass';
-  const description = c.description ?? 'Zuverlässige Kombis, Limousinen & SUVs von Škoda, VW, Toyota und mehr. Wählen Sie Ihr Fahrzeug und profitieren Sie von bis zu 40% Langzeitrabatt.';
-  const { selectVehicle } = useSelectedVehicle();
-  const onInquire = (vehicle: VehicleCardData) => selectVehicle(`${vehicle.brand} ${vehicle.model}`);
-  const [activeFilter, setActiveFilter] = useState<FilterKey>('all');
+  const { tiers, selectVehicle } = useSelectedVehicle();
+  const [activeKey, setActiveKey] = useState('all');
 
-  // Only show filter tabs that have at least one vehicle
-  const availableFilters = useMemo(() => {
-    const types = new Set(vehicles.map((v) => v.type));
-    return FILTER_OPTIONS.filter((f) => f.key === 'all' || types.has(f.key));
-  }, [vehicles]);
+  const categories = useMemo(() => fleetCategories(vehicles, tCategory), [vehicles, tCategory]);
+  const active = categories.find((category) => category.key === activeKey);
+  const filtered = useMemo(
+    () => (active ? vehicles.filter(active.predicate) : vehicles),
+    [vehicles, active],
+  );
 
-  const filtered = useMemo(() => {
-    if (activeFilter === 'all') return vehicles;
-    return vehicles.filter((v) => v.type === activeFilter);
-  }, [vehicles, activeFilter]);
+  const label = c.label ?? t('label');
+  const heading =
+    c.heading ?? (vehicles.length > 0 ? t('headingCount', { count: vehicles.length }) : t('headingEmpty'));
 
   return (
-    <section id="fleet" className="py-20 bg-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-12">
-          <span className="text-brand-600 font-semibold text-sm uppercase tracking-wider">
-            {label}
-          </span>
-          <h2 className="text-3xl md:text-4xl font-bold mt-3 mb-4">
-            {heading}
-          </h2>
-          <p className="text-neutral-500 max-w-2xl mx-auto text-lg">
-            {description}
-          </p>
+    <section id="fleet" className="sec">
+      <div className="wrap">
+        <div className="mb-8 flex flex-col gap-6 max-md:mb-[22px] 3xl:flex-row 3xl:items-end 3xl:justify-between 3xl:gap-8">
+          <div className="sec-head !mb-0">
+            <p className="kick">{label}</p>
+            <h2 className="h2">{heading}</h2>
+            {c.description && <p className="lead">{c.description}</p>}
+          </div>
+
+          {/* Only categories that contain vehicles, with their counts */}
+          {categories.length > 1 && (
+            <div
+              role="group"
+              aria-label={t('filterAria')}
+              className="chips max-md:-mr-5 max-md:flex-nowrap max-md:overflow-x-auto max-md:pb-1 max-md:pr-5"
+            >
+              <Chip pressed={activeKey === 'all'} count={vehicles.length} onClick={() => setActiveKey('all')}>
+                {t('all')}
+              </Chip>
+              {categories.map((category) => (
+                <Chip
+                  key={category.key}
+                  pressed={activeKey === category.key}
+                  count={category.count}
+                  onClick={() => setActiveKey(category.key)}
+                >
+                  {category.label}
+                </Chip>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* Filters */}
-        {!loading && availableFilters.length > 2 && (
-          <div className="flex items-center justify-center gap-2 mb-10 flex-wrap">
-            <SlidersHorizontal className="w-4 h-4 text-neutral-400 mr-1" />
-            {availableFilters.map((filter) => (
-              <button
-                key={filter.key}
-                onClick={() => setActiveFilter(filter.key)}
-                className={`px-4 py-2 text-sm font-medium rounded-full transition-colors ${
-                  activeFilter === filter.key
-                    ? 'bg-neutral-900 text-white'
-                    : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
-                }`}
-              >
-                {filter.label}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="rounded-2xl border border-neutral-200 overflow-hidden bg-white animate-pulse">
-                <div className="aspect-[4/3] bg-neutral-200" />
-                <div className="p-6 space-y-3">
-                  <div className="h-3 bg-neutral-200 rounded w-1/3" />
-                  <div className="h-5 bg-neutral-200 rounded w-2/3" />
-                  <div className="flex gap-2">
-                    <div className="h-6 bg-neutral-100 rounded w-16" />
-                    <div className="h-6 bg-neutral-100 rounded w-20" />
-                    <div className="h-6 bg-neutral-100 rounded w-14" />
-                  </div>
-                  <div className="h-11 bg-neutral-200 rounded-lg w-full mt-4" />
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : filtered.length === 0 ? (
-          <p className="text-center text-neutral-400 py-12">
-            {activeFilter === 'all'
-              ? 'Derzeit sind keine Fahrzeuge verfügbar. Bitte schauen Sie später wieder vorbei.'
-              : 'Keine Fahrzeuge in dieser Kategorie. Versuchen Sie einen anderen Filter.'}
-          </p>
+        {vehicles.length === 0 ? (
+          <EmptyState
+            icon={<SearchX size={34} />}
+            title={t('emptyTitle')}
+            text={t('emptyText')}
+            actions={<Button href="#contact-form">{t('emptyCta')}</Button>}
+          />
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filtered.map((vehicle) => (
-              <VehicleCard
-                key={vehicle.id}
-                vehicle={vehicle}
-                onInquire={onInquire}
+          <div className="3xl:grid 3xl:grid-cols-[minmax(0,1fr)_380px] 3xl:items-start 3xl:gap-10">
+            <div>
+              <div aria-live="polite" className="sr-only">
+                {t('liveCount', { count: filtered.length })}
+              </div>
+              <VehicleGrid
+                vehicles={filtered}
+                tiers={tiers}
+                columns="home"
+                onInquire={(vehicle) => selectVehicle({ vehicleId: vehicle.id })}
+                cardClassName={homeCap}
               />
-            ))}
+            </div>
+            {/* Ultra-wide: sticky price box next to the fleet */}
+            <aside className="sticky top-6 hidden 3xl:block" aria-label={t('priceAside')}>
+              <PriceCalculator variant="sidebar" />
+            </aside>
           </div>
         )}
 
-        <div className="text-center mt-10">
-          <Link
-            href="/fahrzeuge"
-            className="inline-flex items-center gap-2 text-sm font-semibold text-brand-600 hover:text-brand-700 transition-colors"
-          >
-            Alle Fahrzeuge ansehen
-          </Link>
-        </div>
+        {vehicles.length > 0 && (
+          <div className="mt-10 flex justify-center max-md:mt-7 3xl:hidden">
+            <Button href="/fahrzeuge" variant="outline" size="lg" className="max-md:w-full">
+              {t('viewAll', { count: vehicles.length })}
+            </Button>
+          </div>
+        )}
       </div>
     </section>
   );

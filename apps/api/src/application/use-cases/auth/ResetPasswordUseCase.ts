@@ -1,11 +1,13 @@
 import type { IAdminRepository } from '../../../domain';
 import type { IPasswordHasher } from '../../interfaces/IAuthService';
+import { assertPasswordAcceptable } from './passwordPolicy';
 
 interface ResetPasswordInput {
   adminId: string;
   newPassword: string;
 }
 
+/** Forced password change for an authenticated admin (mustResetPassword). */
 export class ResetPasswordUseCase {
   constructor(
     private adminRepo: IAdminRepository,
@@ -18,9 +20,10 @@ export class ResetPasswordUseCase {
       throw new Error('Admin not found');
     }
 
-    if (input.newPassword.length < 12) {
-      throw new Error('Password must be at least 12 characters long');
-    }
+    // Min length, upper + lower case, digit, and different from the current password.
+    await assertPasswordAcceptable(this.passwordHasher, input.newPassword, {
+      currentHash: admin.passwordHash,
+    });
 
     const hash = await this.passwordHasher.hash(input.newPassword);
     admin.completePasswordReset(hash);

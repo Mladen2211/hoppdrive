@@ -1,491 +1,717 @@
 'use client';
 
-import { useEffect, useState, useMemo, useCallback } from 'react';
-import { Search, ChevronLeft, ChevronRight, CalendarPlus, Loader2, Car, Check, Ban } from 'lucide-react';
+import { ChevronRight, Download, MessageSquare, Search } from 'lucide-react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { PricingTierDto } from '@hoppdrive/shared';
+import {
+  Alert,
+  Button,
+  Cell2,
+  ChipGroup,
+  DrawerLayout,
+  EmptyState,
+  IconButton,
+  Input,
+  MobileCard,
+  PageHeader,
+  Panel,
+  SkeletonRows,
+  SkeletonTableRows,
+  StatusPill,
+  Table,
+  TBody,
+  Tabs,
+  Td,
+  Th,
+  THead,
+  Tr,
+  cn,
+  useMediaQuery,
+  useToast,
+} from '@/components/ui';
+import { useNewBooking } from '@/components/NewBookingModal';
+import { useShellCounts } from '@/components/shell';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
-import { StatusBadge } from '@/components/StatusBadge';
+import { useCan } from '@/hooks/usePermission';
 import { api } from '@/lib/api';
+import { bookingErrorText, discountErrorText, isDiscountInvalid } from '@/lib/booking-errors';
+import { fetchBookings } from '@/lib/bookings';
+import { downloadCsv } from '@/lib/download';
+import { errorText } from '@/lib/errors';
+import { fmtDateShort, fmtDateTime, fmtMoney, fmtRelative, toInputDate } from '@/lib/format';
+import { inquiryDays, matchVehicleByName } from '@/lib/inquiry';
+import { InquiryDetail, statusText } from './InquiryDetail';
+import { OPEN_STATUSES, type BookingRow, type Inquiry, type InquiryFilter, type VehicleRow } from './types';
+import { useTranslations } from 'next-intl';
+import { tr } from '@/i18n/active';
 
-interface Inquiry {
-  id: string;
-  fullName: string;
-  email: string;
-  phone?: string;
-  vehicleOfInterest?: string;
-  message: string;
-  desiredStartDate?: string;
-  desiredEndDate?: string;
-  status: string;
-  privacyConsent: boolean;
-  marketingConsent: boolean;
-  createdAt: string;
-}
+const PAGE_SIZE = 10;
+const COUNT_KEYS = ['pending', 'reviewed', 'responded', 'converted', 'denied', 'archived'] as const;
+type Counts = Record<(typeof COUNT_KEYS)[number], number>;
 
-function fmtDate(d?: string) {
-  if (!d) return '—';
-  return new Date(d).toLocaleDateString('de-CH');
+const byCreatedDesc = (a: Inquiry, b: Inquiry) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+
+function period(inq: Inquiry): string {
+  return inq.desiredStartDate && inq.desiredEndDate ? `${fmtDateShort(inq.desiredStartDate)} – ${fmtDateShort(inq.desiredEndDate)}` : tr('inquiries.keinZeitraum');
 }
 
 export default function InquiriesPage() {
+  return (
+    <Suspense fallback={<SkeletonRows rows={6} />}>
+      <InquiriesView />
+    </Suspense>
+  );
+}
+
+function InquiriesView() {
+  const tt = useTranslations();
   const { token } = useAdminAuth();
-  const [inquiries, setInquiries] = useState<Inquiry[]>([]);
-  const [vehicles, setVehicles] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const booking = useNewBooking();
+  const { refresh: refreshCounts } = useShellCounts();
+  const canEdit = useCan('inquiries', 'edit');
+  const isTabletUp = useMediaQuery('(min-width: 768px)');
+
+  const selectedId = searchParams.get('id');
+
+  // List state
+  const [filter, setFilter] = useState<InquiryFilter>('open');
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
+  const [source, setSource] = useState<Inquiry[]>([]);
+  const [serverTotal, setServerTotal] = useState(0);
+  const [counts, setCounts] = useState<Counts | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
-  const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [updating, setUpdating] = useState<string | null>(null);
-  const [converting, setConverting] = useState<string | null>(null);
-  const [convertMsg, setConvertMsg] = useState<{ id: string; ok: boolean; text: string } | null>(null);
-  const [assignedVehicle, setAssignedVehicle] = useState<Record<string, string>>({});
-  const [bookings, setBookings] = useState<any[]>([]);
-  const [denyingId, setDenyingId] = useState<string | null>(null);
-  const [denyReason, setDenyReason] = useState('');
-  const [denying, setDenying] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
 
-  async function fetchInquiries(pageNum = 1, silent = false) {
-    if (!token) return;
-    if (!silent) setLoading(true);
-    try {
-      const data = await api.getContactRequests({ page: pageNum, limit: 15 });
-      setInquiries(data.items || []);
-      setTotalPages(Math.ceil((data.total || 0) / 15));
-    } catch (err) {
-      console.error('Failed to fetch inquiries', err);
-    } finally {
-      if (!silent) setLoading(false);
-    }
-  }
+  // Reference data for the detail drawer
+  const [vehicles, setVehicles] = useState<VehicleRow[]>([]);
+  const [bookings, setBookings] = useState<BookingRow[]>([]);
+  const [tiers, setTiers] = useState<PricingTierDto[] | null>(null);
 
-  useEffect(() => {
-    fetchInquiries(page);
+  // Detail state
+  const [cached, setCached] = useState<Inquiry | null>(null);
+  const [assigned, setAssigned] = useState<Record<string, string>>({});
+  const [actionError, setActionError] = useState<{ id: string; text: string } | null>(null);
+  // Discount code per inquiry: untouched = the visitor's code, null = removed, text = replaced by the admin.
+  const [codeEdits, setCodeEdits] = useState<Record<string, string | null>>({});
+  const [codeRejected, setCodeRejected] = useState<Record<string, boolean>>({});
+  const [busy, setBusy] = useState({ updating: false, converting: false, denying: false });
+
+  const dataKey = filter === 'open' ? 'open' : `${filter}:${page}`;
+
+  // ── Loading ───────────────────────────────────────────────────
+
+  const fetchList = useCallback(
+    async (silent = false) => {
+      if (!token) return;
+      if (!silent) setLoading(true);
+      try {
+        if (filter === 'open') {
+          // "Offen" spans three statuses, which the API cannot combine: merge them (newest first).
+          const parts = await Promise.all(
+            OPEN_STATUSES.map((status) => api.getContactRequests({ status, page: 1, pageSize: 100 })),
+          );
+          const merged = (parts.flatMap((p) => p.items) as Inquiry[]).sort(byCreatedDesc);
+          setSource(merged);
+          setServerTotal(merged.length);
+          setCounts(parts[0].statusCounts as Counts);
+        } else {
+          const data = await api.getContactRequests({
+            page,
+            pageSize: PAGE_SIZE,
+            status: filter === 'all' ? undefined : filter,
+          });
+          setSource(data.items as Inquiry[]);
+          setServerTotal(data.total || 0);
+          setCounts(data.statusCounts as Counts);
+        }
+        setLoadError(null);
+      } catch (err) {
+        if (!silent) setLoadError(errorText(err, tr('inquiries.dieAnfragenKonntenNicht')));
+      } finally {
+        if (!silent) setLoading(false);
+      }
+    },
+    // dataKey covers filter + page (the open filter does not depend on the page)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, page]);
+    [token, dataKey],
+  );
 
-  // Real-time updates via Server-Sent Events
+  useEffect(() => {
+    void fetchList();
+  }, [fetchList]);
+
+  const fetchRef = useRef(fetchList);
+  fetchRef.current = fetchList;
+
+  // Real-time updates via Server-Sent Events (token as query parameter: EventSource has no headers).
   useEffect(() => {
     if (!token) return;
-
     const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:97/api';
-    const url = `${apiBase}/events`;
-
     let es: EventSource | null = null;
     let retryTimeout: ReturnType<typeof setTimeout>;
+    let closed = false;
 
     function connect() {
-      // EventSource doesn't support Authorization header, so we use a query param
-      es = new EventSource(`${url}?token=${encodeURIComponent(token!)}`, { withCredentials: true });
-
+      es = new EventSource(`${apiBase}/events?token=${encodeURIComponent(token as string)}`, { withCredentials: true });
       es.addEventListener('new-inquiry', () => {
-        // Silent refresh — no loading spinner
-        fetchInquiries(page, true);
+        void fetchRef.current(true); // silent refresh, no loading state
+        refreshCounts();
+        toast.info(tr('inquiries.neueAnfrage'), tr('inquiries.ueberDasFormularDer'));
       });
-
       es.onerror = () => {
         es?.close();
-        // Reconnect after 5s on error
-        retryTimeout = setTimeout(connect, 5_000);
+        if (!closed) retryTimeout = setTimeout(connect, 5_000); // reconnect after 5 s
       };
     }
 
     connect();
-
     return () => {
+      closed = true;
       es?.close();
       clearTimeout(retryTimeout);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, page]);
+  }, [token]);
+
+  const loadReference = useCallback(() => {
+    api.getAllVehicles().then((v) => setVehicles(v as VehicleRow[])).catch(() => undefined);
+    fetchBookings().then((data) => setBookings((data.items || []) as BookingRow[])).catch(() => undefined);
+  }, []);
 
   useEffect(() => {
     if (!token) return;
-    api.getAllVehicles().then(setVehicles).catch(() => {});
-    api.getBookings().then((data) => setBookings(data.items || [])).catch(() => {});
-  }, [token]);
+    loadReference();
+    api.getPricingTiers().then(setTiers).catch(() => setTiers(null));
+  }, [token, loadReference]);
 
-  /** Get vehicles available for a date range (no overlapping bookings) */
-  const getAvailableVehicles = useCallback(
-    (startDate?: string, endDate?: string) => {
-      if (!startDate || !endDate) return vehicles;
-      const start = new Date(startDate).getTime();
-      const end = new Date(endDate).getTime();
-      return vehicles.filter((v: any) => {
-        const overlapping = bookings.some(
-          (b: any) =>
-            b.vehicleId === v.id &&
-            new Date(b.startDate).getTime() < end &&
-            new Date(b.endDate).getTime() > start,
-        );
-        return !overlapping;
-      });
-    },
-    [vehicles, bookings],
+  // ── Derived lists ─────────────────────────────────────────────
+
+  const pageRows = useMemo(
+    () => (filter === 'open' ? source.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE) : source),
+    [filter, source, page],
   );
-
-  async function handleStatusChange(id: string, newStatus: string) {
-    if (!token) return;
-    setUpdating(id);
-    try {
-      await api.updateContactStatus(id, newStatus);
-      setInquiries((prev) =>
-        prev.map((inq) => (inq.id === id ? { ...inq, status: newStatus } : inq))
-      );
-    } catch (err) {
-      console.error('Status update failed', err);
-    } finally {
-      setUpdating(null);
-    }
-  }
-
-  /** Convert inquiry to a booking → auto-sets status to "converted" */
-  async function handleApprove(inq: Inquiry) {
-    if (!inq.desiredStartDate || !inq.desiredEndDate) {
-      setConvertMsg({ id: inq.id, ok: false, text: 'Kein Start-/Enddatum in der Anfrage vorhanden.' });
-      return;
-    }
-
-    // First check if admin manually assigned a vehicle
-    let vehicleId = assignedVehicle[inq.id];
-
-    // Otherwise try to auto-match by name from the inquiry
-    if (!vehicleId && inq.vehicleOfInterest) {
-      const match = vehicles.find(
-        (v: any) =>
-          `${v.brand} ${v.model}`.toLowerCase().includes(inq.vehicleOfInterest!.toLowerCase()),
-      );
-      if (match) vehicleId = match.id;
-    }
-
-    if (!vehicleId) {
-      setConvertMsg({
-        id: inq.id,
-        ok: false,
-        text: inq.vehicleOfInterest
-          ? `Fahrzeug „${inq.vehicleOfInterest}" nicht gefunden. Bitte manuell zuweisen.`
-          : 'Bitte ein Fahrzeug zuweisen bevor die Buchung erstellt wird.',
-      });
-      return;
-    }
-
-    setConverting(inq.id);
-    setConvertMsg(null);
-    try {
-      // Atomic on the server: creates the booking and marks the inquiry
-      // "converted" in a single transaction — no partial state possible.
-      await api.approveInquiry(inq.id, { vehicleId });
-      setInquiries((prev) =>
-        prev.map((i) => (i.id === inq.id ? { ...i, status: 'converted' } : i))
-      );
-      setConvertMsg({ id: inq.id, ok: true, text: 'Buchung erfolgreich erstellt!' });
-    } catch (err: any) {
-      setConvertMsg({ id: inq.id, ok: false, text: err.message || 'Fehler beim Erstellen der Buchung.' });
-    } finally {
-      setConverting(null);
-    }
-  }
-
-  function startDeny(id: string) {
-    setDenyingId(id);
-    setDenyReason('');
-    setConvertMsg(null);
-  }
-
-  async function handleDeny(inq: Inquiry) {
-    setDenying(inq.id);
-    try {
-      await api.denyInquiry(inq.id, { reason: denyReason.trim() || undefined });
-      setInquiries((prev) =>
-        prev.map((i) => (i.id === inq.id ? { ...i, status: 'denied' } : i))
-      );
-      setDenyingId(null);
-      setDenyReason('');
-    } catch (err: any) {
-      setConvertMsg({ id: inq.id, ok: false, text: err.message || 'Ablehnung konnte nicht gespeichert werden.' });
-    } finally {
-      setDenying(null);
-    }
-  }
-
-  const filteredInquiries = useMemo(() => {
-    if (!search) return inquiries;
-    const q = search.toLowerCase();
-    return inquiries.filter(
+  const total = filter === 'open' ? source.length : serverTotal;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const visibleRows = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return pageRows;
+    return pageRows.filter(
       (inq) =>
         inq.fullName.toLowerCase().includes(q) ||
         inq.email.toLowerCase().includes(q) ||
         (inq.vehicleOfInterest?.toLowerCase().includes(q) ?? false),
     );
-  }, [inquiries, search]);
+  }, [pageRows, search]);
 
-  return (
-    <div>
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-        <h1 className="text-2xl font-bold text-neutral-900">Anfragen</h1>
-        <div className="relative w-full sm:w-72">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
-          <input
-            type="text"
-            placeholder="Suche nach Name, E-Mail, Fahrzeug..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full border border-neutral-300 rounded-lg pl-9 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-          />
+  const openCount = counts ? OPEN_STATUSES.reduce((sum, s) => sum + (counts[s] ?? 0), 0) : undefined;
+  const allCount = counts ? COUNT_KEYS.reduce((sum, s) => sum + (counts[s] ?? 0), 0) : undefined;
+
+  const selected = useMemo(() => {
+    if (!selectedId) return null;
+    return source.find((i) => i.id === selectedId) ?? (cached?.id === selectedId ? cached : null);
+  }, [selectedId, source, cached]);
+
+  // ── Selection / deep link (?id=) ──────────────────────────────
+
+  const lookedUp = useRef<string | null>(null);
+  useEffect(() => {
+    if (!selectedId || !token) {
+      lookedUp.current = null;
+      return;
+    }
+    if (selected || lookedUp.current === selectedId || loading) return;
+    lookedUp.current = selectedId;
+    // The inquiry is not on the loaded page: search the newest inquiries for it.
+    (async () => {
+      try {
+        for (let p = 1; p <= 5; p += 1) {
+          const data = await api.getContactRequests({ page: p, pageSize: 100 });
+          const hit = (data.items as Inquiry[]).find((i) => i.id === selectedId);
+          if (hit) {
+            setCached(hit);
+            return;
+          }
+          if (p >= (data.totalPages || 1)) break;
+        }
+        toast.error(tr('inquiries.anfrageNichtGefunden'), tr('inquiries.derLinkVerweistAuf'));
+        router.replace(pathname, { scroll: false });
+      } catch (err) {
+        toast.error(tr('inquiries.anfrageKonnteNichtGeladen'), errorText(err));
+      }
+    })();
+  }, [selectedId, selected, token, loading, pathname, router, toast]);
+
+  function openInquiry(inq: Inquiry) {
+    setCached(inq);
+    setActionError(null);
+    router.replace(`${pathname}?id=${inq.id}`, { scroll: false });
+  }
+
+  function closeDetail() {
+    setActionError(null);
+    router.replace(pathname, { scroll: false });
+  }
+
+  function changeFilter(next: InquiryFilter) {
+    setFilter(next);
+    setPage(1);
+  }
+
+  // ── Actions ───────────────────────────────────────────────────
+
+  function patchInquiry(id: string, patch: Partial<Inquiry>) {
+    setSource((rows) => rows.map((r) => (r.id === id ? { ...r, ...patch } : r)));
+    setCached((c) => (c && c.id === id ? { ...c, ...patch } : c));
+  }
+
+  async function handleStatus(inq: Inquiry, status: 'reviewed' | 'responded') {
+    setBusy((b) => ({ ...b, updating: true }));
+    setActionError(null);
+    try {
+      await api.updateContactStatus(inq.id, status);
+      patchInquiry(inq.id, { status, updatedAt: new Date().toISOString() });
+      toast.success(status === 'responded' ? tr('inquiries.alsBeantwortetMarkiert') : tr('inquiries.alsGeprueftMarkiert'), inq.fullName);
+      void fetchList(true);
+      refreshCounts();
+    } catch (err) {
+      setActionError({ id: inq.id, text: errorText(err, tr('inquiries.derStatusKonnteNicht')) });
+    } finally {
+      setBusy((b) => ({ ...b, updating: false }));
+    }
+  }
+
+  /** Converts the inquiry to a booking (atomic on the server: booking + status "converted"). */
+  async function handleApprove(inq: Inquiry, withoutCode = false) {
+    if (!inq.desiredStartDate || !inq.desiredEndDate) {
+      setActionError({ id: inq.id, text: tr('inquiries.keinStartEnddatumIn') });
+      return;
+    }
+    // A manually assigned vehicle wins; otherwise match the name from the inquiry.
+    let vehicleId = assigned[inq.id];
+    if (!vehicleId && inq.vehicleOfInterest) {
+      vehicleId = matchVehicleByName(vehicles, inq.vehicleOfInterest)?.id ?? '';
+    }
+    if (!vehicleId) {
+      setActionError({
+        id: inq.id,
+        text: inq.vehicleOfInterest
+          ? tr('inquiries.fahrzeugNichtGefundenBitte', { vehicleOfInterest: inq.vehicleOfInterest })
+          : tr('inquiries.bitteEinFahrzeugZuweisen'),
+      });
+      return;
+    }
+
+    setBusy((b) => ({ ...b, converting: true }));
+    setActionError(null);
+    try {
+      const edit = withoutCode ? null : codeEdits[inq.id];
+      const created = await api.approveInquiry(inq.id, edit === undefined ? { vehicleId } : { vehicleId, discountCode: edit });
+      patchInquiry(inq.id, { status: 'converted', updatedAt: new Date().toISOString() });
+      setCodeRejected((r) => ({ ...r, [inq.id]: false }));
+      toast.success(
+        tr('inquiries.anfrageInBuchungUmgewandelt'),
+        `${tr('inquiries.buchungFuerErstellt', { fullName: inq.fullName })}${
+          created?.discountAmount > 0 ? ` · ${tr('newBooking.discountApplied', { amount: fmtMoney(created.discountAmount, { currency: created.currency }) })}` : ''
+        }`,
+        {
+          action: created?.id ? { label: tr('common.zurBuchung'), onClick: () => router.push(`/contracts?id=${created.id}`) } : undefined,
+        },
+      );
+      void fetchList(true);
+      loadReference();
+      refreshCounts();
+    } catch (err) {
+      if (isDiscountInvalid(err)) {
+        // 422 discount_invalid: say why, and offer to convert without the code
+        setCodeRejected((r) => ({ ...r, [inq.id]: true }));
+        setActionError({ id: inq.id, text: tr('inquiries.discountRejected', { reason: discountErrorText(err) }) });
+      } else {
+        setActionError({ id: inq.id, text: bookingErrorText(err, tr('inquiries.fehlerBeimErstellenDer')) });
+      }
+    } finally {
+      setBusy((b) => ({ ...b, converting: false }));
+    }
+  }
+
+  async function handleDeny(inq: Inquiry, reason: string) {
+    setBusy((b) => ({ ...b, denying: true }));
+    setActionError(null);
+    try {
+      await api.denyInquiry(inq.id, { reason: reason || undefined });
+      patchInquiry(inq.id, { status: 'denied', updatedAt: new Date().toISOString() });
+      toast.success(tr('inquiries.anfrageAbgelehnt'), tr('inquiries.wirdPerEMail', { fullName: inq.fullName }));
+      void fetchList(true);
+      refreshCounts();
+    } catch (err) {
+      setActionError({ id: inq.id, text: errorText(err, tr('inquiries.dieAblehnungKonnteNicht')) });
+    } finally {
+      setBusy((b) => ({ ...b, denying: false }));
+    }
+  }
+
+  /** Client-side CSV of the current filter (all pages of it) with the search applied. */
+  async function handleExport() {
+    setExporting(true);
+    try {
+      let rows: Inquiry[] = [];
+      if (filter === 'open') {
+        rows = source;
+      } else {
+        for (let p = 1; p <= 20; p += 1) {
+          const data = await api.getContactRequests({ page: p, pageSize: 100, status: filter === 'all' ? undefined : filter });
+          rows = rows.concat(data.items as Inquiry[]);
+          if (p >= (data.totalPages || 1)) break;
+        }
+      }
+      const q = search.trim().toLowerCase();
+      if (q) {
+        rows = rows.filter(
+          (inq) => inq.fullName.toLowerCase().includes(q) || inq.email.toLowerCase().includes(q) || (inq.vehicleOfInterest?.toLowerCase().includes(q) ?? false),
+        );
+      }
+      if (rows.length === 0) {
+        toast.info(tr('inquiries.keineAnfragenZumExportieren'));
+        return;
+      }
+      downloadCsv(
+        [
+          [tr('inquiries.eingang2'), tr('common.name'), 'E-Mail', tr('common.telefon'), tr('common.fahrzeug'), tr('common.von'), tr('common.bis'), tr('common.tage'), tr('inquiries.stand'), tr('inquiries.nachricht'), tr('inquiries.datenschutz'), tr('inquiries.marketing')],
+          ...rows.map((inq) => [
+            fmtDateTime(inq.createdAt),
+            inq.fullName,
+            inq.email,
+            inq.phone ?? '',
+            inq.vehicleOfInterest ?? '',
+            inq.desiredStartDate ? new Date(inq.desiredStartDate) : '',
+            inq.desiredEndDate ? new Date(inq.desiredEndDate) : '',
+            inquiryDays(inq) || '',
+            statusText(inq.status),
+            inq.message,
+            inq.privacyConsent,
+            inq.marketingConsent,
+          ]),
+        ],
+        `hoppdrive-anfragen-${toInputDate(new Date())}.csv`,
+      );
+      toast.success(tr('common.cSVExportiert'), `${rows.length} ${tr('inquiries.anfrageN', { count: rows.length })}`);
+    } catch (err) {
+      toast.error(tr('common.exportFehlgeschlagen'), errorText(err));
+    } finally {
+      setExporting(false);
+    }
+  }
+
+  // ── Render ────────────────────────────────────────────────────
+
+  const tabs = [
+    { id: 'open', label: tt('common.offen'), count: openCount },
+    { id: 'all', label: tt('common.alle'), count: allCount },
+    { id: 'denied', label: tt('inquiries.abgelehnt'), count: counts?.denied },
+  ];
+  const tiles: { id: InquiryFilter; label: string; short?: string; count: number | undefined }[] = [
+    { id: 'pending', label: tt('common.neu'), count: counts?.pending },
+    { id: 'reviewed', label: tt('inquiries.geprueft'), count: counts?.reviewed },
+    { id: 'responded', label: tt('inquiries.beantwortet'), count: counts?.responded },
+    { id: 'converted', label: tt('inquiries.buchungErstellt'), short: tt('inquiries.gebucht'), count: counts?.converted },
+  ];
+  const chipOptions = [
+    { value: 'open', label: tt('common.offen'), count: openCount },
+    { value: 'pending', label: tt('common.neu'), count: counts?.pending },
+    { value: 'reviewed', label: tt('inquiries.geprueft'), count: counts?.reviewed },
+    { value: 'responded', label: tt('inquiries.beantwortet'), count: counts?.responded },
+    { value: 'converted', label: tt('inquiries.gebucht'), count: counts?.converted },
+    { value: 'denied', label: tt('inquiries.abgelehnt'), count: counts?.denied },
+    { value: 'all', label: tt('common.alle'), count: allCount },
+  ];
+
+  const emptyList = !loading && !loadError && visibleRows.length === 0;
+  const from = total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
+  const to = Math.min(total, page * PAGE_SIZE);
+
+  const errorBlock = loadError ? (
+    <Alert
+      tone="err"
+      title={tt('inquiries.anfragenKonntenNichtGeladen')}
+      action={
+        <Button variant="outline" size="sm" onClick={() => void fetchList()}>
+          {tt('common.erneutVersuchen')}
+        </Button>
+      }
+    >
+      {loadError}
+    </Alert>
+  ) : null;
+  const tabValue = tabs.some((t) => t.id === filter) ? filter : ['pending', 'reviewed', 'responded'].includes(filter) ? 'open' : 'all';
+
+  const emptyState =
+    search.trim() ? (
+      <EmptyState
+        compact
+        tone="neutral"
+        icon={<Search size={32} />}
+        title={tt('inquiries.keineAnfragenGefunden')}
+        text={tt('inquiries.fuerGibtEsAuf', { trim: search.trim() })}
+        actions={
+          <Button variant="ghost" onClick={() => setSearch('')}>
+            {tt('inquiries.sucheZuruecksetzen')}
+          </Button>
+        }
+      />
+    ) : filter === 'open' ? (
+      <EmptyState
+        icon={<MessageSquare size={32} />}
+        title={tt('inquiries.keineNeuenAnfragen')}
+        text={tt('inquiries.sobaldJemandDasFormular')}
+        actions={
+          <>
+            {booking.canCreate && <Button onClick={() => booking.open()}>{tt('inquiries.buchungManuellAnlegen')}</Button>}
+            <Button variant="ghost" onClick={() => changeFilter('all')}>
+              {tt('inquiries.alleAnfragenAnsehen')}
+            </Button>
+          </>
+        }
+      />
+    ) : (
+      <EmptyState
+        compact
+        tone="neutral"
+        icon={<MessageSquare size={32} />}
+        title={tt('inquiries.keineAnfragenInDieser')}
+        actions={
+          <Button variant="ghost" onClick={() => changeFilter('all')}>
+            {tt('inquiries.alleAnfragenAnsehen')}
+          </Button>
+        }
+      />
+    );
+
+  const searchField = (
+    <div className="relative max-w-[360px]">
+      <Search size={18} aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-graphite" />
+      <Input
+        type="search"
+        aria-label={tt('inquiries.anfragenAufDieserSeite')}
+        placeholder={tt('inquiries.nameEMailOder')}
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        className="pl-10"
+      />
+    </div>
+  );
+
+  const pagination =
+    total > 0 ? (
+      <div className="flex items-center justify-between gap-3 border-t border-line-soft px-5 py-3 max-md:flex-col max-md:items-stretch max-md:border-t-0 max-md:px-0">
+        <span className="sm mut max-md:text-center">{tt('inquiries.von', { from, to, total })}</span>
+        <div className="flex gap-1.5 max-md:grid max-md:grid-cols-2">
+          <Button variant="ghost" size="sm" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
+            {tt('common.zurueck')}
+          </Button>
+          <Button variant="ghost" size="sm" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
+            {tt('inquiries.weiter')}
+          </Button>
         </div>
       </div>
+    ) : null;
 
-      {loading ? (
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-2 border-brand-600 border-t-transparent" />
-        </div>
-      ) : (
-        <div className="bg-white rounded-xl shadow-sm border border-neutral-200 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-neutral-200 bg-neutral-50">
-                  <th className="text-left px-6 py-3 text-neutral-500 font-medium">Name</th>
-                  <th className="text-left px-6 py-3 text-neutral-500 font-medium">Kontakt</th>
-                  <th className="text-left px-6 py-3 text-neutral-500 font-medium">Fahrzeug</th>
-                  <th className="text-left px-6 py-3 text-neutral-500 font-medium">Zeitraum</th>
-                  <th className="text-left px-6 py-3 text-neutral-500 font-medium">Status</th>
-                  <th className="text-left px-6 py-3 text-neutral-500 font-medium">Eingang</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredInquiries.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="text-center py-12 text-neutral-400">
-                      Keine Anfragen gefunden.
-                    </td>
-                  </tr>
-                ) : (
-                  filteredInquiries.map((inq) => (
-                    <>
-                      <tr
-                        key={inq.id}
-                        className="border-b border-neutral-50 hover:bg-neutral-50 cursor-pointer"
-                        onClick={() =>
-                          setExpandedId(expandedId === inq.id ? null : inq.id)
-                        }
-                      >
-                        <td className="px-6 py-3 font-medium">{inq.fullName}</td>
-                        <td className="px-6 py-3 text-neutral-600">
-                          <div>{inq.email}</div>
-                          {inq.phone && (
-                            <div className="text-xs text-neutral-400">{inq.phone}</div>
-                          )}
-                        </td>
-                        <td className="px-6 py-3 text-neutral-600">
-                          {inq.vehicleOfInterest || (
-                            <span className="text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full font-medium">
-                              Offen
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-6 py-3 text-neutral-600 whitespace-nowrap">
-                          {inq.desiredStartDate
-                            ? `${fmtDate(inq.desiredStartDate)} – ${fmtDate(inq.desiredEndDate)}`
-                            : '—'}
-                        </td>
-                        <td className="px-6 py-3">
-                          <StatusBadge status={inq.status} />
-                        </td>
-                        <td className="px-6 py-3 text-neutral-500">
-                          {fmtDate(inq.createdAt)}
-                        </td>
-                      </tr>
+  return (
+    <div className="flex flex-col gap-5 md:gap-6">
+      <DrawerLayout className="lg:-m-8">
+        <div className="flex min-w-0 flex-col gap-5 md:gap-6 lg:p-8">
+          <div className="max-md:hidden">
+            <PageHeader
+              title={tt('common.anfragen')}
+              subtitle={tt('inquiries.eingaengeAusDemFormular')}
+              actions={
+                <Button variant="ghost" loading={exporting} onClick={() => void handleExport()} iconLeft={<Download size={20} aria-hidden="true" />} aria-label={tt('inquiries.cSVExportieren')}>
+                  <span className="max-lg:hidden">{tt('inquiries.cSVExportieren')}</span>
+                  <span className="lg:hidden">CSV</span>
+                </Button>
+              }
+            />
+          </div>
+          <h1 className="sr-only md:hidden">{tt('common.anfragen')}</h1>
 
-                      {/* Expanded detail row */}
-                      {expandedId === inq.id && (
-                        <tr key={`${inq.id}-detail`} className="border-b border-neutral-100">
-                          <td colSpan={6} className="px-6 py-4 bg-neutral-50/50">
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                              <div className="md:col-span-2">
-                                <p className="text-xs font-semibold text-neutral-500 uppercase mb-1">
-                                  Nachricht
-                                </p>
-                                <p className="text-sm text-neutral-700 whitespace-pre-wrap">
-                                  {inq.message}
-                                </p>
-                              </div>
-                              <div className="space-y-3">
-                                <div>
-                                  <p className="text-xs font-semibold text-neutral-500 uppercase mb-1">
-                                    Einwilligung
-                                  </p>
-                                  <p className="text-xs text-neutral-600">
-                                    Datenschutz: {inq.privacyConsent ? '✓ Ja' : '✗ Nein'}
-                                    <br />
-                                    Marketing: {inq.marketingConsent ? '✓ Ja' : '✗ Nein'}
-                                  </p>
-                                </div>
-                                {inq.status === 'pending' && (
-                                  <button
-                                    disabled={updating === inq.id}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleStatusChange(inq.id, 'reviewed');
-                                    }}
-                                    className="text-xs font-medium text-neutral-500 hover:text-neutral-700 underline decoration-dotted"
-                                  >
-                                    Als geprüft markieren
-                                  </button>
-                                )}
-
-                                {/* Approve / Deny */}
-                                {!['converted', 'denied', 'archived'].includes(inq.status) && (
-                                  <div className="space-y-2">
-                                    {/* Vehicle assignment */}
-                                    <div>
-                                      <p className="text-xs font-semibold text-neutral-500 uppercase mb-1 flex items-center gap-1">
-                                        <Car className="w-3 h-3" />
-                                        Fahrzeug zuweisen
-                                      </p>
-                                      {(() => {
-                                        const available = getAvailableVehicles(inq.desiredStartDate, inq.desiredEndDate);
-                                        return (
-                                          <select
-                                            value={assignedVehicle[inq.id] || ''}
-                                            onChange={(e) => {
-                                              setAssignedVehicle((prev) => ({ ...prev, [inq.id]: e.target.value }));
-                                              setConvertMsg(null);
-                                            }}
-                                            onClick={(e) => e.stopPropagation()}
-                                            className="border border-neutral-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 w-full"
-                                          >
-                                            <option value="">
-                                              {inq.vehicleOfInterest
-                                                ? `Auto-Erkennung: ${inq.vehicleOfInterest}`
-                                                : '— Fahrzeug wählen —'}
-                                            </option>
-                                            {available.map((v: any) => (
-                                              <option key={v.id} value={v.id}>
-                                                {v.brand} {v.model} {v.licensePlate ? `(${v.licensePlate})` : ''}
-                                              </option>
-                                            ))}
-                                            {available.length === 0 && (
-                                              <option disabled>Keine verfügbaren Fahrzeuge</option>
-                                            )}
-                                          </select>
-                                        );
-                                      })()}
-                                      {inq.desiredStartDate && inq.desiredEndDate && (
-                                        <p className="text-[11px] text-neutral-400 mt-0.5">
-                                          Verfügbar für {fmtDate(inq.desiredStartDate)} – {fmtDate(inq.desiredEndDate)}
-                                        </p>
-                                      )}
-                                    </div>
-
-                                    <div className="flex gap-2">
-                                      <button
-                                        disabled={converting === inq.id}
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleApprove(inq);
-                                        }}
-                                        className="flex-1 flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-700 disabled:bg-brand-400 text-white text-sm font-medium py-2 px-3 rounded-lg transition-colors"
-                                      >
-                                        {converting === inq.id ? (
-                                          <Loader2 className="w-4 h-4 animate-spin" />
-                                        ) : (
-                                          <Check className="w-4 h-4" />
-                                        )}
-                                        Genehmigen
-                                      </button>
-                                      <button
-                                        disabled={denying === inq.id}
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          startDeny(inq.id);
-                                        }}
-                                        className="flex-1 flex items-center justify-center gap-2 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-sm font-medium py-2 px-3 rounded-lg transition-colors"
-                                      >
-                                        <Ban className="w-4 h-4" />
-                                        Ablehnen
-                                      </button>
-                                    </div>
-
-                                    {denyingId === inq.id && (
-                                      <div
-                                        className="p-2.5 bg-red-50 border border-red-200 rounded-lg space-y-2"
-                                        onClick={(e) => e.stopPropagation()}
-                                      >
-                                        <textarea
-                                          value={denyReason}
-                                          onChange={(e) => setDenyReason(e.target.value)}
-                                          placeholder="Grund für die Ablehnung (optional, wird dem Kunden per E-Mail mitgeteilt)"
-                                          rows={2}
-                                          className="w-full text-sm border border-red-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-red-400"
-                                        />
-                                        <div className="flex gap-2">
-                                          <button
-                                            disabled={denying === inq.id}
-                                            onClick={() => handleDeny(inq)}
-                                            className="flex-1 flex items-center justify-center gap-1.5 bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white text-xs font-medium py-1.5 rounded-lg transition-colors"
-                                          >
-                                            {denying === inq.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
-                                            Ablehnung bestätigen
-                                          </button>
-                                          <button
-                                            onClick={() => setDenyingId(null)}
-                                            className="flex-1 bg-neutral-100 hover:bg-neutral-200 text-neutral-600 text-xs font-medium py-1.5 rounded-lg transition-colors"
-                                          >
-                                            Abbrechen
-                                          </button>
-                                        </div>
-                                      </div>
-                                    )}
-
-                                    {convertMsg && convertMsg.id === inq.id && (
-                                      <p
-                                        className={`text-xs mt-1 ${
-                                          convertMsg.ok ? 'text-green-600' : 'text-red-600'
-                                        }`}
-                                      >
-                                        {convertMsg.text}
-                                      </p>
-                                    )}
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          </td>
-                        </tr>
-                      )}
-                    </>
-                  ))
-                )}
-              </tbody>
-            </table>
+          {/* Pipeline tiles (tablet and up) */}
+          <div
+            role="group"
+            aria-label={tt('inquiries.anfragenNachStand')}
+            className="grid grid-cols-4 overflow-hidden rounded-2xl border border-line bg-card max-md:hidden"
+          >
+            {tiles.map((tile) => {
+              const active = filter === tile.id;
+              return (
+                <button
+                  key={tile.id}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => changeFilter(active ? 'open' : tile.id)}
+                  className={cn(
+                    'flex min-h-[76px] flex-col items-start justify-center gap-0.5 border-r border-line-soft px-5 py-4 text-left last:border-r-0 hover:bg-row',
+                    active && 'bg-ruby-tint hover:bg-ruby-tint',
+                  )}
+                >
+                  <span className="sm mut">
+                    {tile.short ? (
+                      <>
+                        <span className="max-lg:hidden">{tile.label}</span>
+                        <span className="lg:hidden">{tile.short}</span>
+                      </>
+                    ) : (
+                      tile.label
+                    )}
+                  </span>
+                  <b className="num text-[28px] leading-none">{tile.count ?? '–'}</b>
+                </button>
+              );
+            })}
           </div>
 
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between px-6 py-3 border-t border-neutral-200">
-              <p className="text-xs text-neutral-500">
-                Seite {page} von {totalPages}
-              </p>
-              <div className="flex gap-1">
-                <button
-                  disabled={page <= 1}
-                  onClick={() => setPage(page - 1)}
-                  className="p-1.5 rounded hover:bg-neutral-100 disabled:opacity-30"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-                <button
-                  disabled={page >= totalPages}
-                  onClick={() => setPage(page + 1)}
-                  className="p-1.5 rounded hover:bg-neutral-100 disabled:opacity-30"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </button>
+          {/* Mobile: status chips */}
+          <div className="md:hidden">
+            <ChipGroup
+              aria-label={tt('inquiries.stand')}
+              scrollable
+              options={chipOptions}
+              value={filter}
+              onChange={(value) => changeFilter(value as InquiryFilter)}
+              className="-mx-4 px-4"
+            />
+          </div>
+
+          {errorBlock}
+
+          {isTabletUp ? (
+            <Panel aria-labelledby="inquiries-heading" className="overflow-hidden">
+              <div className="panel-h">
+                <h2 className="h2" id="inquiries-heading">
+                  {tt('inquiries.alleAnfragen')}
+                </h2>
+                <Tabs
+                  aria-label={tt('inquiries.filter')}
+                  tabs={tabs}
+                  value={tabValue}
+                  onChange={(id) => changeFilter(id as InquiryFilter)}
+                />
               </div>
+              <div className="border-b border-line-soft px-5 py-3">{searchField}</div>
+              {loading ? (
+                <Table aria-label={tt('inquiries.anfragenWirdGeladen')} className="relative">
+                  <TBody>
+                    <SkeletonTableRows rows={6} columns={4} />
+                  </TBody>
+                </Table>
+              ) : emptyList && !loadError ? (
+                emptyState
+              ) : (
+                <Table aria-label={tt('common.anfragen')} className="relative">
+                  <THead>
+                    <Tr>
+                      <Th>{tt('common.kunde')}</Th>
+                      <Th>{tt('inquiries.fahrzeugUndZeitraum')}</Th>
+                      <Th>{tt('inquiries.stand')}</Th>
+                      <Th align="right">
+                        <span className="sr-only">{tt('inquiries.oeffnen')}</span>
+                      </Th>
+                    </Tr>
+                  </THead>
+                  <TBody>
+                    {visibleRows.map((inq) => (
+                      <Tr key={inq.id} selected={inq.id === selectedId} onClick={() => openInquiry(inq)}>
+                        <Td>
+                          <Cell2 primary={inq.fullName} secondary={fmtRelative(inq.createdAt, { capitalize: true })} />
+                        </Td>
+                        <Td>
+                          <Cell2
+                            primary={inq.vehicleOfInterest || <span className="font-semibold text-warn">{tt('inquiries.fahrzeugOffen')}</span>}
+                            secondary={<span className="num">{period(inq)}</span>}
+                          />
+                        </Td>
+                        <Td>
+                          <StatusPill kind="contact" status={inq.status} />
+                        </Td>
+                        <Td>
+                          <div className="acts">
+                            <IconButton aria-label={tt('inquiries.anfrageVonOeffnen', { fullName: inq.fullName })} aria-current={inq.id === selectedId ? 'true' : undefined} onClick={(e) => { e.stopPropagation(); openInquiry(inq); }}>
+                              <ChevronRight size={20} aria-hidden="true" />
+                            </IconButton>
+                          </div>
+                        </Td>
+                      </Tr>
+                    ))}
+                  </TBody>
+                </Table>
+              )}
+              {!loading && pagination}
+            </Panel>
+          ) : (
+            <div className="flex flex-col gap-3">
+              {searchField}
+              {loading ? (
+                <SkeletonRows rows={4} />
+              ) : emptyList && !loadError ? (
+                emptyState
+              ) : (
+                visibleRows.map((inq) => (
+                  <MobileCard
+                    key={inq.id}
+                    title={<span className="text-base">{inq.fullName}</span>}
+                    subtitle={fmtRelative(inq.createdAt, { capitalize: true })}
+                    status={<StatusPill kind="contact" status={inq.status} />}
+                    onOpen={() => openInquiry(inq)}
+                    actions={
+                      <Button variant="outline" fullWidth onClick={() => openInquiry(inq)} aria-label={tt('inquiries.anfrageVonOeffnen', { fullName: inq.fullName })}>
+                        {tt('inquiries.oeffnen')}
+                      </Button>
+                    }
+                  >
+                    <div>{inq.vehicleOfInterest || <span className="font-semibold text-warn">{tt('inquiries.fahrzeugOffen')}</span>}</div>
+                    <div className="num mut">{period(inq)}</div>
+                  </MobileCard>
+                ))
+              )}
+              {!loading && pagination}
             </div>
           )}
         </div>
-      )}
+
+        <InquiryDetail
+          inquiry={selected}
+          vehicles={vehicles}
+          bookings={bookings}
+          tiers={tiers}
+          canEdit={canEdit}
+          assignedVehicleId={selected ? (assigned[selected.id] ?? '') : ''}
+          onAssignVehicle={(vehicleId) => {
+            if (!selected) return;
+            setAssigned((a) => ({ ...a, [selected.id]: vehicleId }));
+            setActionError(null);
+          }}
+          actionError={selected && actionError?.id === selected.id ? actionError.text : null}
+          busy={busy}
+          onClose={closeDetail}
+          onMarkReviewed={() => selected && void handleStatus(selected, 'reviewed')}
+          onMarkResponded={() => selected && void handleStatus(selected, 'responded')}
+          onApprove={() => selected && void handleApprove(selected)}
+          onApproveWithoutCode={() => selected && void handleApprove(selected, true)}
+          discountCode={selected ? (selected.id in codeEdits ? codeEdits[selected.id] : (selected.discountCode ?? null)) : null}
+          discountRejected={selected ? Boolean(codeRejected[selected.id]) : false}
+          onChangeDiscountCode={(code) => {
+            if (!selected) return;
+            setCodeEdits((e) => ({ ...e, [selected.id]: code.trim() ? code : null }));
+            setCodeRejected((r) => ({ ...r, [selected.id]: false }));
+            setActionError(null);
+          }}
+          onDeny={(reason) => selected && void handleDeny(selected, reason)}
+        />
+      </DrawerLayout>
     </div>
   );
 }

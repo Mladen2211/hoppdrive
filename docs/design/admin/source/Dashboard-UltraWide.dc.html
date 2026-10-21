@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Übersicht Ultra-wide</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./admin.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fira+Sans:wght@400;500;600;700&family=Fira+Sans+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F2F2F2}
+.tl-row{display:flex;gap:14px;align-items:center;padding:14px 20px;min-height:64px;text-decoration:none;border-bottom:1px solid var(--line-s)}
+.tl-row:last-child{border-bottom:0}
+.tl-ic{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex:none}
+.ft{border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;background:#fff;min-width:0}
+.ft b{font-size:14px;line-height:1.25}
+</style>
+</helmet>
+<div class="ad shell">
+
+  <div style="background:#fff;border-right:1px solid var(--line)">
+    <dc-import name="AdminNav" current="Übersicht" hint-size="264px,100%"></dc-import>
+  </div>
+
+  <div style="min-width:0;display:flex;flex-direction:column">
+    <header class="top">
+      <label class="search"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM21 21l-4.3-4.3"/></svg><span style="position:absolute;left:-9999px">Suche</span><input type="search" placeholder="Name, E-Mail, Fahrzeug oder Vertrag suchen…"></label>
+      <div style="margin-left:auto;display:flex;gap:12px;align-items:center">
+        <a class="btn btn-p" href="Calendar-Desktop.dc.html"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Neue Buchung</a>
+        <button class="icon-btn" type="button" aria-label="Benachrichtigungen, 4 ungelesen"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><span class="dot">4</span></button>
+      </div>
+    </header>
+
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) 420px;flex:1;align-items:stretch">
+      <main class="main">
+        <div class="pg-h"><div><h1 class="h1">Übersicht</h1><p>Mietverträge und Systemstatus auf einen Blick</p></div></div>
+
+        <section class="kpis" aria-label="Kennzahlen">
+          <div class="kpi"><div class="l"><span>Fahrzeuge gesamt</span><span class="ic"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 17H3v-5l2-5h14l2 5v5h-2M5 17a2 2 0 1 0 4 0M15 17a2 2 0 1 0 4 0M9 17h6M3 12h18"/></svg></span></div><b class="num">12</b><span class="sm mut">Keine Änderung</span></div>
+          <div class="kpi"><div class="l"><span>Neue Anfragen</span><span class="ic"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span></div><b class="num">5</b><span class="tr">5 diese Woche</span></div>
+          <div class="kpi"><div class="l"><span>Aktive Buchungen</span><span class="ic"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zM9 16l2 2 4-4"/></svg></span></div><b class="num">7</b><span class="sm mut">Keine Änderung</span></div>
+          <div class="kpi"><div class="l"><span>Monatlicher Umsatz</span><span class="ic"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m22 7-8.5 8.5-5-5L2 17M16 7h6v6"/></svg></span></div><b class="num">CHF 14’820</b><span class="tr">+8 % zum Vormonat</span></div>
+        </section>
+
+        <section class="panel" aria-labelledby="fl-h">
+          <div class="panel-h"><h2 class="h2" id="fl-h">Flotte heute</h2><ul class="sm" style="display:flex;gap:16px"><li><span class="st s-green" style="height:22px">Vermietet 4</span></li><li><span class="st s-blue" style="height:22px">Reserviert 1</span></li><li><span class="st s-gray" style="height:22px">Verfügbar 6</span></li><li><span class="st s-amber" style="height:22px">Wartung 1</span></li></ul></div>
+          <div class="panel-b" style="display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px">
+            <sc-for list="{{fleet}}" as="f" hint-placeholder-count="12">
+              <div class="ft"><b>{{f.n}}</b><span class="st {{f.cls}}" style="align-self:flex-start;height:22px;font-size:12px">{{f.s}}</span></div>
+            </sc-for>
+          </div>
+        </section>
+
+        <section class="panel" aria-labelledby="bk-h">
+          <div class="panel-h"><h2 class="h2" id="bk-h">Aktuelle Buchungen</h2><a class="btn btn-g btn-s" href="Contracts-Desktop.dc.html">Alle Verträge</a></div>
+          <div class="scroll">
+            <table class="tbl">
+              <thead><tr><th>Kunde</th><th>Fahrzeug</th><th>Zeitraum</th><th>Status</th><th class="r">Betrag</th><th class="r"><span style="position:absolute;left:-9999px">Aktionen</span></th></tr></thead>
+              <tbody>
+                <sc-for list="{{rows}}" as="r" hint-placeholder-count="6">
+                  <tr>
+                    <td><div class="cell-2"><b>{{r.name}}</b><span>{{r.contact}}</span></div></td>
+                    <td>{{r.car}}</td>
+                    <td class="num" style="white-space:nowrap">{{r.period}}</td>
+                    <td><span class="st {{r.cls}}">{{r.status}}</span></td>
+                    <td class="r num" style="font-size:16px"><b>{{r.sum}}</b></td>
+                    <td><div class="acts"><button class="ib pr" type="button" aria-label="Vertrag herunterladen"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></button><button class="ib pr" type="button" aria-label="Vertrag unterschreiben"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button></div></td>
+                  </tr>
+                </sc-for>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+
+      <aside style="background:#fff;border-left:1px solid var(--line);padding:32px 24px;display:flex;flex-direction:column;gap:24px;min-width:0" aria-label="Heute">
+        <section aria-labelledby="td-h" style="border:1px solid var(--line);border-radius:16px;overflow:hidden">
+          <div class="panel-h"><h2 class="h2" id="td-h">Heute zu tun</h2><span class="st s-amber">4 offen</span></div>
+          <ul>
+            <li><a class="tl-row" href="Inquiries-Desktop.dc.html"><span class="tl-ic" style="background:var(--info-t);color:var(--info)"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span><span style="flex:1"><b>3 neue Anfragen</b><br><span class="sm mut">Älteste seit 2 Tagen unbeantwortet</span></span><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></a></li>
+            <li><a class="tl-row" href="Contracts-Desktop.dc.html"><span class="tl-ic" style="background:var(--warn-t);color:var(--warn)"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M8 13h8M8 17h8"/></svg></span><span style="flex:1"><b>2 Verträge laufen bald aus</b><br><span class="sm mut">Innerhalb der nächsten 7 Tage</span></span><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></a></li>
+            <li><a class="tl-row" href="Contracts-Desktop.dc.html"><span class="tl-ic" style="background:var(--err-t);color:#8F1C15"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0zM12 9v4M12 17h.01"/></svg></span><span style="flex:1"><b>1 Rechnung offen</b><br><span class="sm mut">Seit 14 Tagen unbezahlt, Mahnung möglich</span></span><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></a></li>
+            <li><a class="tl-row" href="Calendar-Desktop.dc.html"><span class="tl-ic" style="background:var(--paper);color:var(--gr)"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94z"/></svg></span><span style="flex:1"><b>Wartung heute</b><br><span class="sm mut">Škoda Kodiaq, Werkstatt [Name]</span></span><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></a></li>
+          </ul>
+        </section>
+
+        <section aria-labelledby="nw-h" style="border:1px solid var(--line);border-radius:16px;overflow:hidden">
+          <div class="panel-h"><h2 class="h2" id="nw-h">Neue Anfragen</h2><a href="Inquiries-Desktop.dc.html" style="font-weight:600;color:var(--ruby-d);font-size:14px">Alle</a></div>
+          <ul>
+            <li style="padding:12px 20px;border-bottom:1px solid var(--line-s)"><b>Sarah Zürcher</b> <span class="mut">· Škoda Superb Combi</span><div class="sm num mut">07.12. – 20.12. · CHF 995.40</div></li>
+            <li style="padding:12px 20px;border-bottom:1px solid var(--line-s)"><b>David Aebi</b> <span class="mut">· Hyundai Tucson</span><div class="sm num mut">28.11. – 30.11. · CHF 222.00</div></li>
+            <li style="padding:12px 20px"><b>Mira Baumann</b> <span class="mut">· Škoda Enyaq iV</span><div class="sm num mut">02.12. – 09.12. · CHF 792.00</div></li>
+          </ul>
+        </section>
+
+        <section aria-labelledby="ak-h" style="border:1px solid var(--line);border-radius:16px;overflow:hidden">
+          <div class="panel-h"><h2 class="h2" id="ak-h">Letzte Aktivität</h2><a href="#" style="font-weight:600;color:var(--ruby-d);font-size:14px">Protokoll</a></div>
+          <ul style="padding:6px 20px 12px">
+            <li style="padding:10px 0;border-bottom:1px solid var(--line-s)"><b>Mladen R.</b> hat Anfrage von Laura Meier in Buchung umgewandelt<div class="sm mut">vor 12 Minuten</div></li>
+            <li style="padding:10px 0;border-bottom:1px solid var(--line-s)"><b>Mladen R.</b> hat Rechnung R-2026-0042 erstellt<div class="sm mut">vor 1 Stunde</div></li>
+            <li style="padding:10px 0"><b>Mladen R.</b> hat Preise für Škoda Kodiaq geändert<div class="sm mut">gestern, 16:40</div></li>
+          </ul>
+        </section>
+      </aside>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":1400}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const f = (n, s, cls) => ({ n, s, cls });
+    return {
+      fleet: [
+        f('Škoda Superb Combi', 'Vermietet', 's-green'), f('VW Passat Variant', 'Reserviert', 's-blue'), f('Škoda Enyaq iV', 'Vermietet', 's-green'),
+        f('Škoda Kodiaq', 'Wartung', 's-amber'), f('Hyundai Tucson', 'Verfügbar', 's-gray'), f('Toyota RAV4', 'Verfügbar', 's-gray'),
+        f('Škoda Octavia', 'Verfügbar', 's-gray'), f('Škoda Scala', 'Verfügbar', 's-gray'), f('Škoda Karoq', 'Vermietet', 's-green'),
+        f('VW Golf', 'Verfügbar', 's-gray'), f('Hyundai Kona', 'Vermietet', 's-green'), f('Škoda Fabia', 'Verfügbar', 's-gray')
+      ],
+      rows: [
+        { name: 'Laura Meier', contact: 'laura.meier@beispiel.ch', car: 'Škoda Superb Combi', status: 'Aktiv', cls: 's-green', period: '23.11. – 06.12.', sum: 'CHF 995.40' },
+        { name: 'Marco Brunner', contact: '+41 79 555 01 12', car: 'VW Passat Variant', status: 'Reserviert', cls: 's-blue', period: '01.12. – 31.12.', sum: 'CHF 1’794.00' },
+        { name: 'Nadia Frei', contact: 'nadia.frei@beispiel.ch', car: 'Škoda Enyaq iV', status: 'Aktiv', cls: 's-green', period: '10.11. – 10.02.', sum: 'CHF 6’197.40' },
+        { name: 'Elena Rossi', contact: 'elena.rossi@beispiel.ch', car: 'Škoda Kodiaq', status: 'Reserviert', cls: 's-blue', period: '05.12. – 12.12.', sum: 'CHF 694.20' },
+        { name: 'Thomas Keller', contact: '+41 78 555 02 31', car: 'Hyundai Tucson', status: 'Erledigt', cls: 's-gray', period: '02.11. – 09.11.', sum: 'CHF 577.20' },
+        { name: 'Jonas Huber', contact: 'jonas.huber@beispiel.ch', car: 'Škoda Octavia', status: 'Storniert', cls: 's-red', period: '15.11. – 18.11.', sum: '–' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

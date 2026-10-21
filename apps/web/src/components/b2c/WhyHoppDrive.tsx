@@ -1,75 +1,68 @@
-import { Shield, PiggyBank, Wrench, HeartHandshake } from 'lucide-react';
+import { DollarSign, Headset, ShieldCheck, Wrench } from 'lucide-react';
+import { useTranslations } from 'next-intl';
+import { useFormatters } from '@/i18n/useFormatters';
 import type { WhyHoppDriveContent } from '@/types/homepage-sections';
 
-const ICONS = [PiggyBank, Shield, Wrench, HeartHandshake];
-
-const DEFAULT_ITEMS = [
-  {
-    title: 'Unschlagbare Preise',
-    description:
-      'Starten Sie ab CHF 59/Tag – bis zu 40% Rabatt bei Langzeitmiete. Transparente Preise ohne versteckte Gebühren.',
-  },
-  {
-    title: 'Vollkasko inklusive',
-    description:
-      'Premium-Versicherungsschutz ist bei jeder Anmietung dabei. Keine Zusatzkosten, keine Überraschungen.',
-  },
-  {
-    title: 'Bestens gewartet',
-    description:
-      'Jedes Fahrzeug wird vor jeder Übergabe professionell geprüft und gereinigt. Immer zuverlässig.',
-  },
-  {
-    title: 'Persönlicher Service',
-    description:
-      'Individuelle Beratung und flexible Laufzeiten. Wir passen uns Ihren Bedürfnissen an.',
-  },
-];
+const ICONS = [DollarSign, ShieldCheck, Wrench, Headset];
 
 export type { WhyHoppDriveContent };
 
 interface WhyHoppDriveProps {
   content?: WhyHoppDriveContent;
+  /** Lowest daily price of the live fleet, used in the default first tile (none: neutral copy). */
+  minPrice?: number | null;
+  /** ISO code of the site currency. */
+  currency?: string;
 }
 
-export function WhyHoppDrive({ content }: WhyHoppDriveProps) {
+export function WhyHoppDrive({ content, minPrice = null, currency }: WhyHoppDriveProps) {
+  const t = useTranslations('why');
+  const f = useFormatters(currency);
   const c = content || {};
-  const label = c.label ?? 'Warum HoppDrive';
-  const heading = c.heading ?? 'Günstig, flexibel & zuverlässig';
-  const description =
-    c.description ?? 'Wir machen Autovermietung einfach und erschwinglich – mit transparenten Preisen und persönlichem Service.';
-  const items = c.items?.length ? c.items : DEFAULT_ITEMS;
+  const label = c.label ?? t('label');
+  const heading = c.heading ?? t('heading');
+  const defaultItems = [
+    {
+      title: t('priceTitle'),
+      description:
+        minPrice !== null ? t('priceText', { price: f.money(minPrice, { decimals: 0 }) }) : t('priceTextNoPrice'),
+    },
+    {
+      title: t('coverTitle'),
+      description: t('coverText'),
+    },
+    {
+      title: t('maintenanceTitle'),
+      description: t('maintenanceText'),
+    },
+    {
+      title: t('serviceTitle'),
+      description: t('serviceText'),
+    },
+  ];
+  const items = c.items?.length ? c.items : defaultItems;
 
   return (
-    <section className="py-20 bg-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-16">
-          <span className="text-brand-600 font-semibold text-sm uppercase tracking-wider">
-            {label}
-          </span>
-          <h2 className="text-3xl md:text-4xl font-bold mt-3 mb-4">
-            {heading}
-          </h2>
-          <p className="text-neutral-500 max-w-2xl mx-auto text-lg">
-            {description}
-          </p>
+    <section className="sec bg-white">
+      <div className="wrap">
+        <div className="sec-head">
+          <p className="kick">{label}</p>
+          <h2 className="h2">{heading}</h2>
+          {c.description && <p className="lead">{c.description}</p>}
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-          {items.map((prop, idx) => {
-            const Icon = ICONS[idx % ICONS.length];
+        <div className="grid grid-cols-4 gap-8 max-lg:grid-cols-2 max-md:grid-cols-1 max-md:gap-6">
+          {items.map((item, index) => {
+            const Icon = ICONS[index % ICONS.length];
             return (
-              <div
-                key={prop.title}
-                className="group text-center p-6 rounded-2xl border border-neutral-100 hover:border-brand-100 hover:shadow-lg hover:shadow-brand-50 transition-all duration-300"
-              >
-                <div className="inline-flex items-center justify-center w-14 h-14 bg-brand-50 rounded-2xl mb-5 group-hover:bg-brand-100 transition-colors">
-                  <Icon className="w-7 h-7 text-brand-600" />
+              <div key={`${item.title}-${index}`} className="flex flex-col gap-3 max-md:flex-row max-md:items-start max-md:gap-4">
+                <div className="flex h-[52px] w-[52px] flex-none items-center justify-center rounded-14 bg-ruby-tint text-ruby">
+                  <Icon size={26} strokeWidth={2} aria-hidden="true" />
                 </div>
-                <h3 className="text-lg font-bold mb-2">{prop.title}</h3>
-                <p className="text-neutral-500 text-sm leading-relaxed">
-                  {prop.description}
-                </p>
+                <div className="flex flex-col gap-3 max-md:gap-1">
+                  <h3 className="h3">{item.title}</h3>
+                  <p className="mut">{item.description}</p>
+                </div>
               </div>
             );
           })}

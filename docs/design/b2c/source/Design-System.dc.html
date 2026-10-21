@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Kundenseite Design System</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./b2c.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fira+Sans:wght@400;500;600;700;800&family=Fira+Sans+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F2F2F2}
+.dsx{padding:56px;display:flex;flex-direction:column;gap:32px;width:1440px}
+.box{background:#fff;border:1px solid var(--line);border-radius:20px;padding:32px;display:flex;flex-direction:column;gap:22px}
+.box > h2{font-size:26px;line-height:1.2;font-weight:700}
+.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:32px}
+.tok{font:500 12px/1.35 ui-monospace,Menlo,Consolas,monospace;color:var(--gr)}
+.lab{font-size:14px;color:var(--gr);font-weight:600;margin-bottom:10px}
+.sw2{height:92px;border-radius:14px;border:1px solid rgba(0,0,0,.08);display:flex;align-items:flex-end;padding:12px;font-weight:600;font-size:14px}
+.demo{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.spb{height:16px;background:var(--ruby);border-radius:3px}
+.rdb{width:96px;height:64px;border:2px solid var(--ink);background:var(--paper)}
+.in.dis{background:var(--paper);color:#6E7174;border-color:var(--line)}
+.in.foc{outline:3px solid var(--info);outline-offset:1px;border-color:var(--info)}
+.btn.hov{background:var(--ruby-d)}
+.btn.foc{outline:3px solid var(--info);outline-offset:2px}
+.trow{display:flex;justify-content:space-between;align-items:baseline;gap:16px;border-bottom:1px solid var(--line-s);padding-bottom:12px}
+</style>
+</helmet>
+<div class="hd" style="width:1440px">
+<div class="dsx">
+
+  <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:24px">
+    <div><h1 class="disp" style="font-size:48px">HoppDrive: Design System der Kundenseite</h1><p class="lead" style="margin-top:10px">Aus den Markenwerten des Projekts abgeleitet: Ruby für die eine Handlung pro Ansicht, Anthrazit für alles Tragende, viel Weiss. Preise sind immer Zahlen in Fira Sans Condensed.</p></div>
+  </div>
+
+
+  <section class="box" aria-labelledby="lg-h">
+    <h2 id="lg-h">Logo</h2>
+    <p class="mut" style="max-width:80ch">Das Logo wird nur gewählt, nie neu gesetzt. Farben: Ruby #A60E0E und Anthrazit #3E4144, flächig, ohne Verlauf. Schutzraum rundum: Höhe des „o“ im Schriftzug. Nicht strecken, nicht drehen, nicht einfärben.</p>
+    <div style="display:grid;grid-template-columns:1.1fr 1.5fr 1fr .5fr;gap:24px;align-items:start"><figure style="margin:0;display:flex;flex-direction:column;gap:10px;min-width:0"><div style="background:#fff;border:1px solid var(--line);border-radius:14px;height:190px;display:flex;align-items:center;justify-content:center;padding:20px"><img src="/_blob/a82670af88d63b848e66522df4cc6ce8" alt="" style="width:260px;max-width:100%;height:auto;display:block"></div><figcaption style="color:var(--ink)"><b>Stehend</b><div class="sm mut">Fusszeile, Anmeldung, Unterschriftsseite. Ab 140 px Breite</div></figcaption></figure><figure style="margin:0;display:flex;flex-direction:column;gap:10px;min-width:0"><div style="background:#fff;border:1px solid var(--line);border-radius:14px;height:190px;display:flex;align-items:center;justify-content:center;padding:20px"><img src="/_blob/b577d9af4c60c1f44053c4d1a78b29d9" alt="" style="width:400px;max-width:100%;height:auto;display:block"></div><figcaption style="color:var(--ink)"><b>Liegend</b><div class="sm mut">Kopfzeile mit viel Platz, Briefkopf. Ab 260 px Breite</div></figcaption></figure><figure style="margin:0;display:flex;flex-direction:column;gap:10px;min-width:0"><div style="background:#fff;border:1px solid var(--line);border-radius:14px;height:190px;display:flex;align-items:center;justify-content:center;padding:20px"><img src="/_blob/c58998c5c84da27dee7cde4d98723e61" alt="" style="width:230px;max-width:100%;height:auto;display:block"></div><figcaption style="color:var(--ink)"><b>Schriftzug</b><div class="sm mut">Navigation, Mobil und Desktop. Ab 96 px Breite</div></figcaption></figure><figure style="margin:0;display:flex;flex-direction:column;gap:10px;min-width:0"><div style="background:#fff;border:1px solid var(--line);border-radius:14px;height:190px;display:flex;align-items:center;justify-content:center;padding:20px"><img src="/_blob/c4d8bf0cce53a418ea028bc736817454" alt="" style="width:84px;max-width:100%;height:auto;display:block"></div><figcaption style="color:var(--ink)"><b>Zeichen</b><div class="sm mut">App-Symbol, Icon-Leiste (Admin). Ab 24 px</div></figcaption></figure></div>
+    <div style="display:grid;grid-template-columns:1.1fr 1.5fr 1fr .5fr;gap:24px;align-items:start"><figure style="margin:0;display:flex;flex-direction:column;gap:10px;min-width:0"><div style="background:#3E4144;border:1px solid #3E4144;border-radius:14px;height:190px;display:flex;align-items:center;justify-content:center;padding:20px"><img src="/_blob/c260315641034377a4a0bc4c9e277977" alt="" style="width:260px;max-width:100%;height:auto;display:block"></div><figcaption style="color:var(--ink)"><b>Stehend, weiss</b><div class="sm mut">Nur auf Anthrazit oder Ruby (Kontrast ab 7.8:1)</div></figcaption></figure><figure style="margin:0;display:flex;flex-direction:column;gap:10px;min-width:0"><div style="background:#3E4144;border:1px solid #3E4144;border-radius:14px;height:190px;display:flex;align-items:center;justify-content:center;padding:20px"><img src="/_blob/10800fd386d3d8350f6f8886d600e5f2" alt="" style="width:400px;max-width:100%;height:auto;display:block"></div><figcaption style="color:var(--ink)"><b>Liegend, weiss</b><div class="sm mut">Für dunkle Banner und Präsentationen</div></figcaption></figure><figure style="margin:0;display:flex;flex-direction:column;gap:10px;min-width:0"><div style="background:#3E4144;border:1px solid #3E4144;border-radius:14px;height:190px;display:flex;align-items:center;justify-content:center;padding:20px"><img src="/_blob/99d1f069d05898ecb114f1155dfb032e" alt="" style="width:230px;max-width:100%;height:auto;display:block"></div><figcaption style="color:var(--ink)"><b>Schriftzug, weiss</b><div class="sm mut">Für dunkle Kopfzeilen</div></figcaption></figure><figure style="margin:0;display:flex;flex-direction:column;gap:10px;min-width:0"><div style="background:#3E4144;border:1px solid #3E4144;border-radius:14px;height:190px;display:flex;align-items:center;justify-content:center;padding:20px"><img src="/_blob/2f9e1980100eb3174d33ca19381abe40" alt="" style="width:84px;max-width:100%;height:auto;display:block"></div><figcaption style="color:var(--ink)"><b>Zeichen, weiss</b><div class="sm mut">Auf Anthrazit oder Ruby</div></figcaption></figure></div>
+    <div class="alert al-info" style="font-size:14px"><span><b>[Improvement &amp; Reason]</b> Vier feste Varianten mit festem Einsatzort statt einer Datei für alles. Grund: Der Schriftzug bleibt in schmalen Kopfzeilen lesbar, die Variante mit Auto und Zeile trägt die Marke dort, wo Platz ist. Alle Dateien sind Vektoren und aus den hochgeladenen Vorlagen nachgezeichnet.</span></div>
+  </section>
+
+  <section class="box" aria-labelledby="f-h">
+    <h2 id="f-h">Farben</h2>
+    <div style="display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:14px">
+      <sc-for list="{{colors}}" as="c" hint-placeholder-count="8">
+        <div><div class="sw2" style="background:{{c.hex}};color:{{c.fg}}">{{c.n}}</div><div class="tok" style="margin-top:8px">{{c.hex}}<br>{{c.use}}</div></div>
+      </sc-for>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px">
+      <sc-for list="{{states}}" as="s" hint-placeholder-count="4">
+        <div style="background:{{s.bg}};color:{{s.fg}};border-radius:14px;padding:16px 18px"><b>{{s.n}}</b><div class="sm" style="margin-top:2px">{{s.use}}</div><div class="tok" style="color:{{s.fg}};margin-top:8px">{{s.cr}}</div></div>
+      </sc-for>
+    </div>
+    <p class="sm" style="color:var(--gr)">Gemessene Kontraste: Weiss auf Ruby 7.8:1 · Anthrazit auf Weiss 10.3:1 · Graphit auf Weiss 6.1:1 · Graphit auf Hellgrau 5.5:1 · Ruby dunkel auf Ruby hell 8.9:1 · Blau (Fokus) auf Weiss 5.8:1</p>
+  </section>
+
+  <div class="two">
+    <section class="box" aria-labelledby="t-h">
+      <h2 id="t-h">Typografie</h2>
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <div class="trow"><span class="disp" style="font-size:56px">Mieten ohne Umwege</span><span class="tok">Fira Sans 800 · 64/65 · −0.025em<br>Tablet 52 · Mobil 38</span></div>
+        <div class="trow"><span class="h2">Abschnittstitel</span><span class="tok">Fira Sans 700 · 40/44<br>Tablet 34 · Mobil 28</span></div>
+        <div class="trow"><span class="h3">Kartentitel</span><span class="tok">Fira Sans 700 · 22/28</span></div>
+        <div class="trow"><span class="lead" style="font-size:19px">Einleitung in ruhigem Graphit.</span><span class="tok">Fira Sans 400 · 19/29<br>Zeilenlänge max. 56 Zeichen</span></div>
+        <div class="trow"><span>Fliesstext und Formulare</span><span class="tok">Fira Sans 400 · 16/24</span></div>
+        <div class="trow" style="border-bottom:0"><span class="tag" style="display:flex;gap:10px;align-items:baseline"><b style="font:700 44px/1 var(--cond);color:var(--ruby)">CHF 79.00</b><span style="font-size:14px;color:var(--gr)">pro Tag</span></span><span class="tok">Fira Sans Condensed 700 · Preise</span></div>
+      </div>
+    </section>
+
+    <section class="box" aria-labelledby="s-h">
+      <h2 id="s-h">Abstand, Radius, Markenzeichen</h2>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <sc-for list="{{space}}" as="p" hint-placeholder-count="7">
+          <div style="display:grid;grid-template-columns:100px 1fr;gap:12px;align-items:center"><span class="tok">{{p.t}}</span><span class="spb" style="width:{{p.px}}"></span></div>
+        </sc-for>
+      </div>
+      <div class="demo" style="gap:18px;align-items:flex-end">
+        <sc-for list="{{radius}}" as="r" hint-placeholder-count="5"><div><div class="rdb" style="border-radius:{{r.px}}"></div><div class="tok" style="margin-top:6px">{{r.t}}</div></div></sc-for>
+      </div>
+      <div style="display:flex;gap:18px;align-items:center;border-top:1px solid var(--line-s);padding-top:18px">
+        <svg width="56" height="56" viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="5" fill="#A60E0E"/><path d="M9 4h6v5h5v6h-5v5H9v-5H4V9h5z" fill="#fff"/></svg>
+        <p class="sm" style="max-width:420px;color:var(--gr)">Das Schweizer Kreuz bleibt dem Logo, dem Hero und der Strasse im Kopfbereich vorbehalten. Nie als Muster, nie als Aufzählungszeichen.</p>
+      </div>
+      <p class="sm" style="color:var(--gr)">Raster 4 px. Inhaltsbreite 1280 px (Ultra-wide 1680 px). Seitenrand 40 / 32 / 20 px.</p>
+    </section>
+  </div>
+
+  <section class="box" aria-labelledby="k-h">
+    <h2 id="k-h">Komponenten</h2>
+    <div class="two">
+      <div style="display:flex;flex-direction:column;gap:24px">
+        <div><div class="lab">Knöpfe (48 px, gross 56 px)</div>
+          <div class="demo"><button class="btn btn-p" type="button">Anfrage senden</button><button class="btn btn-p hov" type="button">Hover</button><button class="btn btn-p foc" type="button">Fokus</button><button class="btn btn-o" type="button">Umrandet</button><button class="btn btn-g" type="button">Ruhig</button><button class="btn btn-p" type="button" disabled>Deaktiviert</button><button class="btn btn-p btn-lg" type="button">Gross 56</button></div></div>
+        <div><div class="lab">Filter</div>
+          <div class="chips"><button class="chip" type="button" aria-pressed="true">Alle <small>12</small></button><button class="chip" type="button" aria-pressed="false">SUV <small>5</small></button><button class="chip" type="button" aria-pressed="false">Hybrid <small>2</small></button></div></div>
+        <div><div class="lab">Richtpreis im Formular</div>
+          <div class="demo" style="align-items:stretch"><div class="pp" style="min-width:220px"><span>Richtpreis, 14 Tage</span><b>CHF 995.40</b></div></div></div>
+        <div><div class="lab">Meldungen</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div class="alert al-ok"><span><b>Anfrage gesendet.</b> Wir melden uns innert eines Werktags.</span></div>
+            <div class="alert al-warn"><span><b>Fahrzeug reserviert.</b> Schauen Sie sich ähnliche Fahrzeuge an.</span></div>
+            <div class="alert al-err"><span><b>Nicht gesendet.</b> Ihre Eingaben bleiben erhalten. Versuchen Sie es erneut.</span></div>
+          </div></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:24px">
+        <div><div class="lab">Felder (52 px): Standard, Fokus, Fehler, Gültig, Deaktiviert</div>
+          <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px">
+            <div class="fld"><label for="g1">Name</label><input class="in" id="g1" value="Laura Meier"></div>
+            <div class="fld"><label for="g2">Fokus</label><input class="in foc" id="g2" value="laura.meier@"></div>
+            <div class="fld"><label for="g3">E-Mail</label><input class="in bad" id="g3" value="laura.meier@" aria-invalid="true"><span style="font-size:14px;color:var(--err);font-weight:500">Die E-Mail-Adresse ist unvollständig.</span></div>
+            <div class="fld"><label for="g4">Telefon</label><input class="in ok" id="g4" value="+41 79 555 01 12"></div>
+            <div class="fld"><label for="g5">Fahrzeug</label><input class="in dis" id="g5" value="Škoda Superb Combi" disabled></div>
+          </div></div>
+        <div><div class="lab">Fahrzeugkarte: Ladezustand</div>
+          <div class="vcard" style="max-width:340px" aria-busy="true"><div class="skel" style="height:150px;border-radius:0"></div><div style="padding:18px;display:flex;flex-direction:column;gap:10px"><div class="skel" style="height:20px;width:70%"></div><div class="skel" style="height:14px;width:45%"></div><div class="skel" style="height:30px;width:55%"></div></div></div></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="two">
+    <section class="box" aria-labelledby="b-h">
+      <h2 id="b-h">Breakpoints und Verhalten</h2>
+      <table style="width:100%;border-collapse:collapse;font-size:15px">
+        <thead><tr style="text-align:left;color:var(--gr);font-size:13px"><th style="padding:10px 12px 10px 0;border-bottom:1px solid var(--line)">Bereich</th><th style="padding:10px 12px;border-bottom:1px solid var(--line)">Navigation</th><th style="padding:10px 0 10px 12px;border-bottom:1px solid var(--line)">Raster</th></tr></thead>
+        <tbody>
+          <sc-for list="{{bps}}" as="b" hint-placeholder-count="4">
+            <tr><td style="padding:12px 12px 12px 0;border-bottom:1px solid var(--line-s);vertical-align:top"><b>{{b.n}}</b><div class="sm" style="color:var(--gr)">{{b.w}}</div></td><td style="padding:12px;border-bottom:1px solid var(--line-s);vertical-align:top">{{b.nav}}</td><td style="padding:12px 0 12px 12px;border-bottom:1px solid var(--line-s);vertical-align:top">{{b.grid}}</td></tr>
+          </sc-for>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="box" aria-labelledby="a-h">
+      <h2 id="a-h">Bedienbarkeit</h2>
+      <ul style="display:flex;flex-direction:column;gap:14px">
+        <li style="display:flex;gap:12px"><b style="color:var(--ok);flex:none;width:68px">Pflicht</b><span>Touch-Ziele mindestens 48 × 48 px, Abstand 8 px dazwischen.</span></li>
+        <li style="display:flex;gap:12px"><b style="color:var(--ok);flex:none;width:68px">Pflicht</b><span>Fokusring 3 px Blau mit 2 px Abstand, auf jedem Hintergrund sichtbar.</span></li>
+        <li style="display:flex;gap:12px"><b style="color:var(--ok);flex:none;width:68px">Pflicht</b><span>Fehler am Feld und als Zusammenfassung, Eingaben bleiben erhalten.</span></li>
+        <li style="display:flex;gap:12px"><b style="color:var(--ok);flex:none;width:68px">Pflicht</b><span>„Nur notwendige“ Cookies gleichwertig zu „Akzeptieren“.</span></li>
+        <li style="display:flex;gap:12px"><b style="color:var(--info);flex:none;width:68px">Bewegung</b><span>Bewegung nur als Antwort auf Eingaben (Öffnen, Laden). Sie entfällt bei „reduzierte Bewegung“.</span></li>
+        <li style="display:flex;gap:12px"><b style="color:var(--info);flex:none;width:68px">Fotos</b><span>Ohne Foto zeigt die Karte eine Silhouette mit „Foto folgt“, nie ein leeres Feld.</span></li>
+      </ul>
+    </section>
+  </div>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const c = (n, hex, fg, use) => ({ n, hex, fg, use });
+    const s = (n, bg, fg, use, cr) => ({ n, bg, fg, use, cr });
+    return {
+      colors: [
+        c('Ruby', '#A60E0E', '#fff', 'Hauptaktion, Preise'), c('Ruby dunkel', '#850B0B', '#fff', 'Hover'), c('Ruby hell', '#FBEBEB', '#850B0B', 'Richtpreis-Fläche'),
+        c('Anthrazit', '#3E4144', '#fff', 'Text, Kopf'), c('Graphit', '#5F6265', '#fff', 'Zweittext'), c('Kühlgrau', '#A0A0A0', '#2C2E30', 'Deko'),
+        c('Linie', '#DADADA', '#2C2E30', 'Rahmen'), c('Hellgrau', '#F2F2F2', '#2C2E30', 'Hintergrund')
+      ],
+      states: [
+        s('Erfolg', '#E3F2EA', '#124D31', 'Anfrage gesendet', 'Text auf Fläche, hoher Kontrast'),
+        s('Hinweis', '#FFF1D6', '#5E3700', 'Fahrzeug reserviert', 'Kontrast 5.7:1 (Wortfarbe #8A5200)'),
+        s('Fehler', '#FCE9E7', '#7D1913', 'Eingabe korrigieren', 'Kontrast 5.6:1 (Randfarbe #B3261E)'),
+        s('Information', '#E5EEFB', '#123F8C', 'Neutrale Hinweise', 'Blau #1B5FD1 nur für Fokus')
+      ],
+      space: [
+        { t: '4 · xs', px: '4px' }, { t: '8 · s', px: '8px' }, { t: '16 · m', px: '16px' }, { t: '24 · l', px: '24px' }, { t: '40 · xl', px: '40px' }, { t: '72 · Tablet', px: '72px' }, { t: '96 · Desktop', px: '96px' }
+      ],
+      radius: [
+        { t: '8 Skeleton', px: '8px' }, { t: '10 Knöpfe, Felder', px: '10px' }, { t: '12 Meldungen', px: '12px' }, { t: '18 Karten', px: '18px' }, { t: '999 Filter', px: '999px' }
+      ],
+      bps: [
+        { n: 'Mobil', w: 'unter 768 px', nav: 'Hamburger-Menü, feste Anfrage-Leiste auf Fahrzeugseiten', grid: '1 Spalte, Filter als Bottom-Sheet' },
+        { n: 'Tablet', w: '768 bis 1024 px', nav: 'Hamburger-Menü', grid: '2 Spalten, Rand 32 px' },
+        { n: 'Desktop', w: '1024 bis 1600 px', nav: 'Horizontale Navigation', grid: '4 Spalten, Container 1280 px' },
+        { n: 'Ultra-wide', w: 'ab 1600 px', nav: 'Wie Desktop', grid: 'Container 1680 px, feste Preis-Seitenleiste' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

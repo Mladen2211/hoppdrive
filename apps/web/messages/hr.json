@@ -1,0 +1,724 @@
+{
+  "common": {
+    "errorBoundary": "Ovaj dio nije moguće učitati.",
+    "close": "Zatvori",
+    "loadingVehicle": "Učitavanje vozila",
+    "breadcrumb": "Navigacijski trag"
+  },
+  "labels": {
+    "type": {
+      "sedan": "Limuzina",
+      "suv": "SUV",
+      "estate": "Karavan",
+      "coupe": "Kupe",
+      "convertible": "Kabriolet",
+      "electric": "Električno vozilo",
+      "van": "Van"
+    },
+    "fuel": {
+      "petrol": "Benzin",
+      "diesel": "Dizel",
+      "electric": "Električni",
+      "hybrid": "Hibrid"
+    },
+    "transmission": {
+      "automatic": "Automatski",
+      "manual": "Ručni"
+    },
+    "spec": {
+      "hp": "{hp} KS",
+      "seats": "{count, plural, one {# sjedalo} few {# sjedala} other {# sjedala}}"
+    }
+  },
+  "category": {
+    "estate": {
+      "label": "Karavan",
+      "rent": "Najam karavana"
+    },
+    "suv": {
+      "label": "SUV",
+      "rent": "Najam SUV-a"
+    },
+    "sedan": {
+      "label": "Limuzina",
+      "rent": "Najam limuzine"
+    },
+    "van": {
+      "label": "Van",
+      "rent": "Najam vana"
+    },
+    "electric": {
+      "label": "Električni automobil",
+      "rent": "Najam električnog automobila"
+    },
+    "coupe": {
+      "label": "Kupe",
+      "rent": "Najam kupea"
+    },
+    "convertible": {
+      "label": "Kabriolet",
+      "rent": "Najam kabrioleta"
+    }
+  },
+  "categoryIntro": {
+    "estate": "Karavan je svakodnevni junak za obitelji i one koji puno voze: mnogo prostora u prtljažniku, udoban na dugim relacijama, a ipak dovoljno okretan za grad. Kod HoppDrivea unajmljujete karavane poznatih marki – idealno za selidbe, odmor ili prijevoz većih predmeta.",
+    "suv": "SUV-ovi nude povišen položaj sjedenja, puno prostora i siguran osjećaj vožnje na svakoj cesti – u gradu ili na alpskim prijevojima. Naša flota SUV-ova prikladna je za obitelji, izlete u planine i sve koji cijene malo više prostora i veći klirens.",
+    "sedan": "Limuzine osvajaju mirnom vožnjom, velikim prtljažnikom i reprezentativnim izgledom – savršene za poslovna putovanja ili opuštene duge relacije. Kod HoppDrivea limuzine unajmljujete po transparentnim dnevnim cijenama, uključujući puno kasko osiguranje.",
+    "van": "Vanovi nude maksimalan prostor za putnike i prtljagu te su prvi izbor za veće grupe, obitelji ili izlete udruga. Naše vanove možete unajmiti fleksibilno – od jednog vikenda do višemjesečnog korištenja.",
+    "electric": "Električna vozila voze lokalno bez emisija i tiho – idealno za upoznavanje Švicarske uz brigu o CO2. Kod HoppDrivea električne automobile unajmljujete uključujući puno kasko osiguranje, bez vlastite infrastrukture za punjenje i bez troškova nabave.",
+    "coupe": "Kupei spajaju sportski dizajn s izravnim osjećajem vožnje – za sve koji ne žele odreći se užitka u vožnji ni kod unajmljenog automobila. Dvovratna izvedba unosi stil u svaku vožnju, od vikend-izleta do posebne prigode.",
+    "convertible": "Kabriolet svaku vožnju pretvara u doživljaj – vožnja na otvorenom po suncu, bilo uz neko švicarsko jezero ili kroz Alpe. Unajmite kabriolet kod HoppDrivea za poseban izlet ili tjedan odmora."
+  },
+  "fleetCategory": {
+    "estate": "Karavan",
+    "suv": "SUV",
+    "sedan": "Limuzine",
+    "van": "Van",
+    "coupe": "Kupe",
+    "convertible": "Kabriolet",
+    "electric": "Električni",
+    "hybrid": "Hibridni"
+  },
+  "nav": {
+    "fleet": "Naša flota",
+    "pricing": "Cjenik",
+    "faq": "Česta pitanja",
+    "location": "Lokacija",
+    "home": "HoppDrive početna stranica",
+    "main": "Glavna navigacija",
+    "mobile": "Mobilna navigacija",
+    "menu": "Izbornik",
+    "toggle": "Prikaži ili sakrij navigaciju",
+    "closeMenu": "Zatvori navigaciju",
+    "cta": "Pošalji upit",
+    "questions": "Imate pitanja? Pišite nam."
+  },
+  "language": {
+    "label": "Jezik",
+    "switchLabel": "Odaberite jezik",
+    "current": "Trenutačni jezik: {name}"
+  },
+  "footer": {
+    "logoAlt": "HoppDrive – kratkoročni i dugoročni najam vozila u Švicarskoj",
+    "tagline": "Povoljno, fleksibilno, puno kasko osiguranje uključeno.",
+    "vehicles": "Vozila",
+    "allVehicles": "Sva vozila",
+    "legal": "Pravne informacije",
+    "imprint": "Impresum",
+    "privacy": "Zaštita podataka",
+    "terms": "Opći uvjeti",
+    "cookieSettings": "Postavke kolačića",
+    "contact": "Kontakt",
+    "locationHours": "Lokacija i radno vrijeme",
+    "copyright": "© {year} Euro-Abschleppservice GmbH. Sva prava pridržana.",
+    "adminTitle": "Admin",
+    "adminAria": "Prijava administratora",
+    "language": "Jezik"
+  },
+  "maintenance": {
+    "defaultMessage": "Naša web-stranica privremeno nije dostupna zbog radova na održavanju. Pokušajte ponovno kasnije.",
+    "title": "Odmah se vraćamo.",
+    "urgent": "Na hitna pitanja rado odgovaramo e-poštom:"
+  },
+  "cookie": {
+    "dialogLabel": "Obavijest o kolačićima",
+    "title": "Kolačići na HoppDriveu",
+    "text": "Koristimo kolačiće kako bismo poboljšali vaše iskustvo i analizirali promet. Klikom na „Prihvati” pristajete na korištenje kolačića u skladu sa švicarskim zakonom o zaštiti podataka (DSG) i EU-ovom Općom uredbom o zaštiti podataka (GDPR). Više u <link>izjavi o zaštiti podataka</link>.",
+    "accept": "Prihvati",
+    "declineNonEssential": "Samo nužni",
+    "manage": "Upravljanje postavkama",
+    "settingsTitle": "Postavke kolačića",
+    "save": "Spremi postavke",
+    "necessary": "Nužni",
+    "necessaryDescription": "Potrebni za rad web-stranice. Uvijek aktivni.",
+    "analytics": "Statistika",
+    "analyticsDescription": "Google Analytics: pomaže nam razumjeti koje se stranice koriste.",
+    "marketing": "Marketing",
+    "marketingDescription": "Brevo: promotivni sadržaji i personalizirane ponude."
+  },
+  "hero": {
+    "badge": "Kratkoročni i dugoročni najam vozila u Švicarskoj",
+    "heading": "Povoljno na putu,",
+    "headingHighlight": "fleksibilno unajmljeno.",
+    "description": "Pouzdana vozila poput Škode Superb, VW Passata i drugih – od {price} dnevno. Što dulje unajmljujete, to više štedite. Puno kasko osiguranje uključeno.",
+    "ctaPrimary": "Otkrijte flotu",
+    "ctaSecondary": "Provjerite dostupnost",
+    "trustCover": "Puno kasko osiguranje uključeno",
+    "trustFlexible": "Najam od 1 dana",
+    "trustDiscount": "Do {percent} % popusta za dugoročni najam",
+    "imageAlt": "Moderan automobil na švicarskoj cesti – HoppDrive povoljan najam vozila",
+    "from": "Od",
+    "perDay": "dnevno",
+    "coverShort": ", puno kasko uklj.",
+    "descriptionNoPrice": "Pouzdana vozila poput Škode Superb, VW Passata i drugih. Što dulje unajmljujete, to više štedite. Puno kasko osiguranje uključeno.",
+    "carousel": {
+      "label": "Vozila naše flote",
+      "roleDescription": "vrtuljak",
+      "slideRole": "slajd",
+      "slideLabel": "{current} od {total}",
+      "previous": "Prethodno vozilo",
+      "next": "Sljedeće vozilo",
+      "goTo": "Prikaži vozilo {number}: {name}",
+      "dots": "Odaberite vozilo",
+      "pause": "Zaustavi automatsku izmjenu",
+      "play": "Pokreni automatsku izmjenu",
+      "live": "{name}, {current} od {total}",
+      "fromPerDay": "od {price} / dan"
+    }
+  },
+  "why": {
+    "label": "Zašto HoppDrive",
+    "heading": "Jasne cijene, njegovani automobili, jedan kontakt",
+    "priceTitle": "Neprobojne cijene",
+    "priceText": "Od {price} dnevno, a dnevna cijena je svakim tjednom povoljnija.",
+    "coverTitle": "Puno kasko osiguranje uključeno",
+    "coverText": "Osiguranje je uključeno u cijenu, bez skrivenih dodatnih troškova.",
+    "maintenanceTitle": "Vrhunski održavani",
+    "maintenanceText": "Svako vozilo redovito se pregledava i servisira prije nego što stigne do vas.",
+    "serviceTitle": "Osobna usluga",
+    "serviceText": "Od upita do povrata razgovarate s istim ljudima.",
+    "priceTextNoPrice": "Dnevna cijena je svakim tjednom povoljnija."
+  },
+  "how": {
+    "label": "Kako to funkcionira",
+    "heading": "Na put u tri koraka",
+    "step": "Korak {number}: ",
+    "chooseTitle": "Odaberite vozilo",
+    "chooseText": "Pregledajte našu flotu i pronađite automobil koji odgovara vašim potrebama.",
+    "requestTitle": "Pošaljite neobvezujući upit",
+    "requestText": "Pošaljite nam besplatan upit sa željenim datumima, odgovorit ćemo što prije.",
+    "driveTitle": "Krenite",
+    "driveText": "Potpišite ugovor, preuzmite ključeve i već ste na putu – povoljno i fleksibilno."
+  },
+  "pricing": {
+    "label": "Cjenik",
+    "heading": "Što dulje unajmljujete, to manje plaćate dnevno",
+    "descriptionVehicle": "Popust vrijedi za svaki dan od pojedinog razreda nadalje. Primjer prikazuje vozilo {name} s osnovnom cijenom od {price}.",
+    "description": "Popust vrijedi za svaki dan od pojedinog razreda nadalje. Sve cijene uključuju puno kasko osiguranje.",
+    "tierStandard": "Standardna dnevna tarifa za kratkoročne potrebe.",
+    "tierDiscount": "Automatski popust od {percent} % na dnevnu cijenu za svaki dan u ovom razredu.",
+    "tierBadge": "{percent} % POPUSTA",
+    "tierRange": "Dan {from} – {to}",
+    "tierFrom": "Od dana {from}",
+    "tierDay": "Dan {day}",
+    "includedTitle": "Uvijek uključeno – bez doplate",
+    "included": [
+      "Puno kasko osiguranje",
+      "Održavanje i servis",
+      "Pomoć na cesti 24/7",
+      "Transparentni ugovori"
+    ]
+  },
+  "ladder": {
+    "ariaLabel": "Stepenice cijena: {summary}",
+    "fullPrice": "puna cijena",
+    "minus": "minus {percent} posto",
+    "zeroPercent": "0 %",
+    "standard": "Standardna tarifa",
+    "standardShort": "Standard",
+    "discount": "{percent} % popusta"
+  },
+  "calculator": {
+    "title": "Cijena za vaše razdoblje najma",
+    "unavailable": "Kalkulator cijena trenutačno nije dostupan. Cijenu za vaše razdoblje najma rado ćemo navesti u odgovoru na upit.",
+    "cta": "Pošalji upit s ovim podacima",
+    "vehicle": "Vozilo",
+    "vehicleOption": "{name} · {price} / dan",
+    "duration": "Trajanje najma",
+    "days": "{days, plural, one {# dan} few {# dana} other {# dana}}",
+    "total": "Ukupna cijena",
+    "average": "Ø {price} dnevno. ",
+    "noteCard": "Okvirna cijena iz izračuna cijene; obvezujuća je potvrda e-poštom.",
+    "noteSidebar": "Okvirna cijena; obvezujuća je potvrda e-poštom.",
+    "proofFree": "Besplatno i neobvezujuće",
+    "proofCover": "Puno kasko osiguranje uključeno"
+  },
+  "quick": {
+    "ariaLabel": "Brzi upit",
+    "vehicle": "Vozilo",
+    "anyVehicle": "Nije bitno koje vozilo",
+    "vehicleOption": "{name} · od {price}",
+    "from": "Od",
+    "to": "Do",
+    "dateOrderError": "Završetak ne smije biti prije početka.",
+    "cta": "Provjerite dostupnost"
+  },
+  "estimate": {
+    "label": "Okvirna cijena",
+    "labelDays": "Okvirna cijena · {days, plural, one {# dan} few {# dana} other {# dana}}",
+    "labelForDays": "Okvirna cijena za {days, plural, one {# dan} few {# dana} other {# dana}}",
+    "invalidSub": "Završetak ne smije biti prije početka.",
+    "averageSub": "Ø {perDay} / dan, {hint}",
+    "fromPerDay": "Od {price} / dan",
+    "pickPeriod": "Odaberite početak i završetak za okvirnu cijenu.",
+    "pickVehicleAndPeriod": "Odaberite vozilo i razdoblje za okvirnu cijenu.",
+    "discountFromDay": "popust od dana {day}",
+    "noDiscount": "bez popusta"
+  },
+  "contact": {
+    "label": "Besplatno i neobvezujuće",
+    "heading": "Pošaljite upit",
+    "description": "Recite nam što trebate. Javit ćemo se s dostupnošću i cijenom.",
+    "cta": "Pošalji upit",
+    "formAria": "Upit za najam",
+    "legend": "Vaši podaci",
+    "fields": {
+      "fullName": "Ime i prezime",
+      "phone": "Telefon",
+      "email": "E-pošta",
+      "message": "Poruka",
+      "privacyConsent": "Zaštita podataka",
+      "desiredStartDate": "Početak",
+      "desiredEndDate": "Datum završetka",
+      "discountCode": "Kod za popust"
+    },
+    "labels": {
+      "fullName": "Ime i prezime",
+      "phone": "Telefon",
+      "email": "E-pošta",
+      "vehicle": "Vozilo koje vas zanima",
+      "start": "Željeni početak",
+      "end": "Željeni završetak",
+      "message": "Poruka",
+      "discountCode": "Kod za popust"
+    },
+    "placeholders": {
+      "fullName": "Ivan Horvat",
+      "phone": "+41 79 123 45 67",
+      "email": "ivan@primjer.ch",
+      "message": "Željela/želio bih unajmiti vozilo od...",
+      "discountCode": "npr. HD-AB12-CD34"
+    },
+    "anyVehicle": "Nije bitno koje vozilo",
+    "errors": {
+      "fullName": {
+        "empty": "Unesite svoje ime i prezime.",
+        "invalid": "Unesite svoje ime i prezime."
+      },
+      "phone": {
+        "empty": "Unesite svoj broj telefona.",
+        "invalid": "Broj telefona je prekratak (najmanje 7 znakova)."
+      },
+      "email": {
+        "empty": "Unesite svoju adresu e-pošte.",
+        "invalid": "Unesite potpunu adresu e-pošte, npr. laura@primjer.ch."
+      },
+      "message": {
+        "empty": "Ukratko nam napišite što trebate.",
+        "invalid": "Ukratko nam napišite što trebate."
+      },
+      "privacyConsent": {
+        "empty": "Bez vaše privole ne možemo obraditi upit.",
+        "invalid": "Bez vaše privole ne možemo obraditi upit."
+      },
+      "desiredStartDate": {
+        "empty": "Provjerite željeni početak.",
+        "invalid": "Provjerite željeni početak."
+      },
+      "desiredEndDate": {
+        "empty": "Provjerite željeni završetak.",
+        "invalid": "Završetak ne smije biti prije početka."
+      },
+      "discountCode": {
+        "empty": "Ispravite kod za popust ili ostavite polje prazno.",
+        "invalid": "Ispravite kod za popust ili ostavite polje prazno."
+      }
+    },
+    "summaryTitle": "{count, plural, one {# podatak još morate ispraviti} few {# podatka još morate ispraviti} other {# podataka još morate ispraviti}}.",
+    "failedTitle": "Upit nije poslan.",
+    "resend": "Pošalji ponovno",
+    "orWriteTo": "Ili pišite na",
+    "failureNetwork": "Poslužitelj trenutačno nije dostupan. Vaši su unosi i dalje tu.",
+    "failureTooMany": "Primljeno je previše upita. Pokušajte ponovno za nekoliko minuta. Vaši su unosi i dalje tu.",
+    "failureGeneric": "Došlo je do pogreške pri slanju. Vaši su unosi i dalje tu.",
+    "picked": "Vozilo preuzeto iz vašeg odabira: <b>{name}</b>",
+    "change": "Promijeni",
+    "privacyLabel": "Upoznat/a sam s <link>izjavom o zaštiti podataka<sr> (otvara se u novoj kartici)</sr></link> i pristajem na obradu svojih podataka.",
+    "privacyDetail": "Privoljam na obradu svojih osobnih podataka (ime, e-pošta, telefon) radi obrade ovog upita. Podaci se obrađuju sigurno i mogu se proslijediti našem pružatelju usluga e-pošte (Brevo).",
+    "marketingLabel": "Pristajem primati promotivne e-poruke o posebnim ponudama i novim vozilima.",
+    "optional": "(neobavezno)",
+    "marketingDetail": "Odjaviti se mogu u bilo kojem trenutku.",
+    "sending": "Upit se šalje…",
+    "readyHint": "Gumb postaje aktivan čim se ispune ime, e-pošta i zaštita podataka.",
+    "dontClose": "Nemojte zatvarati stranicu.",
+    "asideTitle": "Što se događa nakon slanja",
+    "nextConfirmTitle": "Potvrda e-poštom",
+    "nextConfirmText": "Odmah primate kopiju svog upita.",
+    "nextCheckTitle": "Provjeravamo dostupnost",
+    "nextCheckText": "Odgovaramo što prije s cijenom i ponudom.",
+    "nextHandoverTitle": "Primopredaja na licu mjesta",
+    "nextHandoverText": "Potpisivanje ugovora o najmu, preuzimanje ključeva.",
+    "successTitle": "Hvala. Vaš je upit stigao do nas.",
+    "successTitleNamed": "Hvala, {name}. Vaš je upit stigao do nas.",
+    "successText": "Javit ćemo vam se što prije na <addr>{email}</addr>.",
+    "summaryVehicle": "Vozilo",
+    "summaryPeriod": "Razdoblje",
+    "summaryEstimate": "Okvirna cijena",
+    "summaryDays": "({days, plural, one {# dan} few {# dana} other {# dana}})",
+    "afterConfirmTitle": "Potvrda e-poštom",
+    "afterConfirmText": "Provjerite i mapu s neželjenom poštom.",
+    "afterCheckTitle": "Provjeravamo dostupnost",
+    "afterCheckText": "Zatim primate cijenu i ponudu.",
+    "moreVehicles": "Pogledajte još vozila",
+    "toHome": "Na početnu stranicu",
+    "discount": {
+      "hint": "Imate kod? Uračunat ćemo ga u vašu ponudu.",
+      "check": "Provjeri",
+      "checkAria": "Provjeri kod za popust",
+      "checking": "Provjera koda…",
+      "valid": "Kod je valjan: {label}",
+      "percentOff": "−{percent} %",
+      "unavailable": "Kod trenutačno nije bilo moguće provjeriti. Možete ga svejedno poslati s upitom, provjerit ćemo ga pri obradi.",
+      "pillSub": "Popust s koda {label} uračunat, Ø {perDay} / dan",
+      "summaryCode": "Kod za popust",
+      "reasons": {
+        "not_found": "Ovaj kod nije valjan. Provjerite pravopis.",
+        "inactive": "Ovaj kod više nije aktivan.",
+        "not_started": "Ovaj kod još nije valjan.",
+        "expired": "Ovaj kod je istekao.",
+        "exhausted": "Ovaj kod je već iskorišten previše puta.",
+        "email_limit": "Ovaj kod već je iskorišten s ovom adresom e-pošte.",
+        "min_days": "Ovaj kod vrijedi tek za dulje razdoblje najma.",
+        "wrong_recipient": "Ovaj kod namijenjen je drugoj adresi e-pošte.",
+        "email_required": "Gore unesite svoju adresu e-pošte kako bismo mogli provjeriti kod.",
+        "currency_mismatch": "Ovaj kod ne vrijedi za trenutačnu valutu.",
+        "generic": "Ovaj kod nije moguće primijeniti."
+      },
+      "priceWas": "Umjesto",
+      "priceNow": "sada"
+    }
+  },
+  "social": {
+    "label": "Iskustva klijenata",
+    "heading": "Što kažu naši klijenti",
+    "stars": "{value} od 5 zvjezdica",
+    "fallback": {
+      "one": {
+        "name": "Marco S.",
+        "location": "Zürich",
+        "text": "Vrlo jednostavno i povoljno. Imao sam VW Passat 3 mjeseca – bolje od bilo kojeg ugovora o leasingu."
+      },
+      "two": {
+        "name": "Laura M.",
+        "location": "Basel",
+        "text": "Ljubazna usluga i automobil je bio besprijekorno održavan. Uključeno puno kasko osiguranje velik je plus."
+      },
+      "three": {
+        "name": "Thomas K.",
+        "location": "Bern",
+        "text": "Savršeno za moje prijelazno razdoblje. Popust za dugoročni najam stvarno se isplatio – topla preporuka!"
+      }
+    }
+  },
+  "faq": {
+    "label": "Česta pitanja",
+    "heading": "Dobro je znati prije upita",
+    "askTitle": "Nedostaje vaše pitanje?",
+    "askText": "Pišite nam, odgovorit ćemo što prije.",
+    "askCta": "Postavi pitanje",
+    "discountSentence": " Pri dužem najmu ostvarujete automatske popuste: {parts}.",
+    "discountPart": "{percent} % od {days} dana",
+    "discountPartMax": "do {percent} % od {days} dana",
+    "fallback": {
+      "priceQuestion": "Koliko košta najam kod HoppDrivea?",
+      "priceAnswer": "Naši unajmljeni automobili počinju od {price} dnevno.{discounts}",
+      "insuranceQuestion": "Je li osiguranje uključeno?",
+      "insuranceAnswer": "Da, uz svaki najam uključeno je puno kasko osiguranje. Nema skrivenih dodatnih troškova za osiguranje.",
+      "durationQuestion": "Koliko dugo mogu unajmiti vozilo?",
+      "durationAnswer": "Naša vozila možete unajmiti od 1 dana do nekoliko mjeseci. Što je najam dulji, to je dnevna cijena povoljnija.",
+      "documentsQuestion": "Koji su mi dokumenti potrebni?",
+      "documentsAnswer": "Potrebni su vam važeća vozačka dozvola i osobna isprava (putovnica ili osobna iskaznica). Ugovor o najmu potpisuje se na licu mjesta pri preuzimanju.",
+      "extendQuestion": "Mogu li produljiti najam?",
+      "extendAnswer": "Da, produljenje je moguće u svakom trenutku, samo nam se javite. Cijena se automatski prilagođava novom ukupnom trajanju.",
+      "pickupQuestion": "Gdje mogu preuzeti vozilo?",
+      "pickupAnswer": "Primopredaja vozila odvija se na našoj lokaciji. Točnu adresu i upute za dolazak dobit ćete nakon potvrde rezervacije.",
+      "priceAnswerNoPrice": "Cijena ovisi o vozilu i trajanju najma.{discounts}"
+    }
+  },
+  "map": {
+    "kicker": "Lokacija",
+    "defaultTitle": "Ovdje nas možete pronaći",
+    "pickup": "Preuzimanje i povrat",
+    "hours": "Radno vrijeme",
+    "email": "E-pošta",
+    "phone": "Telefon",
+    "route": "Planiraj rutu"
+  },
+  "fleet": {
+    "label": "Naša flota",
+    "headingCount": "{count, plural, one {# vozilo} few {# vozila} other {# vozila}}, najam od 1 dana",
+    "headingEmpty": "Povoljna unajmljena vozila za svaku priliku",
+    "filterAria": "Filtriraj po kategoriji vozila",
+    "all": "Sva",
+    "emptyTitle": "Trenutačno nema dostupnih vozila",
+    "emptyText": "Svratite ponovno kasnije ili nas izravno upitajte.",
+    "emptyCta": "Pošalji upit",
+    "liveCount": "{count, plural, one {# vozilo} few {# vozila} other {# vozila}}",
+    "priceAside": "Cijena i upit",
+    "viewAll": "{count, plural, =1 {Pogledaj vozilo} other {Pogledaj vozila (#)}}"
+  },
+  "vehicleCard": {
+    "available": "Dostupno",
+    "reserved": "Rezervirano",
+    "from": "Od",
+    "perDay": "/ dan",
+    "month": "30 dana ukupno: <num>{price}</num>",
+    "details": "Detalji",
+    "detailsAria": "Detalji o vozilu {name}",
+    "inquire": "Upit",
+    "inquireAria": "Upit za vozilo {name}",
+    "photoSoon": "Fotografija uskoro"
+  },
+  "gallery": {
+    "roleDescription": "Galerija slika",
+    "groupLabel": "Slike vozila {name}",
+    "previous": "Prethodna slika",
+    "next": "Sljedeća slika",
+    "counter": "{current} / {total}",
+    "live": "Slika {current} od {total}",
+    "thumbnail": "Slika {number}"
+  },
+  "vehiclePanel": {
+    "aria": "Cijena i upit",
+    "reservedTitle": "Vozilo je rezervirano.",
+    "reservedText": "Pogledajte slična vozila ili nas upitajte za drugo razdoblje.",
+    "from": "Od",
+    "perDay": "/ dan",
+    "ladderTitle": "Dnevna cijena prema trajanju najma",
+    "duration": "Trajanje najma",
+    "discount": "Popust",
+    "perDayColumn": "Po danu",
+    "dateFrom": "Od",
+    "dateTo": "Do",
+    "dateOrderError": "Završetak ne smije biti prije početka.",
+    "averagePerDay": "Ø {price} / dan",
+    "cta": "Pošalji upit za ovo vozilo",
+    "ctaNote": "Besplatno i neobvezujuće. Vozilo i datumi prenose se u obrazac.",
+    "stickyCta": "Upit"
+  },
+  "browser": {
+    "filterTitle": "Filtri",
+    "reset": "Poništi",
+    "fuel": "Pogon",
+    "seats": "Broj sjedala",
+    "seatsAny": "Svejedno",
+    "seatsFive": "5 ili više",
+    "seatsSeven": "7 ili više",
+    "maxPrice": "Maks. cijena po danu",
+    "maxPriceValue": "{price} po danu",
+    "onlyAvailable": "Samo dostupna vozila",
+    "activeFilters": "{count, plural, one {# aktivan filtar} few {# aktivna filtra} other {# aktivnih filtara}}",
+    "sortLabel": "Sortiraj",
+    "sortPriceAsc": "Cijena uzlazno",
+    "sortPriceDesc": "Cijena silazno",
+    "sortName": "Naziv A–Z",
+    "count": "<b>{shown}</b> od {total} {total, plural, one {vozila} few {vozila} other {vozila}}",
+    "loadMore": "Učitaj još {count} {count, plural, one {vozilo} few {vozila} other {vozila}}",
+    "emptyAllTitle": "Trenutačno nema dostupnih vozila",
+    "emptyAllText": "Svratite ponovno kasnije ili nas izravno upitajte.",
+    "emptyAllCta": "Pošalji upit",
+    "emptyFilterTitle": "Nema odgovarajućih vozila",
+    "emptyFilterText": "Pokušajte s drugim filtrom ili pogledajte cijelu flotu.",
+    "emptyFilterCta": "Poništi filtre",
+    "sheetCancel": "Odustani",
+    "sheetShow": "Prikaži {count} {count, plural, one {vozilo} few {vozila} other {vozila}}"
+  },
+  "categoryChips": {
+    "aria": "Kategorije vozila",
+    "all": "Sva"
+  },
+  "fleetPage": {
+    "crumbHome": "Početna",
+    "crumbFleet": "Vozila",
+    "title": "Najam vozila u Švicarskoj – naša flota",
+    "description": "Sva HoppDrive vozila za najam na jednom mjestu: limuzine, SUV-ovi, karavani, vanovi i električni automobili. Povoljne dnevne cijene, automatski popust za dugoročni najam, puno kasko osiguranje uključeno.",
+    "lead": "Od štedljive limuzine do prostranog vana: pregledajte cijelu našu flotu i pronađite vozilo koje odgovara vašem sljedećem putovanju. Sve cijene uključuju puno kasko osiguranje, uz automatski popust pri dužem najmu."
+  },
+  "categoryPage": {
+    "title": "{category} u Švicarskoj",
+    "titleWithPrice": "{category} u Švicarskoj od {price}/dan",
+    "description": "{category} u Švicarskoj kod HoppDrivea. Fleksibilan kratkoročni i dugoročni najam, do 40 % popusta za dugoročni najam, puno kasko osiguranje uključeno.",
+    "descriptionWithPrice": "{category} u Švicarskoj kod HoppDrivea od {price} dnevno. Fleksibilan kratkoročni i dugoročni najam, do 40 % popusta za dugoročni najam, puno kasko osiguranje uključeno.",
+    "priceLine": "Od <num>{price}</num> dnevno, uključujući puno kasko osiguranje i automatski popust za dugoročni najam.",
+    "back": "Pogledaj sva vozila"
+  },
+  "vehiclePage": {
+    "crumbHome": "Početna",
+    "crumbFleet": "Vozila",
+    "backToFleet": "Sva vozila",
+    "notFoundTitle": "Vozilo nije pronađeno",
+    "metaTitle": "Najam vozila {name} od {price}/dan",
+    "metaDescription": "Povoljno unajmite vozilo {name} ({year}) – {type} od {hp} KS, {seats} sjedala. Od {price}/dan, do 40 % popusta za dugoročni najam. Puno kasko osiguranje uključeno. Pošaljite neobvezujući upit kod HoppDrivea.",
+    "imageAlt": "{name} – HoppDrive dugoročni najam",
+    "specsTitle": "Tehnički podaci",
+    "specPower": "Snaga",
+    "specTransmission": "Mjenjač",
+    "specSeats": "Broj sjedala",
+    "specDrive": "Pogon",
+    "specRange": "Domet",
+    "specYear": "Godina proizvodnje",
+    "specCategory": "Kategorija",
+    "aboutTitle": "O ovom vozilu",
+    "kind": {
+      "sedan": "limuzina",
+      "suv": "SUV",
+      "estate": "karavan",
+      "coupe": "kupe",
+      "convertible": "kabriolet",
+      "electric": "električno vozilo",
+      "van": "van"
+    },
+    "transmissionLongAutomatic": "automatskim mjenjačem",
+    "transmissionLongManual": "ručnim mjenjačem",
+    "fuelElectricRange": "Vozi isključivo na struju s dometom od {range}.",
+    "fuelElectric": "Vozi isključivo na struju.",
+    "fuelHybrid": "Ima štedljiv hibridni pogon.",
+    "fuelOther": "Vozi na gorivo: {fuel}.",
+    "proseDiscount": " do {percent} %",
+    "prose": "{name} ({year}) je {kind} snage {hp} KS s {transmission} i {seats} sjedala. {fuelSentence} Cijena najma od {price} dnevno; pri dužem najmu dnevna cijena automatski pada{discount} – puno kasko osiguranje i pomoć na cesti uvijek su uključeni.",
+    "includedTitle": "Uključeno u cijenu",
+    "defaultFeatures": {
+      "coverTitle": "Puno kasko osiguranje",
+      "coverText": "Nema skrivenih dodatnih troškova za osiguranje.",
+      "maintenanceTitle": "Redovito održavanje",
+      "maintenanceText": "Svako se vozilo pregledava prije nego što stigne do vas.",
+      "extendTitle": "Produljenje u svakom trenutku",
+      "extendText": "Cijena se automatski prilagođava novom ukupnom trajanju."
+    },
+    "examplesTitle": "Primjeri cijena",
+    "exampleDuration": "Trajanje najma",
+    "exampleTotal": "Ukupna cijena",
+    "exampleDiscount": "Popust",
+    "exampleDays": "{days, plural, one {# dan} few {# dana} other {# dana}}",
+    "similarTitle": "Slična vozila",
+    "similarAll": "Sva vozila",
+    "jsonldDescription": "Povoljno unajmite vozilo {name} ({year}) u Švicarskoj. {type} od {hp} KS. Od {price}/dan.",
+    "propPower": "Snaga",
+    "propTransmission": "Mjenjač",
+    "propSeats": "Sjedala",
+    "propDrive": "Pogon",
+    "propRange": "Domet",
+    "propYear": "Godina proizvodnje",
+    "unitHp": "KS",
+    "fuelPetrol": "Vozi na benzin.",
+    "fuelDiesel": "Vozi na dizel."
+  },
+  "legal": {
+    "navLabel": "Pravne stranice",
+    "home": "Početna",
+    "note": "Pravno mjerodavna je njemačka verzija.",
+    "pages": {
+      "impressum": "Impresum",
+      "privacy": "Zaštita podataka",
+      "agb": "Opći uvjeti"
+    },
+    "impressum": {
+      "title": "Impresum",
+      "metaDescription": "Impresum i podaci o tvrtki HoppDrive – vašem povoljnom najmu vozila u Švicarskoj.",
+      "company": "Podaci o tvrtki",
+      "contact": "Kontakt",
+      "emailLabel": "E-pošta",
+      "phoneLabel": "Telefon",
+      "representative": "Osoba ovlaštena za zastupanje",
+      "register": "Trgovački registar",
+      "vat": "Porezni broj (PDV)",
+      "disclaimer": "Isključenje odgovornosti",
+      "dataQuestions": "Pitanja o vašim podacima uputite na info@hoppdrive.ch."
+    },
+    "privacy": {
+      "title": "Izjava o zaštiti podataka",
+      "metaTitle": "Zaštita podataka",
+      "metaDescription": "Izjava o zaštiti podataka tvrtke HoppDrive u skladu sa švicarskim DSG-om i GDPR-om. Saznajte kako štitimo vaše podatke.",
+      "lastUpdated": "Zadnje ažuriranje: {date}",
+      "emailLabel": "E-pošta",
+      "phoneLabel": "Telefon",
+      "controller": "1. Voditelj obrade",
+      "data": "2. Prikupljeni podaci",
+      "dataContact": "a) Unosi u kontaktni obrazac",
+      "dataAuto": "b) Automatski prikupljeni podaci",
+      "dataCookies": "c) Kolačići i analitika (samo uz privolu)",
+      "processors": "3. Izvršitelji obrade (pružatelji usluga trećih strana)",
+      "retention": "4. Razdoblje čuvanja",
+      "rights": "5. Vaša prava",
+      "security": "6. Sigurnosne mjere",
+      "complaints": "7. Pravo na prigovor"
+    },
+    "agb": {
+      "title": "Opći uvjeti poslovanja",
+      "metaTitle": "Opći uvjeti",
+      "metaDescription": "Opći uvjeti poslovanja tvrtke HoppDrive – vašeg povoljnog najma vozila u Švicarskoj.",
+      "intro": "U nastavku možete pronaći naše cjelovite opće uvjete u obliku PDF dokumenta.",
+      "download": "Preuzmi opće uvjete kao PDF",
+      "iframeTitle": "Opći uvjeti poslovanja – HoppDrive"
+    }
+  },
+  "notFound": {
+    "title": "Stranica nije pronađena",
+    "heading": "Ova stranica ne postoji",
+    "text": "Poveznica je zastarjela ili vozilo više nije u našoj floti.",
+    "allVehicles": "Sva vozila",
+    "home": "Na početnu stranicu"
+  },
+  "unsubscribe": {
+    "metaTitle": "Odjava",
+    "metaDescription": "Odjava s HoppDrive newslettera i ponuda.",
+    "title": "Odjava",
+    "home": "Na početnu stranicu",
+    "loading": "Provjera poveznice…",
+    "readyTitle": "Odjava s promotivnih e-poruka",
+    "readyText": "Ne želite li više primati ponude i novosti tvrtke HoppDrive e-poštom?",
+    "emailLine": "Adresa o kojoj je riječ: {email}",
+    "serviceNote": "Servisne e-poruke o vašim ugovorima o najmu i dalje ćete primati.",
+    "submit": "Odjavi me",
+    "submitting": "Odjava u tijeku…",
+    "doneTitle": "Odjavljeni ste.",
+    "doneText": "Više nećete primati promotivne e-poruke. Servisne e-poruke o vašim ugovorima o najmu i dalje ćete primati.",
+    "alreadyTitle": "Već ste odjavljeni.",
+    "alreadyText": "Na ovu adresu više se ne šalju promotivne e-poruke. Servisne e-poruke o vašim ugovorima o najmu i dalje ćete primati.",
+    "invalidTitle": "Ova je poveznica nevaljana ili je istekla.",
+    "invalidText": "Ponovno otvorite poveznicu iz najnovije e-poruke. Ako i dalje ne radi, pišite nam pa ćemo vas odjaviti ručno.",
+    "errorTitle": "Nažalost, nije uspjelo.",
+    "errorText": "Poslužitelj trenutačno nije dostupan. Pokušajte ponovno za nekoliko minuta.",
+    "retry": "Pokušaj ponovno"
+  },
+  "meta": {
+    "keywords": [
+      "najam vozila Švicarska",
+      "povoljni unajmljeni automobili",
+      "dugoročni najam automobila Švicarska",
+      "kratkoročni najam automobila",
+      "povoljan najam automobila",
+      "najam Škode Švicarska",
+      "najam VW-a Švicarska",
+      "najam vozila dnevna cijena",
+      "popust za dugoročni najam vozila",
+      "HoppDrive",
+      "najam karavana",
+      "povoljan najam SUV-a",
+      "najam obiteljskog automobila Švicarska",
+      "car rental Switzerland",
+      "cheap car rental Switzerland",
+      "long term car rental",
+      "unajmljeni automobil Švicarska",
+      "najam automobila Zürich",
+      "povoljan dugoročni najam automobila",
+      "dugoročni najam automobila puno kasko"
+    ],
+    "ogTitle": "HoppDrive – Povoljan najam vozila u Švicarskoj | Od {price}/dan",
+    "ogDescription": "Povoljan kratkoročni i dugoročni najam vozila u Švicarskoj. Škoda Superb, Octavia, VW Passat i drugi. Dinamično određivanje cijena s do 40 % popusta pri dugoročnom najmu. Puno kasko osiguranje uključeno.",
+    "ogImageAlt": "HoppDrive – Povoljan najam vozila u Švicarskoj",
+    "twitterDescription": "Škoda, VW, Toyota i drugi od {price}/dan. Do 40 % popusta za dugoročni najam. Puno kasko osiguranje uključeno.",
+    "homeTitle": "HoppDrive – Povoljan najam vozila u Švicarskoj | Unajmljena vozila od {price}/dan",
+    "homeDescription": "HoppDrive – povoljan kratkoročni i dugoročni najam vozila u Švicarskoj. Škoda, VW, Toyota i drugi od {price}/dan. Do 40 % popusta za dugoročni najam. Puno kasko osiguranje uključeno. Pošaljite neobvezujući upit!",
+    "homeTitleNoPrice": "HoppDrive – Povoljan najam vozila u Švicarskoj | Kratkoročni i dugoročni najam",
+    "homeDescriptionNoPrice": "HoppDrive – povoljan kratkoročni i dugoročni najam vozila u Švicarskoj. Škoda, VW, Toyota i drugi. Do 40 % popusta za dugoročni najam. Puno kasko osiguranje uključeno. Pošaljite neobvezujući upit!",
+    "ogTitleNoPrice": "HoppDrive – Povoljan najam vozila u Švicarskoj",
+    "twitterDescriptionNoPrice": "Škoda, VW, Toyota i drugi. Do 40 % popusta za dugoročni najam. Puno kasko osiguranje uključeno."
+  },
+  "jsonld": {
+    "organizationDescription": "Povoljan kratkoročni i dugoročni najam vozila u Švicarskoj. Škoda, VW, Toyota i drugi, puno kasko osiguranje uključeno.",
+    "priceRange": "{min} – {max} / dan",
+    "crumbHome": "Početna",
+    "crumbFleet": "Vozila"
+  }
+}

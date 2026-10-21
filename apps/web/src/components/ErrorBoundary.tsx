@@ -4,6 +4,7 @@ import { Component, type ReactNode } from 'react';
 
 interface Props {
   children: ReactNode;
+  /** Shown instead of the children after an error. The (translated) text comes from the caller. */
   fallback?: ReactNode;
 }
 
@@ -24,11 +25,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
   render() {
     if (this.state.hasError) {
-      return this.props.fallback ?? (
-        <div className="py-16 text-center text-neutral-500">
-          <p className="text-sm">Dieser Bereich konnte nicht geladen werden.</p>
-        </div>
-      );
+      return this.props.fallback ?? null;
     }
     return this.props.children;
   }

@@ -1,0 +1,724 @@
+{
+  "common": {
+    "errorBoundary": "Dieser Bereich konnte nicht geladen werden.",
+    "close": "Schliessen",
+    "loadingVehicle": "Fahrzeug wird geladen",
+    "breadcrumb": "Breadcrumb"
+  },
+  "labels": {
+    "type": {
+      "sedan": "Limousine",
+      "suv": "SUV",
+      "estate": "Kombi",
+      "coupe": "Coupé",
+      "convertible": "Cabrio",
+      "electric": "Elektrofahrzeug",
+      "van": "Van"
+    },
+    "fuel": {
+      "petrol": "Benzin",
+      "diesel": "Diesel",
+      "electric": "Elektrisch",
+      "hybrid": "Hybrid"
+    },
+    "transmission": {
+      "automatic": "Automatik",
+      "manual": "Schaltgetriebe"
+    },
+    "spec": {
+      "hp": "{hp} PS",
+      "seats": "{count, plural, one {# Sitz} other {# Sitze}}"
+    }
+  },
+  "category": {
+    "estate": {
+      "label": "Kombi",
+      "rent": "Kombi mieten"
+    },
+    "suv": {
+      "label": "SUV",
+      "rent": "SUV mieten"
+    },
+    "sedan": {
+      "label": "Limousine",
+      "rent": "Limousine mieten"
+    },
+    "van": {
+      "label": "Van",
+      "rent": "Van mieten"
+    },
+    "electric": {
+      "label": "Elektroauto",
+      "rent": "Elektroauto mieten"
+    },
+    "coupe": {
+      "label": "Coupé",
+      "rent": "Coupé mieten"
+    },
+    "convertible": {
+      "label": "Cabrio",
+      "rent": "Cabrio mieten"
+    }
+  },
+  "categoryIntro": {
+    "estate": "Der Kombi ist der Alltagsheld für Familien und Vielfahrer: viel Stauraum im Kofferraum, komfortabel auf langen Strecken und trotzdem wendig genug für die Stadt. Bei HoppDrive mieten Sie Kombis bekannter Marken – ideal für Umzüge, Ferien oder den Transport grösserer Gegenstände.",
+    "suv": "SUVs bieten eine erhöhte Sitzposition, viel Platz und ein sicheres Fahrgefühl auf jeder Strasse – ob in der Stadt oder auf alpinen Pässen. Unsere SUV-Flotte eignet sich für Familien, Ausflüge in die Berge und alle, die etwas mehr Raum und Bodenfreiheit schätzen.",
+    "sedan": "Limousinen punkten mit ruhigem Fahrverhalten, grossem Kofferraum und einem repräsentativen Auftritt – perfekt für Geschäftsreisen oder entspannte Langstrecken. Bei HoppDrive mieten Sie Limousinen zu transparenten Tagespreisen, inklusive Vollkasko.",
+    "van": "Vans bieten maximalen Platz für Passagiere und Gepäck und sind die erste Wahl für grössere Gruppen, Familien oder Vereinsausflüge. Unsere Vans lassen sich flexibel mieten – vom einzelnen Wochenende bis zur mehrmonatigen Nutzung.",
+    "electric": "Elektrofahrzeuge fahren lokal emissionsfrei und leise – ideal, um die Schweiz CO2-bewusst zu entdecken. Bei HoppDrive mieten Sie Elektroautos inklusive Vollkasko, ganz ohne eigene Ladeinfrastruktur oder Anschaffungskosten.",
+    "coupe": "Coupés verbinden sportliches Design mit direktem Fahrgefühl – für alle, die auch beim Mietwagen nicht auf Fahrfreude verzichten möchten. Die zweitürige Bauweise bringt Stil auf jede Fahrt, vom Wochenendausflug bis zum besonderen Anlass.",
+    "convertible": "Ein Cabrio macht aus jeder Fahrt ein Erlebnis – offenes Fahren bei Sonnenschein, ob entlang eines Schweizer Sees oder durch die Alpen. Mieten Sie bei HoppDrive ein Cabrio für den besonderen Ausflug oder die Ferienwoche."
+  },
+  "fleetCategory": {
+    "estate": "Kombi",
+    "suv": "SUV",
+    "sedan": "Limousinen",
+    "van": "Van",
+    "coupe": "Coupé",
+    "convertible": "Cabrio",
+    "electric": "Elektro",
+    "hybrid": "Hybrid"
+  },
+  "nav": {
+    "fleet": "Unsere Flotte",
+    "pricing": "Preismodell",
+    "faq": "FAQ",
+    "location": "Standort",
+    "home": "HoppDrive Startseite",
+    "main": "Hauptnavigation",
+    "mobile": "Mobile Navigation",
+    "menu": "Menü",
+    "toggle": "Navigation umschalten",
+    "closeMenu": "Navigation schliessen",
+    "cta": "Anfrage senden",
+    "questions": "Fragen? Schreiben Sie uns."
+  },
+  "language": {
+    "label": "Sprache",
+    "switchLabel": "Sprache wählen",
+    "current": "Aktuelle Sprache: {name}"
+  },
+  "footer": {
+    "logoAlt": "HoppDrive – Kurz- & Langzeitvermietung Schweiz",
+    "tagline": "Günstig, flexibel, Vollkasko inklusive.",
+    "vehicles": "Fahrzeuge",
+    "allVehicles": "Alle Fahrzeuge",
+    "legal": "Rechtliches",
+    "imprint": "Impressum",
+    "privacy": "Datenschutz",
+    "terms": "AGB",
+    "cookieSettings": "Cookie-Einstellungen",
+    "contact": "Kontakt",
+    "locationHours": "Standort & Öffnungszeiten",
+    "copyright": "© {year} Euro-Abschleppservice GmbH. Alle Rechte vorbehalten.",
+    "adminTitle": "Admin",
+    "adminAria": "Admin-Anmeldung",
+    "language": "Sprache"
+  },
+  "maintenance": {
+    "defaultMessage": "Wegen Wartungsarbeiten ist unsere Website vorübergehend nicht erreichbar. Bitte versuchen Sie es später noch einmal.",
+    "title": "Wir sind gleich wieder da.",
+    "urgent": "Dringende Fragen beantworten wir gern per E-Mail:"
+  },
+  "cookie": {
+    "dialogLabel": "Cookie-Hinweis",
+    "title": "Cookies auf HoppDrive",
+    "text": "Wir verwenden Cookies, um Ihre Erfahrung zu verbessern und unseren Traffic zu analysieren. Mit Klick auf «Akzeptieren» stimmen Sie der Verwendung von Cookies gemäss dem Schweizer DSG und der EU-DSGVO zu. Mehr in der <link>Datenschutzerklärung</link>.",
+    "accept": "Akzeptieren",
+    "declineNonEssential": "Nur notwendige",
+    "manage": "Einstellungen verwalten",
+    "settingsTitle": "Cookie-Einstellungen",
+    "save": "Einstellungen speichern",
+    "necessary": "Notwendig",
+    "necessaryDescription": "Für die Funktion der Website erforderlich. Immer aktiv.",
+    "analytics": "Statistik",
+    "analyticsDescription": "Google Analytics: hilft uns zu verstehen, welche Seiten genutzt werden.",
+    "marketing": "Marketing",
+    "marketingDescription": "Brevo: Werbeinhalte und personalisierte Angebote."
+  },
+  "hero": {
+    "badge": "Kurz- & Langzeitvermietung Schweiz",
+    "heading": "Günstig unterwegs,",
+    "headingHighlight": "flexibel gemietet.",
+    "description": "Zuverlässige Fahrzeuge wie Škoda Superb, VW Passat & mehr – ab {price} pro Tag. Je länger Sie mieten, desto mehr sparen Sie. Vollkasko inklusive.",
+    "ctaPrimary": "Flotte entdecken",
+    "ctaSecondary": "Verfügbarkeit prüfen",
+    "trustCover": "Vollkasko inklusive",
+    "trustFlexible": "Ab 1 Tag mietbar",
+    "trustDiscount": "Bis {percent} % Langzeitrabatt",
+    "imageAlt": "Modernes Auto auf Schweizer Strasse – HoppDrive günstige Autovermietung",
+    "from": "Ab",
+    "perDay": "pro Tag",
+    "coverShort": ", Vollkasko inkl.",
+    "descriptionNoPrice": "Zuverlässige Fahrzeuge wie Škoda Superb, VW Passat & mehr. Je länger Sie mieten, desto mehr sparen Sie. Vollkasko inklusive.",
+    "carousel": {
+      "label": "Fahrzeuge unserer Flotte",
+      "roleDescription": "Karussell",
+      "slideRole": "Folie",
+      "slideLabel": "{current} von {total}",
+      "previous": "Vorheriges Fahrzeug",
+      "next": "Nächstes Fahrzeug",
+      "goTo": "Fahrzeug {number} anzeigen: {name}",
+      "dots": "Fahrzeug auswählen",
+      "pause": "Automatischen Wechsel anhalten",
+      "play": "Automatischen Wechsel starten",
+      "live": "{name}, {current} von {total}",
+      "fromPerDay": "ab {price} / Tag"
+    }
+  },
+  "why": {
+    "label": "Warum HoppDrive",
+    "heading": "Klare Preise, gepflegte Autos, ein Ansprechpartner",
+    "priceTitle": "Unschlagbare Preise",
+    "priceText": "Ab {price} pro Tag, und mit jeder Woche wird der Tagespreis günstiger.",
+    "coverTitle": "Vollkasko inklusive",
+    "coverText": "Der Versicherungsschutz ist im Preis enthalten, ohne versteckte Zusatzkosten.",
+    "maintenanceTitle": "Bestens gewartet",
+    "maintenanceText": "Jedes Fahrzeug wird regelmässig geprüft und gewartet, bevor es zu Ihnen kommt.",
+    "serviceTitle": "Persönlicher Service",
+    "serviceText": "Sie sprechen von der Anfrage bis zur Rückgabe mit denselben Menschen.",
+    "priceTextNoPrice": "Mit jeder Woche wird der Tagespreis günstiger."
+  },
+  "how": {
+    "label": "So funktioniert’s",
+    "heading": "In drei Schritten losfahren",
+    "step": "Schritt {number}: ",
+    "chooseTitle": "Fahrzeug wählen",
+    "chooseText": "Durchstöbern Sie unsere Flotte und finden Sie das passende Auto für Ihre Bedürfnisse.",
+    "requestTitle": "Unverbindlich anfragen",
+    "requestText": "Senden Sie uns eine kostenlose Anfrage mit Ihren Wunschdaten, wir antworten schnellstmöglich.",
+    "driveTitle": "Losfahren",
+    "driveText": "Vertrag unterschreiben, Schlüssel erhalten, und schon sind Sie günstig und flexibel unterwegs."
+  },
+  "pricing": {
+    "label": "Preismodell",
+    "heading": "Je länger Sie mieten, desto weniger zahlen Sie pro Tag",
+    "descriptionVehicle": "Der Rabatt gilt für jeden Tag ab der jeweiligen Stufe. Das Beispiel zeigt den {name} mit {price} Basispreis.",
+    "description": "Der Rabatt gilt für jeden Tag ab der jeweiligen Stufe. Alle Preise inklusive Vollkasko.",
+    "tierStandard": "Standard-Tagestarif für kurzfristige Bedürfnisse.",
+    "tierDiscount": "Automatisch {percent}% Rabatt auf den Tagespreis für jeden Tag in dieser Stufe.",
+    "tierBadge": "{percent}% RABATT",
+    "tierRange": "Tag {from} – {to}",
+    "tierFrom": "Ab Tag {from}",
+    "tierDay": "Tag {day}",
+    "includedTitle": "Immer inklusive – ohne Aufpreis",
+    "included": [
+      "Vollkasko-Versicherung",
+      "Wartung & Service",
+      "Pannenhilfe 24/7",
+      "Transparente Verträge"
+    ]
+  },
+  "ladder": {
+    "ariaLabel": "Preistreppe: {summary}",
+    "fullPrice": "voller Preis",
+    "minus": "minus {percent} Prozent",
+    "zeroPercent": "0 %",
+    "standard": "Standardtarif",
+    "standardShort": "Standard",
+    "discount": "{percent} % Rabatt"
+  },
+  "calculator": {
+    "title": "Preis für Ihre Mietdauer",
+    "unavailable": "Der Preisrechner ist gerade nicht verfügbar. Den Preis für Ihre Mietdauer nennen wir Ihnen gern in der Anfrage.",
+    "cta": "Mit diesen Daten anfragen",
+    "vehicle": "Fahrzeug",
+    "vehicleOption": "{name} · {price} / Tag",
+    "duration": "Mietdauer",
+    "days": "{days, plural, one {# Tag} other {# Tage}}",
+    "total": "Gesamtpreis",
+    "average": "Ø {price} pro Tag. ",
+    "noteCard": "Richtpreis aus der Preisberechnung, verbindlich ist die Bestätigung per E-Mail.",
+    "noteSidebar": "Richtpreis, verbindlich ist die Bestätigung per E-Mail.",
+    "proofFree": "Kostenlos & unverbindlich",
+    "proofCover": "Vollkasko inklusive"
+  },
+  "quick": {
+    "ariaLabel": "Schnellanfrage",
+    "vehicle": "Fahrzeug",
+    "anyVehicle": "Kein bestimmtes Fahrzeug",
+    "vehicleOption": "{name} · ab {price}",
+    "from": "Von",
+    "to": "Bis",
+    "dateOrderError": "Das Ende darf nicht vor dem Beginn liegen.",
+    "cta": "Verfügbarkeit prüfen"
+  },
+  "estimate": {
+    "label": "Richtpreis",
+    "labelDays": "Richtpreis · {days, plural, one {# Tag} other {# Tage}}",
+    "labelForDays": "Richtpreis für {days, plural, one {# Tag} other {# Tage}}",
+    "invalidSub": "Das Ende darf nicht vor dem Beginn liegen.",
+    "averageSub": "Ø {perDay} / Tag, {hint}",
+    "fromPerDay": "Ab {price} / Tag",
+    "pickPeriod": "Wählen Sie Beginn und Ende für einen Richtpreis.",
+    "pickVehicleAndPeriod": "Wählen Sie Fahrzeug und Zeitraum für einen Richtpreis.",
+    "discountFromDay": "Rabatt ab Tag {day}",
+    "noDiscount": "ohne Rabatt"
+  },
+  "contact": {
+    "label": "Kostenlos & unverbindlich",
+    "heading": "Anfrage senden",
+    "description": "Sagen Sie uns, was Sie brauchen. Wir melden uns mit Verfügbarkeit und Preis.",
+    "cta": "Anfrage senden",
+    "formAria": "Mietanfrage",
+    "legend": "Ihre Angaben",
+    "fields": {
+      "fullName": "Name",
+      "phone": "Telefon",
+      "email": "E-Mail",
+      "message": "Nachricht",
+      "privacyConsent": "Datenschutz",
+      "desiredStartDate": "Beginn",
+      "desiredEndDate": "Enddatum",
+      "discountCode": "Rabattcode"
+    },
+    "labels": {
+      "fullName": "Name",
+      "phone": "Telefon",
+      "email": "E-Mail",
+      "vehicle": "Fahrzeug von Interesse",
+      "start": "Gewünschter Beginn",
+      "end": "Gewünschtes Ende",
+      "message": "Nachricht",
+      "discountCode": "Rabattcode"
+    },
+    "placeholders": {
+      "fullName": "Max Muster",
+      "phone": "+41 79 123 45 67",
+      "email": "max@beispiel.ch",
+      "message": "Ich möchte ein Fahrzeug mieten ab...",
+      "discountCode": "z. B. HD-AB12-CD34"
+    },
+    "anyVehicle": "Kein bestimmtes Fahrzeug",
+    "errors": {
+      "fullName": {
+        "empty": "Bitte geben Sie Ihren Namen ein.",
+        "invalid": "Bitte geben Sie Ihren Namen ein."
+      },
+      "phone": {
+        "empty": "Bitte geben Sie Ihre Telefonnummer ein.",
+        "invalid": "Die Telefonnummer ist zu kurz (mindestens 7 Zeichen)."
+      },
+      "email": {
+        "empty": "Bitte geben Sie Ihre E-Mail-Adresse ein.",
+        "invalid": "Bitte geben Sie eine vollständige E-Mail-Adresse ein, z. B. laura@beispiel.ch."
+      },
+      "message": {
+        "empty": "Bitte schreiben Sie uns kurz, was Sie brauchen.",
+        "invalid": "Bitte schreiben Sie uns kurz, was Sie brauchen."
+      },
+      "privacyConsent": {
+        "empty": "Ohne Ihre Zustimmung können wir die Anfrage nicht bearbeiten.",
+        "invalid": "Ohne Ihre Zustimmung können wir die Anfrage nicht bearbeiten."
+      },
+      "desiredStartDate": {
+        "empty": "Bitte prüfen Sie den gewünschten Beginn.",
+        "invalid": "Bitte prüfen Sie den gewünschten Beginn."
+      },
+      "desiredEndDate": {
+        "empty": "Bitte prüfen Sie das gewünschte Ende.",
+        "invalid": "Das Ende darf nicht vor dem Beginn liegen."
+      },
+      "discountCode": {
+        "empty": "Bitte korrigieren Sie den Rabattcode oder lassen Sie das Feld leer.",
+        "invalid": "Bitte korrigieren Sie den Rabattcode oder lassen Sie das Feld leer."
+      }
+    },
+    "summaryTitle": "{count, plural, one {# Angabe muss} other {# Angaben müssen}} Sie noch korrigieren.",
+    "failedTitle": "Die Anfrage wurde nicht gesendet.",
+    "resend": "Erneut senden",
+    "orWriteTo": "Oder schreiben Sie an",
+    "failureNetwork": "Der Server ist gerade nicht erreichbar. Ihre Eingaben sind noch da.",
+    "failureTooMany": "Es sind zu viele Anfragen eingegangen. Bitte versuchen Sie es in einigen Minuten erneut. Ihre Eingaben sind noch da.",
+    "failureGeneric": "Beim Senden ist ein Fehler aufgetreten. Ihre Eingaben sind noch da.",
+    "picked": "Fahrzeug aus Ihrer Auswahl übernommen: <b>{name}</b>",
+    "change": "Ändern",
+    "privacyLabel": "Ich habe die <link>Datenschutzerklärung<sr> (öffnet in neuem Tab)</sr></link> gelesen und stimme der Verarbeitung meiner Angaben zu.",
+    "privacyDetail": "Ich willige in die Verarbeitung meiner personenbezogenen Daten (Name, E-Mail, Telefon) zur Bearbeitung dieser Anfrage ein. Die Daten werden sicher verarbeitet und können an unseren E-Mail-Dienstleister (Brevo) übermittelt werden.",
+    "marketingLabel": "Ich bin damit einverstanden, Werbe-E-Mails über Sonderangebote und neue Fahrzeuge zu erhalten.",
+    "optional": "(optional)",
+    "marketingDetail": "Ich kann mich jederzeit abmelden.",
+    "sending": "Anfrage wird gesendet…",
+    "readyHint": "Die Schaltfläche wird aktiv, sobald Name, E-Mail und Datenschutz ausgefüllt sind.",
+    "dontClose": "Bitte schliessen Sie die Seite nicht.",
+    "asideTitle": "Wie es nach dem Absenden weitergeht",
+    "nextConfirmTitle": "Bestätigung per E-Mail",
+    "nextConfirmText": "Sie erhalten sofort eine Kopie Ihrer Anfrage.",
+    "nextCheckTitle": "Wir prüfen die Verfügbarkeit",
+    "nextCheckText": "Wir antworten schnellstmöglich mit Preis und Angebot.",
+    "nextHandoverTitle": "Übergabe vor Ort",
+    "nextHandoverText": "Mietvertrag unterschreiben, Schlüssel erhalten.",
+    "successTitle": "Danke. Ihre Anfrage ist bei uns.",
+    "successTitleNamed": "Danke, {name}. Ihre Anfrage ist bei uns.",
+    "successText": "Wir melden uns schnellstmöglich unter <addr>{email}</addr>.",
+    "summaryVehicle": "Fahrzeug",
+    "summaryPeriod": "Zeitraum",
+    "summaryEstimate": "Richtpreis",
+    "summaryDays": "({days, plural, one {# Tag} other {# Tage}})",
+    "afterConfirmTitle": "Bestätigung per E-Mail",
+    "afterConfirmText": "Bitte prüfen Sie auch Ihren Spam-Ordner.",
+    "afterCheckTitle": "Wir prüfen die Verfügbarkeit",
+    "afterCheckText": "Danach erhalten Sie Preis und Angebot.",
+    "moreVehicles": "Weitere Fahrzeuge ansehen",
+    "toHome": "Zur Startseite",
+    "discount": {
+      "hint": "Haben Sie einen Code? Wir rechnen ihn in Ihr Angebot ein.",
+      "check": "Prüfen",
+      "checkAria": "Rabattcode prüfen",
+      "checking": "Code wird geprüft…",
+      "valid": "Code gültig: {label}",
+      "percentOff": "−{percent} %",
+      "unavailable": "Der Code konnte gerade nicht geprüft werden. Sie können ihn trotzdem mitsenden, wir prüfen ihn bei der Bearbeitung.",
+      "pillSub": "Code-Rabatt {label} eingerechnet, Ø {perDay} / Tag",
+      "summaryCode": "Rabattcode",
+      "reasons": {
+        "not_found": "Dieser Code ist ungültig. Bitte prüfen Sie die Schreibweise.",
+        "inactive": "Dieser Code ist nicht mehr aktiv.",
+        "not_started": "Dieser Code ist noch nicht gültig.",
+        "expired": "Dieser Code ist abgelaufen.",
+        "exhausted": "Dieser Code wurde bereits zu oft eingelöst.",
+        "email_limit": "Dieser Code wurde mit dieser E-Mail-Adresse bereits eingelöst.",
+        "min_days": "Dieser Code gilt erst ab einer längeren Mietdauer.",
+        "wrong_recipient": "Dieser Code ist für eine andere E-Mail-Adresse bestimmt.",
+        "email_required": "Bitte geben Sie oben Ihre E-Mail-Adresse an, damit wir den Code prüfen können.",
+        "currency_mismatch": "Dieser Code gilt nicht für die aktuelle Währung.",
+        "generic": "Dieser Code kann nicht angewendet werden."
+      },
+      "priceWas": "Statt",
+      "priceNow": "jetzt"
+    }
+  },
+  "social": {
+    "label": "Kundenstimmen",
+    "heading": "Was Mieterinnen und Mieter sagen",
+    "stars": "{value} von 5 Sternen",
+    "fallback": {
+      "one": {
+        "name": "Marco S.",
+        "location": "Zürich",
+        "text": "Sehr unkompliziert und günstig. Hatte den VW Passat für 3 Monate – besser als jeder Leasingvertrag."
+      },
+      "two": {
+        "name": "Laura M.",
+        "location": "Basel",
+        "text": "Freundlicher Service und das Auto war top gepflegt. Vollkasko inklusive ist ein grosser Pluspunkt."
+      },
+      "three": {
+        "name": "Thomas K.",
+        "location": "Bern",
+        "text": "Perfekt für meine Überbrückungszeit. Der Langzeitrabatt hat sich wirklich gelohnt – klare Empfehlung!"
+      }
+    }
+  },
+  "faq": {
+    "label": "Häufige Fragen",
+    "heading": "Gut zu wissen, bevor Sie anfragen",
+    "askTitle": "Ihre Frage fehlt?",
+    "askText": "Schreiben Sie uns, wir antworten schnellstmöglich.",
+    "askCta": "Frage stellen",
+    "discountSentence": " Bei längerer Mietdauer profitieren Sie von automatischen Rabatten: {parts}.",
+    "discountPart": "{percent}% ab {days} Tagen",
+    "discountPartMax": "bis zu {percent}% ab {days} Tagen",
+    "fallback": {
+      "priceQuestion": "Was kostet die Miete bei HoppDrive?",
+      "priceAnswer": "Unsere Mietwagen starten ab {price} pro Tag.{discounts}",
+      "insuranceQuestion": "Ist eine Versicherung inklusive?",
+      "insuranceAnswer": "Ja, bei jeder Anmietung ist eine Vollkasko-Versicherung inklusive. Es gibt keine versteckten Zusatzkosten für den Versicherungsschutz.",
+      "durationQuestion": "Wie lange kann ich ein Fahrzeug mieten?",
+      "durationAnswer": "Sie können unsere Fahrzeuge ab 1 Tag bis zu mehreren Monaten mieten. Je länger die Mietdauer, desto günstiger der Tagespreis.",
+      "documentsQuestion": "Welche Dokumente brauche ich?",
+      "documentsAnswer": "Sie benötigen einen gültigen Führerschein und einen Identitätsausweis (Pass oder ID). Bei der Übergabe wird ein Mietvertrag vor Ort unterschrieben.",
+      "extendQuestion": "Kann ich die Mietdauer verlängern?",
+      "extendAnswer": "Ja, eine Verlängerung ist jederzeit möglich, einfach Kontakt aufnehmen. Der Preis passt sich automatisch an die neue Gesamtdauer an.",
+      "pickupQuestion": "Wo kann ich das Fahrzeug abholen?",
+      "pickupAnswer": "Die Fahrzeugübergabe findet an unserem Standort statt. Die genaue Adresse und Wegbeschreibung erhalten Sie nach der Buchungsbestätigung.",
+      "priceAnswerNoPrice": "Der Preis richtet sich nach Fahrzeug und Mietdauer.{discounts}"
+    }
+  },
+  "map": {
+    "kicker": "Standort",
+    "defaultTitle": "Hier finden Sie uns",
+    "pickup": "Abholung und Rückgabe",
+    "hours": "Öffnungszeiten",
+    "email": "E-Mail",
+    "phone": "Telefon",
+    "route": "Route planen"
+  },
+  "fleet": {
+    "label": "Unsere Flotte",
+    "headingCount": "{count, plural, one {# Fahrzeug} other {# Fahrzeuge}}, ab 1 Tag mietbar",
+    "headingEmpty": "Günstige Mietwagen für jeden Anlass",
+    "filterAria": "Fahrzeugkategorie filtern",
+    "all": "Alle",
+    "emptyTitle": "Derzeit keine Fahrzeuge verfügbar",
+    "emptyText": "Bitte schauen Sie später wieder vorbei oder fragen Sie uns direkt.",
+    "emptyCta": "Anfrage senden",
+    "liveCount": "{count, plural, one {# Fahrzeug} other {# Fahrzeuge}}",
+    "priceAside": "Preis und Anfrage",
+    "viewAll": "{count, plural, one {Alle # Fahrzeug ansehen} other {Alle # Fahrzeuge ansehen}}"
+  },
+  "vehicleCard": {
+    "available": "Verfügbar",
+    "reserved": "Reserviert",
+    "from": "Ab",
+    "perDay": "/ Tag",
+    "month": "30 Tage zusammen: <num>{price}</num>",
+    "details": "Details",
+    "detailsAria": "Details zu {name}",
+    "inquire": "Anfragen",
+    "inquireAria": "{name} anfragen",
+    "photoSoon": "Foto folgt"
+  },
+  "gallery": {
+    "roleDescription": "Bildergalerie",
+    "groupLabel": "Bilder von {name}",
+    "previous": "Vorheriges Bild",
+    "next": "Nächstes Bild",
+    "counter": "{current} / {total}",
+    "live": "Bild {current} von {total}",
+    "thumbnail": "Bild {number}"
+  },
+  "vehiclePanel": {
+    "aria": "Preis und Anfrage",
+    "reservedTitle": "Fahrzeug reserviert.",
+    "reservedText": "Schauen Sie sich ähnliche Fahrzeuge an oder fragen Sie uns nach einem anderen Zeitraum.",
+    "from": "Ab",
+    "perDay": "/ Tag",
+    "ladderTitle": "Tagespreis nach Mietdauer",
+    "duration": "Mietdauer",
+    "discount": "Rabatt",
+    "perDayColumn": "Pro Tag",
+    "dateFrom": "Von",
+    "dateTo": "Bis",
+    "dateOrderError": "Das Ende darf nicht vor dem Beginn liegen.",
+    "averagePerDay": "Ø {price} / Tag",
+    "cta": "Dieses Fahrzeug anfragen",
+    "ctaNote": "Kostenlos & unverbindlich. Fahrzeug und Daten werden ins Formular übernommen.",
+    "stickyCta": "Anfragen"
+  },
+  "browser": {
+    "filterTitle": "Filter",
+    "reset": "Zurücksetzen",
+    "fuel": "Antrieb",
+    "seats": "Sitzplätze",
+    "seatsAny": "Egal",
+    "seatsFive": "5 oder mehr",
+    "seatsSeven": "7 oder mehr",
+    "maxPrice": "Max. Preis pro Tag",
+    "maxPriceValue": "{price} pro Tag",
+    "onlyAvailable": "Nur verfügbare Fahrzeuge",
+    "activeFilters": "{count} aktiv",
+    "sortLabel": "Sortieren",
+    "sortPriceAsc": "Preis aufsteigend",
+    "sortPriceDesc": "Preis absteigend",
+    "sortName": "Name A–Z",
+    "count": "<b>{shown}</b> von {total} {total, plural, one {Fahrzeug} other {Fahrzeugen}}",
+    "loadMore": "Weitere {count} {count, plural, one {Fahrzeug} other {Fahrzeuge}} laden",
+    "emptyAllTitle": "Derzeit sind keine Fahrzeuge verfügbar",
+    "emptyAllText": "Bitte schauen Sie später wieder vorbei oder fragen Sie uns direkt.",
+    "emptyAllCta": "Anfrage senden",
+    "emptyFilterTitle": "Keine passenden Fahrzeuge",
+    "emptyFilterText": "Versuchen Sie einen anderen Filter oder sehen Sie die ganze Flotte.",
+    "emptyFilterCta": "Filter zurücksetzen",
+    "sheetCancel": "Abbrechen",
+    "sheetShow": "{count} {count, plural, one {Fahrzeug} other {Fahrzeuge}} anzeigen"
+  },
+  "categoryChips": {
+    "aria": "Fahrzeugkategorien",
+    "all": "Alle"
+  },
+  "fleetPage": {
+    "crumbHome": "Startseite",
+    "crumbFleet": "Fahrzeuge",
+    "title": "Mietwagen in der Schweiz – unsere Flotte",
+    "description": "Alle Mietfahrzeuge von HoppDrive auf einen Blick: Limousinen, SUVs, Kombis, Vans und Elektroautos. Günstige Tagespreise, automatischer Langzeitrabatt, Vollkasko inklusive.",
+    "lead": "Von der sparsamen Limousine bis zum geräumigen Van: Stöbern Sie durch unsere gesamte Flotte und finden Sie das passende Fahrzeug für Ihre nächste Reise. Alle Preise inklusive Vollkasko, mit automatischem Rabatt bei längerer Mietdauer."
+  },
+  "categoryPage": {
+    "title": "{category} in der Schweiz",
+    "titleWithPrice": "{category} in der Schweiz ab {price}/Tag",
+    "description": "{category} in der Schweiz bei HoppDrive. Flexible Kurz- und Langzeitmiete, bis 40% Langzeitrabatt, Vollkasko inklusive.",
+    "descriptionWithPrice": "{category} in der Schweiz bei HoppDrive ab {price} pro Tag. Flexible Kurz- und Langzeitmiete, bis 40% Langzeitrabatt, Vollkasko inklusive.",
+    "priceLine": "Ab <num>{price}</num> pro Tag, inklusive Vollkasko und automatischem Langzeitrabatt.",
+    "back": "Alle Fahrzeuge ansehen"
+  },
+  "vehiclePage": {
+    "crumbHome": "Startseite",
+    "crumbFleet": "Fahrzeuge",
+    "backToFleet": "Alle Fahrzeuge",
+    "notFoundTitle": "Fahrzeug nicht gefunden",
+    "metaTitle": "{name} mieten ab {price}/Tag",
+    "metaDescription": "{name} ({year}) günstig mieten – {type} mit {hp} PS, {seats} Sitzen. Ab {price}/Tag, bis 40% Langzeitrabatt. Vollkasko inklusive. Jetzt unverbindlich anfragen bei HoppDrive.",
+    "imageAlt": "{name} – HoppDrive Langzeitvermietung",
+    "specsTitle": "Technische Daten",
+    "specPower": "Leistung",
+    "specTransmission": "Getriebe",
+    "specSeats": "Sitzplätze",
+    "specDrive": "Antrieb",
+    "specRange": "Reichweite",
+    "specYear": "Baujahr",
+    "specCategory": "Kategorie",
+    "aboutTitle": "Über dieses Fahrzeug",
+    "kind": {
+      "sedan": "eine Limousine",
+      "suv": "ein SUV",
+      "estate": "ein Kombi",
+      "coupe": "ein Coupé",
+      "convertible": "ein Cabrio",
+      "electric": "ein Elektrofahrzeug",
+      "van": "ein Van"
+    },
+    "transmissionLongAutomatic": "Automatikgetriebe",
+    "transmissionLongManual": "Schaltgetriebe",
+    "fuelElectricRange": "Er fährt rein elektrisch mit einer Reichweite von {range}.",
+    "fuelElectric": "Er fährt rein elektrisch.",
+    "fuelHybrid": "Er verfügt über einen sparsamen Hybridantrieb.",
+    "fuelOther": "Er fährt mit {fuel}.",
+    "proseDiscount": " um bis zu {percent}%",
+    "prose": "Der {name} ({year}) ist {kind} mit {hp} PS, {transmission} und {seats} Sitzen. {fuelSentence} Mietpreis ab {price} pro Tag, bei längerer Mietdauer sinkt der Tagespreis automatisch{discount} – Vollkasko-Versicherung und Pannenhilfe sind immer inklusive.",
+    "includedTitle": "Im Preis enthalten",
+    "defaultFeatures": {
+      "coverTitle": "Vollkasko-Versicherung",
+      "coverText": "Keine versteckten Zusatzkosten für den Versicherungsschutz.",
+      "maintenanceTitle": "Regelmässige Wartung",
+      "maintenanceText": "Jedes Fahrzeug wird geprüft, bevor es zu Ihnen kommt.",
+      "extendTitle": "Verlängerung jederzeit",
+      "extendText": "Der Preis passt sich automatisch an die neue Gesamtdauer an."
+    },
+    "examplesTitle": "Preisbeispiele",
+    "exampleDuration": "Mietdauer",
+    "exampleTotal": "Gesamtpreis",
+    "exampleDiscount": "Rabatt",
+    "exampleDays": "{days, plural, one {# Tag} other {# Tage}}",
+    "similarTitle": "Ähnliche Fahrzeuge",
+    "similarAll": "Alle Fahrzeuge",
+    "jsonldDescription": "{name} ({year}) günstig mieten in der Schweiz. {type} mit {hp} PS. Ab {price}/Tag.",
+    "propPower": "Leistung",
+    "propTransmission": "Getriebe",
+    "propSeats": "Sitze",
+    "propDrive": "Antrieb",
+    "propRange": "Reichweite",
+    "propYear": "Baujahr",
+    "unitHp": "PS",
+    "fuelPetrol": "Er fährt mit Benzin.",
+    "fuelDiesel": "Er fährt mit Diesel."
+  },
+  "legal": {
+    "navLabel": "Rechtliche Seiten",
+    "home": "Startseite",
+    "note": "Rechtlich massgebend ist die deutsche Fassung.",
+    "pages": {
+      "impressum": "Impressum",
+      "privacy": "Datenschutz",
+      "agb": "AGB"
+    },
+    "impressum": {
+      "title": "Impressum",
+      "metaDescription": "Impressum und Firmeninformationen von HoppDrive – Ihrer günstigen Autovermietung in der Schweiz.",
+      "company": "Firmenangaben",
+      "contact": "Kontakt",
+      "emailLabel": "E-Mail",
+      "phoneLabel": "Telefon",
+      "representative": "Vertretungsberechtigte Person",
+      "register": "Handelsregister",
+      "vat": "Mehrwertsteuernummer",
+      "disclaimer": "Haftungsausschluss",
+      "dataQuestions": "Fragen zu Ihren Daten richten Sie bitte an info@hoppdrive.ch."
+    },
+    "privacy": {
+      "title": "Datenschutzerklärung",
+      "metaTitle": "Datenschutz",
+      "metaDescription": "Datenschutzerklärung und Datenschutzinformationen von HoppDrive gemäss DSG und DSGVO. Erfahren Sie, wie wir Ihre Daten schützen.",
+      "lastUpdated": "Zuletzt aktualisiert: {date}",
+      "emailLabel": "E-Mail",
+      "phoneLabel": "Telefon",
+      "controller": "1. Verantwortliche Stelle",
+      "data": "2. Erhobene Daten",
+      "dataContact": "a) Kontaktformular-Eingaben",
+      "dataAuto": "b) Automatisch erhobene Daten",
+      "dataCookies": "c) Cookies und Analyse (nur mit Einwilligung)",
+      "processors": "3. Auftragsverarbeiter (Drittanbieter)",
+      "retention": "4. Aufbewahrungsdauer",
+      "rights": "5. Ihre Rechte",
+      "security": "6. Sicherheitsmassnahmen",
+      "complaints": "7. Beschwerderecht"
+    },
+    "agb": {
+      "title": "Allgemeine Geschäftsbedingungen",
+      "metaTitle": "AGB",
+      "metaDescription": "Allgemeine Geschäftsbedingungen (AGB) von HoppDrive – Ihrer günstigen Autovermietung in der Schweiz.",
+      "intro": "Nachfolgend finden Sie unsere vollständigen AGB als PDF-Dokument.",
+      "download": "AGB als PDF herunterladen",
+      "iframeTitle": "Allgemeine Geschäftsbedingungen – HoppDrive"
+    }
+  },
+  "notFound": {
+    "title": "Seite nicht gefunden",
+    "heading": "Diese Seite gibt es nicht",
+    "text": "Der Link ist veraltet oder das Fahrzeug ist nicht mehr in unserer Flotte.",
+    "allVehicles": "Alle Fahrzeuge",
+    "home": "Zur Startseite"
+  },
+  "unsubscribe": {
+    "metaTitle": "Abmelden",
+    "metaDescription": "Newsletter und Angebote von HoppDrive abbestellen.",
+    "title": "Abmelden",
+    "home": "Zur Startseite",
+    "loading": "Link wird geprüft…",
+    "readyTitle": "Werbe-E-Mails abbestellen",
+    "readyText": "Möchten Sie keine Angebote und Neuigkeiten von HoppDrive mehr per E-Mail erhalten?",
+    "emailLine": "Betroffene Adresse: {email}",
+    "serviceNote": "Service-E-Mails zu Ihren Mietverträgen erhalten Sie weiterhin.",
+    "submit": "Abmelden",
+    "submitting": "Wird abgemeldet…",
+    "doneTitle": "Sie sind abgemeldet.",
+    "doneText": "Sie erhalten keine Werbe-E-Mails mehr. Service-E-Mails zu Ihren Mietverträgen erhalten Sie weiterhin.",
+    "alreadyTitle": "Sie sind bereits abgemeldet.",
+    "alreadyText": "Für diese Adresse werden keine Werbe-E-Mails mehr verschickt. Service-E-Mails zu Ihren Mietverträgen erhalten Sie weiterhin.",
+    "invalidTitle": "Dieser Link ist ungültig oder abgelaufen.",
+    "invalidText": "Bitte öffnen Sie den Link aus der neuesten E-Mail noch einmal. Wenn es weiterhin nicht klappt, schreiben Sie uns, dann melden wir Sie von Hand ab.",
+    "errorTitle": "Das hat leider nicht geklappt.",
+    "errorText": "Der Server ist gerade nicht erreichbar. Bitte versuchen Sie es in einigen Minuten erneut.",
+    "retry": "Erneut versuchen"
+  },
+  "meta": {
+    "keywords": [
+      "Autovermietung Schweiz",
+      "günstige Mietwagen",
+      "Langzeitmiete Auto Schweiz",
+      "Kurzzeitmiete Auto",
+      "Auto mieten günstig",
+      "Škoda mieten Schweiz",
+      "VW mieten Schweiz",
+      "Mietwagen Tagespreis",
+      "Autovermietung Langzeit Rabatt",
+      "HoppDrive",
+      "Kombi mieten",
+      "SUV mieten günstig",
+      "Familienauto mieten Schweiz",
+      "car rental Switzerland",
+      "cheap car rental Switzerland",
+      "long term car rental",
+      "Mietauto Schweiz",
+      "Automiete Zürich",
+      "Mietwagen Langzeit günstig",
+      "Auto Langzeitmiete Vollkasko"
+    ],
+    "ogTitle": "HoppDrive – Günstige Autovermietung Schweiz | Ab {price}/Tag",
+    "ogDescription": "Günstige Kurz- & Langzeit-Autovermietung in der Schweiz. Škoda Superb, Octavia, VW Passat & mehr. Dynamische Preisgestaltung mit bis zu 40% Rabatt bei Langzeitmiete. Vollkasko inklusive.",
+    "ogImageAlt": "HoppDrive – Günstige Autovermietung Schweiz",
+    "twitterDescription": "Škoda, VW, Toyota & mehr ab {price}/Tag. Bis 40% Langzeitrabatt. Vollkasko inklusive.",
+    "homeTitle": "HoppDrive – Günstige Autovermietung Schweiz | Mietwagen ab {price}/Tag",
+    "homeDescription": "HoppDrive – Günstige Kurz- & Langzeitvermietung in der Schweiz. Škoda, VW, Toyota & mehr ab {price}/Tag. Bis 40% Langzeitrabatt. Vollkasko inklusive. Jetzt unverbindlich anfragen!",
+    "homeTitleNoPrice": "HoppDrive – Günstige Autovermietung Schweiz | Kurz- & Langzeitmiete",
+    "homeDescriptionNoPrice": "HoppDrive – Günstige Kurz- & Langzeitvermietung in der Schweiz. Škoda, VW, Toyota & mehr. Bis 40% Langzeitrabatt. Vollkasko inklusive. Jetzt unverbindlich anfragen!",
+    "ogTitleNoPrice": "HoppDrive – Günstige Autovermietung Schweiz",
+    "twitterDescriptionNoPrice": "Škoda, VW, Toyota & mehr. Bis 40% Langzeitrabatt. Vollkasko inklusive."
+  },
+  "jsonld": {
+    "organizationDescription": "Günstige Kurz- & Langzeitvermietung in der Schweiz. Škoda, VW, Toyota & mehr, inklusive Vollkasko.",
+    "priceRange": "{min} – {max} / Tag",
+    "crumbHome": "Startseite",
+    "crumbFleet": "Fahrzeuge"
+  }
+}

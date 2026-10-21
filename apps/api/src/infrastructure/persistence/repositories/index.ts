@@ -5,3 +5,5 @@ export { PrismaBookingRepository } from './PrismaBookingRepository';
 export { PrismaPricingRuleRepository } from './PrismaPricingRuleRepository';
 export { PrismaVehicleMaintenanceRepository } from './PrismaVehicleMaintenanceRepository';
 export { PrismaAuditLogRepository } from './PrismaAuditLogRepository';
+export { PrismaPasswordResetTokenRepository } from './PrismaPasswordResetTokenRepository';
+export { PrismaReportingRepository } from './PrismaReportingRepository';

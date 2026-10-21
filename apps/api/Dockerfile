@@ -40,8 +40,9 @@ COPY --from=build /app/apps/api/package.json ./apps/api/package.json
 COPY --from=build /app/packages/shared/dist ./packages/shared/dist
 COPY --from=build /app/packages/shared/package.json ./packages/shared/package.json
 
-# Create uploads directory
-RUN mkdir -p /app/uploads && chown -R expressjs:nodejs /app/uploads
+# Create the public uploads directory and the PRIVATE storage (contracts, damage photos, ...).
+# The private directory is never served statically; mount it as a volume (see docker-compose.yml).
+RUN mkdir -p /app/uploads /app/private && chown -R expressjs:nodejs /app/uploads /app/private
 
 USER expressjs
 

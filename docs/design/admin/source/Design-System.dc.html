@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Admin Design System</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./admin.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fira+Sans:wght@400;500;600;700&family=Fira+Sans+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F2F2F2}
+.ds{padding:48px;display:flex;flex-direction:column;gap:32px;width:1440px}
+.sec{background:#fff;border:1px solid var(--line);border-radius:18px;padding:28px;display:flex;flex-direction:column;gap:20px}
+.sec > h2{font-size:22px}
+.row2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:32px}
+.tok{font:500 12px/1.3 ui-monospace,Menlo,Consolas,monospace;color:var(--gr)}
+.sp{height:16px;background:var(--ruby);border-radius:3px}
+.rd{width:84px;height:56px;border:2px solid var(--ink);background:var(--paper)}
+.demo{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.lab{font-size:13px;color:var(--gr);font-weight:600;margin-bottom:8px}
+.in.focus{border-color:#1B5FD1;box-shadow:0 0 0 3px rgba(27,95,209,.28)}
+.in.dis{background:var(--paper);color:#6E7174;border-color:var(--line)}
+.btn.hov{background:var(--ruby-d)}
+.btn.foc{outline:3px solid #1B5FD1;outline-offset:2px}
+</style>
+</helmet>
+<div class="ad" style="width:1440px">
+<div class="ds">
+
+  <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:24px">
+    <div><h1 class="h1" style="font-size:36px">HoppDrive Admin: Design System</h1><p class="mut" style="margin-top:6px;max-width:760px">Gleiche Marke wie die Kundenseite, ruhiger eingesetzt: Ruby nur für Hauptaktion und aktuelle Seite, alles andere in Anthrazit und Grau. Statusfarben tragen immer auch ein Wort.</p></div>
+    <img src="/_blob/3c8c22cf0c301f831c336e6bf36e584f" alt="HoppDrive Admin" style="height:40px;width:auto">
+  </div>
+
+  <section class="sec" aria-labelledby="lg-h">
+    <h2 class="h2" id="lg-h">Logo im Admin</h2>
+    <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px"><figure style="margin:0;display:flex;flex-direction:column;gap:8px;min-width:0"><div style="background:#fff;border:1px solid var(--line);border-radius:12px;height:150px;display:flex;align-items:center;justify-content:center;padding:16px"><img src="/_blob/3c8c22cf0c301f831c336e6bf36e584f" alt="" style="width:210px;max-width:100%;height:auto;display:block"></div><figcaption><b>Schriftzug</b><div class="sm mut">Seitenleiste 264 px, Mobil-Kopfzeile</div></figcaption></figure><figure style="margin:0;display:flex;flex-direction:column;gap:8px;min-width:0"><div style="background:#fff;border:1px solid var(--line);border-radius:12px;height:150px;display:flex;align-items:center;justify-content:center;padding:16px"><img src="/_blob/d6aea83af0e4a797da75d95eab312540" alt="" style="width:64px;max-width:100%;height:auto;display:block"></div><figcaption><b>Zeichen</b><div class="sm mut">Icon-Leiste 76 px (Tablet)</div></figcaption></figure><figure style="margin:0;display:flex;flex-direction:column;gap:8px;min-width:0"><div style="background:#fff;border:1px solid var(--line);border-radius:12px;height:150px;display:flex;align-items:center;justify-content:center;padding:16px"><img src="/_blob/402c491d9170ec01ef64f5a547b7e578" alt="" style="width:200px;max-width:100%;height:auto;display:block"></div><figcaption><b>Stehend</b><div class="sm mut">Anmeldung, Passwort, Unterschriftsseite</div></figcaption></figure><figure style="margin:0;display:flex;flex-direction:column;gap:8px;min-width:0"><div style="background:#3E4144;border:1px solid #3E4144;border-radius:12px;height:150px;display:flex;align-items:center;justify-content:center;padding:16px"><img src="/_blob/9edd9e86ce5f1723f6a438957b30cd4d" alt="" style="width:210px;max-width:100%;height:auto;display:block"></div><figcaption><b>Schriftzug, weiss</b><div class="sm mut">Reserve für dunkle Flächen</div></figcaption></figure></div>
+    <div class="alert al-info"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 16v-4M12 8h.01"/></svg><span><b>[Improvement &amp; Reason]</b> Die Seitenleiste ist hell, damit die zweifarbigen Logos unverändert stehen. Das Zeichen ersetzt in der Icon-Leiste den früheren roten Kasten mit weissem Kreuz. Grund: ein Markenzeichen, nicht zwei.</span></div>
+  </section>
+
+  <section class="sec" aria-labelledby="c-h">
+    <h2 class="h2" id="c-h">Farben</h2>
+    <div style="display:grid;grid-template-columns:repeat(9,minmax(0,1fr));gap:12px">
+      <sc-for list="{{brand}}" as="c" hint-placeholder-count="9">
+        <div><div class="swatch" style="background:{{c.hex}};color:{{c.fg}}">{{c.n}}</div><div class="tok" style="margin-top:6px">{{c.hex}}<br>{{c.use}}</div></div>
+      </sc-for>
+    </div>
+    <div>
+      <div class="lab">Status: Text auf Fläche, mit gemessenem Kontrast</div>
+      <div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px">
+        <sc-for list="{{status}}" as="s" hint-placeholder-count="5">
+          <div style="background:{{s.bg}};color:{{s.fg}};border-radius:12px;padding:14px 16px"><b>{{s.n}}</b><div class="sm" style="margin-top:2px">{{s.use}}</div><div class="tok" style="color:{{s.fg}};margin-top:8px">{{s.cr}}</div></div>
+        </sc-for>
+      </div>
+    </div>
+    <div class="sm mut">Weitere Kontraste: Weiss auf Ruby 7.8:1 · Anthrazit auf Weiss 10.3:1 · Graphit auf Weiss 6.1:1 · Graphit auf Hellgrau 5.5:1 · Feldrand #8E9194 auf Weiss 3.2:1</div>
+  </section>
+
+  <div class="row2">
+    <section class="sec" aria-labelledby="t-h">
+      <h2 class="h2" id="t-h">Typografie</h2>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid var(--line-s);padding-bottom:10px"><span class="h1">Seitentitel</span><span class="tok">Fira Sans 700 · 28/32 · −0.015em</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid var(--line-s);padding-bottom:10px"><span class="h2">Bereichstitel</span><span class="tok">Fira Sans 700 · 20/25</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid var(--line-s);padding-bottom:10px"><span class="h3">Gruppentitel</span><span class="tok">Fira Sans 700 · 16/21</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid var(--line-s);padding-bottom:10px"><span>Fliesstext und Tabellen</span><span class="tok">Fira Sans 400 · 15/22</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid var(--line-s);padding-bottom:10px"><span class="sm mut">Hilfetext, Spaltenköpfe</span><span class="tok">Fira Sans 400–600 · 13/18</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline"><b class="num" style="font-size:36px;line-height:1">CHF 14’820</b><span class="tok">Fira Sans Condensed 700 · 36 · Tabellenziffern</span></div>
+      </div>
+      <p class="sm mut">Nie unter 13 px. Zahlen und Preise immer in Fira Sans Condensed mit Tabellenziffern, damit Spalten sauber ausgerichtet sind.</p>
+    </section>
+
+    <section class="sec" aria-labelledby="s-h">
+      <h2 class="h2" id="s-h">Abstand und Radius</h2>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <sc-for list="{{space}}" as="p" hint-placeholder-count="7">
+          <div style="display:grid;grid-template-columns:90px 1fr;gap:12px;align-items:center"><span class="tok">{{p.t}}</span><span class="sp" style="width:{{p.px}}"></span></div>
+        </sc-for>
+      </div>
+      <div class="demo" style="gap:16px;align-items:flex-end">
+        <sc-for list="{{radius}}" as="r" hint-placeholder-count="5"><div><div class="rd" style="border-radius:{{r.px}}"></div><div class="tok" style="margin-top:6px">{{r.t}}</div></div></sc-for>
+      </div>
+      <p class="sm mut">Raster 4 px. Seitenrand 32 px (Desktop), 24 px (Tablet), 16 px (Mobil).</p>
+    </section>
+  </div>
+
+  <section class="sec" aria-labelledby="k-h">
+    <h2 class="h2" id="k-h">Komponenten</h2>
+    <div class="row2">
+      <div style="display:flex;flex-direction:column;gap:20px">
+        <div><div class="lab">Knöpfe (44 px hoch, mobil 48 px)</div>
+          <div class="demo"><button class="btn btn-p" type="button">Primär</button><button class="btn btn-p hov" type="button">Hover</button><button class="btn btn-p foc" type="button">Fokus</button><button class="btn btn-o" type="button">Umrandet</button><button class="btn btn-g" type="button">Ruhig</button><button class="btn btn-d" type="button">Löschen</button><button class="btn btn-p" type="button" disabled>Deaktiviert</button><button class="btn btn-g btn-s" type="button">Klein 36</button></div></div>
+        <div><div class="lab">Status mit Wort</div>
+          <div class="demo"><span class="st s-amber">Neu</span><span class="st s-blue">Reserviert</span><span class="st s-green">Aktiv</span><span class="st s-gray">Erledigt</span><span class="st s-red">Storniert</span><span class="st s-vio">Beantwortet</span></div></div>
+        <div><div class="lab">Schalter, Auswahl, Filter</div>
+          <div class="demo"><span class="sw on" role="img" aria-label="An"></span><span class="sw" role="img" aria-label="Aus"></span><label class="chk"><input type="checkbox" checked>Option</label><button class="chip" type="button" aria-pressed="true">Aktiv</button><button class="chip" type="button" aria-pressed="false">Inaktiv</button></div></div>
+        <div><div class="lab">Reiter</div>
+          <div class="tabs" role="tablist" aria-label="Beispiel" style="display:inline-flex"><button class="tab" role="tab" aria-selected="true" type="button">Offen <small>5</small></button><button class="tab" role="tab" aria-selected="false" type="button">Alle <small>20</small></button></div></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:20px">
+        <div><div class="lab">Felder: Standard, Fokus, Fehler, Deaktiviert</div>
+          <div class="grid2">
+            <div class="fld"><label for="d1">Standard</label><input class="in" id="d1" value="Škoda Kodiaq"></div>
+            <div class="fld"><label for="d2">Fokus</label><input class="in focus" id="d2" value="89.00"></div>
+            <div class="fld"><label for="d3">Fehler</label><input class="in bad" id="d3" value="" aria-invalid="true"><span class="errm">Geben Sie einen Preis ein.</span></div>
+            <div class="fld"><label for="d4">Deaktiviert</label><input class="in dis" id="d4" value="Nicht änderbar" disabled></div>
+          </div></div>
+        <div><div class="lab">Fortschritt einer Buchung</div>
+          <div class="prog"><span class="done"><i>✓</i>Vertrag</span><hr class="done"><span class="done"><i>✓</i>Signiert</span><hr class="done"><span class="now"><i></i>Rechnung</span><hr><span><i></i>Bezahlt</span></div></div>
+        <div><div class="lab">Meldungen</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div class="alert al-ok"><span><b>Gespeichert.</b> Änderungen sind live.</span></div>
+            <div class="alert al-warn"><span><b>Überschneidung.</b> Zeitraum ist bereits vorgemerkt.</span></div>
+            <div class="alert al-err"><span><b>Nicht gespeichert.</b> Verbindung unterbrochen.</span></div>
+          </div></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="row2">
+    <section class="sec" aria-labelledby="b-h">
+      <h2 class="h2" id="b-h">Breakpoints und Verhalten</h2>
+      <div class="scroll">
+        <table class="tbl">
+          <thead><tr><th>Bereich</th><th>Navigation</th><th>Tabellen und Details</th></tr></thead>
+          <tbody>
+            <sc-for list="{{bps}}" as="b" hint-placeholder-count="4">
+              <tr><td><b>{{b.n}}</b><div class="sm mut num">{{b.w}}</div></td><td>{{b.nav}}</td><td>{{b.tbl}}</td></tr>
+            </sc-for>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="sec" aria-labelledby="a-h">
+      <h2 class="h2" id="a-h">Bedienbarkeit</h2>
+      <ul style="display:flex;flex-direction:column;gap:12px">
+        <li style="display:flex;gap:12px"><span class="st s-green" style="flex:none;height:24px">Pflicht</span><span>Touch-Ziele mindestens 48 × 48 px auf Mobil, 44 × 44 px auf Desktop.</span></li>
+        <li style="display:flex;gap:12px"><span class="st s-green" style="flex:none;height:24px">Pflicht</span><span>Sichtbarer Fokusring: 3 px Blau #1B5FD1 mit 2 px Abstand, auch auf Ruby.</span></li>
+        <li style="display:flex;gap:12px"><span class="st s-green" style="flex:none;height:24px">Pflicht</span><span>Status nie nur als Farbe: immer Punkt und Wort.</span></li>
+        <li style="display:flex;gap:12px"><span class="st s-green" style="flex:none;height:24px">Pflicht</span><span>Fehler am Feld und als Zusammenfassung oben, mit Hinweis zur Korrektur.</span></li>
+        <li style="display:flex;gap:12px"><span class="st s-green" style="flex:none;height:24px">Pflicht</span><span>Eigene Dialoge statt confirm() und alert(): Fokus im Dialog, Escape schliesst.</span></li>
+        <li style="display:flex;gap:12px"><span class="st s-blue" style="flex:none;height:24px">Bewegung</span><span>Skeleton-Schimmer und Übergänge entfallen bei „reduzierte Bewegung“.</span></li>
+      </ul>
+    </section>
+  </div>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":2000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const c = (n, hex, fg, use) => ({ n, hex, fg, use });
+    const s = (n, bg, fg, use, cr) => ({ n, bg, fg, use, cr });
+    return {
+      brand: [
+        c('Ruby', '#A60E0E', '#fff', 'Hauptaktion'), c('Ruby dunkel', '#850B0B', '#fff', 'Hover, Text'), c('Ruby hell', '#FBEBEB', '#850B0B', 'Aktive Seite'),
+        c('Anthrazit', '#3E4144', '#fff', 'Text, Rahmen'), c('Graphit', '#5F6265', '#fff', 'Zweittext'), c('Kühlgrau', '#A0A0A0', '#2C2E30', 'Deko'),
+        c('Linie', '#DADADA', '#2C2E30', 'Trennlinien'), c('Hellgrau', '#F2F2F2', '#2C2E30', 'Hintergrund'), c('Weiss', '#FFFFFF', '#2C2E30', 'Flächen')
+      ],
+      status: [
+        s('Neu / Offen', '#FFF1D6', '#7A4A00', 'Braucht Aufmerksamkeit', 'Kontrast 6.7:1'),
+        s('Reserviert', '#E5EEFB', '#174C9E', 'Geplant', 'Kontrast 7.0:1'),
+        s('Aktiv / Bezahlt', '#E3F2EA', '#1B6E46', 'Läuft, erledigt', 'Kontrast 5.4:1'),
+        s('Fehler / Storniert', '#FCE9E7', '#8F1C15', 'Problem, abgebrochen', 'Kontrast 7.7:1'),
+        s('Beantwortet', '#EEE8F8', '#5B3B9E', 'Bearbeitet, wartet', 'Kontrast 6.8:1')
+      ],
+      space: [
+        { t: '4 · xs', px: '4px' }, { t: '8 · s', px: '8px' }, { t: '12', px: '12px' }, { t: '16 · m', px: '16px' }, { t: '24 · l', px: '24px' }, { t: '32 · xl', px: '32px' }, { t: '48 · xxl', px: '48px' }
+      ],
+      radius: [
+        { t: '8 Klein', px: '8px' }, { t: '10 Felder', px: '10px' }, { t: '12 Karten', px: '12px' }, { t: '16 Panels', px: '16px' }, { t: '18 Dialoge', px: '18px' }
+      ],
+      bps: [
+        { n: 'Mobil', w: 'unter 768 px', nav: 'Untere Leiste: 4 Ziele plus „Mehr“, Ziele 48 px', tbl: 'Tabellen werden Karten, Details als Sheet von unten, Hauptaktion unten fest' },
+        { n: 'Tablet', w: '768 bis 1024 px', nav: 'Symbolleiste links (76 px), Beschriftung entfällt', tbl: 'Spalten ausgeblendet, Details als Overlay von rechts (480 px)' },
+        { n: 'Desktop', w: '1024 bis 1600 px', nav: 'Feste Seitenleiste 264 px mit Gruppen', tbl: 'Volle Tabellen, Details als dauerhaftes Panel (440 px)' },
+        { n: 'Ultra-wide', w: 'ab 1600 px', nav: 'Wie Desktop', tbl: 'Dritte Spalte „Heute“ (420 px), Inhalt wird nicht gestreckt' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

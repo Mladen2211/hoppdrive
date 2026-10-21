@@ -11,21 +11,62 @@ datasource db {
 // ─── Admin ─────────────────────────────────────────────────────
 
 model Admin {
-  id                String         @id @default(uuid())
-  email             String         @unique
-  name              String
-  firstName         String?        @map("first_name")
-  lastName          String?        @map("last_name")
-  phone             String?
-  signatureData     String?        @map("signature_data") @db.Text
-  passwordHash      String         @map("password_hash")
-  mustResetPassword Boolean        @default(true) @map("must_reset_password")
-  createdAt         DateTime       @default(now()) @map("created_at")
-  updatedAt         DateTime       @updatedAt @map("updated_at")
-  auditLogs         AuditLog[]
-  notifications     Notification[]
+  id                  String               @id @default(uuid())
+  email               String               @unique
+  name                String
+  firstName           String?              @map("first_name")
+  lastName            String?              @map("last_name")
+  phone               String?
+  signatureData       String?              @map("signature_data") @db.Text
+  passwordHash        String               @map("password_hash")
+  mustResetPassword   Boolean              @default(true) @map("must_reset_password")
+  role                AdminRole            @default(ADMIN)
+  lastActiveAt        DateTime?            @map("last_active_at")
+  failedLoginAttempts Int                  @default(0) @map("failed_login_attempts")
+  lockedUntil         DateTime?            @map("locked_until")
+  // SHA-256 of the one-time invite token. Non-null = invite still pending (cannot log in yet).
+  inviteTokenHash     String?              @unique @map("invite_token_hash")
+  inviteExpiresAt     DateTime?            @map("invite_expires_at")
+  // Soft delete: audit_logs must keep resolving to a person (FADP), so admins are never hard-deleted.
+  deletedAt           DateTime?            @map("deleted_at")
+  // UI preferences (admin app): language 'de' | 'en' | 'fr' | 'it' | 'hr', theme 'light' | 'dark' | 'system'.
+  locale              String               @default("de")
+  theme               String               @default("system")
+  createdAt           DateTime             @default(now()) @map("created_at")
+  updatedAt           DateTime             @updatedAt @map("updated_at")
+  auditLogs           AuditLog[]
+  notifications       Notification[]
+  passwordResetTokens PasswordResetToken[]
+  contractTemplates   ContractTemplate[]
+  reportedDamages     VehicleDamage[]
+  signedBookings      Booking[]            @relation("BookingCompanySigner")
+  inspections         BookingInspection[]
+  campaigns           MarketingCampaign[]
 
   @@map("admins")
+}
+
+enum AdminRole {
+  ADMIN
+  RENTAL
+  EDITOR
+  READONLY
+}
+
+// ─── Password Reset Tokens ─────────────────────────────────────
+
+model PasswordResetToken {
+  id        String    @id @default(uuid())
+  adminId   String    @map("admin_id")
+  // SHA-256 of the raw token that is emailed to the admin; the raw token is never stored.
+  tokenHash String    @unique @map("token_hash")
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  admin     Admin     @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId])
+  @@map("password_reset_tokens")
 }
 
 // ─── Vehicle ───────────────────────────────────────────────────
@@ -43,12 +84,19 @@ model Vehicle {
   seats              Int
   fuelType           FuelType             @map("fuel_type")
   range              String?
+  description        String?
+  // Normalised (uppercase, no spaces / dots / dashes): "ZH 123 456" is stored as "ZH123456".
+  licensePlate       String?              @unique @map("license_plate")
   isAvailable        Boolean              @default(true) @map("is_available")
+  // Per-locale content, e.g. { "en": { "description": "..." }, "fr": { ... } }. German lives in the columns.
+  translations       Json?
   createdAt          DateTime             @default(now()) @map("created_at")
   updatedAt          DateTime             @updatedAt @map("updated_at")
   images             VehicleImage[]
   bookings           Booking[]
   maintenancePeriods VehicleMaintenance[]
+  damages            VehicleDamage[]
+  fines              Fine[]
 
   @@map("vehicles")
 }
@@ -125,9 +173,14 @@ model ContactRequest {
   desiredEndDate    DateTime?            @map("desired_end_date")
   privacyConsent    Boolean              @map("privacy_consent")
   marketingConsent  Boolean              @default(false) @map("marketing_consent")
+  // Discount code typed into the inquiry form (applied when the inquiry is converted to a booking).
+  discountCode      String?              @map("discount_code")
+  // Website language the visitor was using ('de' | 'en' | 'fr' | 'it' | 'hr').
+  locale            String?
   status            ContactRequestStatus @default(pending)
   createdAt         DateTime             @default(now()) @map("created_at")
   updatedAt         DateTime             @updatedAt @map("updated_at")
+  redemptions       DiscountRedemption[]
 
   @@map("contact_requests")
 }
@@ -144,31 +197,59 @@ enum ContactRequestStatus {
 // ─── Booking ───────────────────────────────────────────────────
 
 model Booking {
-  id              String         @id @default(uuid())
-  vehicleId       String         @map("vehicle_id")
-  customerName    String         @map("customer_name")
-  customerEmail   String?        @map("customer_email")
-  startDate       DateTime       @map("start_date")
-  endDate         DateTime       @map("end_date")
-  totalPrice      Decimal        @map("total_price") @db.Decimal(10, 2)
-  currency        String         @default("CHF")
-  status          BookingStatus  @default(reserved)
-  notes           String?
-  contractStatus  ContractStatus @default(PENDING) @map("contract_status")
-  signatureData   String?        @map("signature_data") @db.Text
-  signedAt        DateTime?      @map("signed_at")
-  signeeIp        String?        @map("signee_ip")
-  contractPdfPath String?        @map("contract_pdf_path")
-  locationId      String?        @map("location_id")
-  createdAt       DateTime       @default(now()) @map("created_at")
-  updatedAt       DateTime       @updatedAt @map("updated_at")
-  vehicle         Vehicle        @relation(fields: [vehicleId], references: [id])
-  location        Location?      @relation(fields: [locationId], references: [id], onDelete: SetNull)
-  invoices        Invoice[]
+  id                   String               @id @default(uuid())
+  vehicleId            String               @map("vehicle_id")
+  customerName         String               @map("customer_name")
+  customerEmail        String?              @map("customer_email")
+  customerPhone        String?              @map("customer_phone")
+  // Website language of the customer ('de' | 'en' | 'fr' | 'it' | 'hr'), copied from the inquiry
+  customerLocale       String?              @map("customer_locale")
+  // startDate / endDate carry the real pickup / return time. Rows stored at exactly 00:00 (legacy)
+  // are treated as whole days.
+  startDate            DateTime             @map("start_date")
+  endDate              DateTime             @map("end_date")
+  // Driver details (contract + authority requests)
+  driverStreet         String?              @map("driver_street")
+  driverZip            String?              @map("driver_zip")
+  driverCity           String?              @map("driver_city")
+  driverCountry        String?              @map("driver_country")
+  driverBirthDate      DateTime?            @map("driver_birth_date") @db.Date
+  driverLicenseNumber  String?              @map("driver_license_number")
+  driverLicenseCountry String?              @map("driver_license_country")
+  // totalPrice is the final price (after discountAmount)
+  totalPrice           Decimal              @map("total_price") @db.Decimal(10, 2)
+  discountCodeId       String?              @map("discount_code_id")
+  discountAmount       Decimal              @default(0) @map("discount_amount") @db.Decimal(10, 2)
+  currency             String               @default("CHF")
+  status               BookingStatus        @default(reserved)
+  notes                String?
+  contractStatus       ContractStatus       @default(PENDING) @map("contract_status")
+  signatureData        String?              @map("signature_data") @db.Text
+  signedAt             DateTime?            @map("signed_at")
+  signeeIp             String?              @map("signee_ip")
+  // Storage key in the private storage (e.g. "contracts/<bookingId>.pdf"); legacy rows held a file path.
+  contractPdfPath      String?              @map("contract_pdf_path")
+  contractTemplateId   String?              @map("contract_template_id")
+  contractSha256       String?              @map("contract_sha256")
+  companySignerId      String?              @map("company_signer_id")
+  locationId           String?              @map("location_id")
+  createdAt            DateTime             @default(now()) @map("created_at")
+  updatedAt            DateTime             @updatedAt @map("updated_at")
+  vehicle              Vehicle              @relation(fields: [vehicleId], references: [id])
+  location             Location?            @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  discountCode         DiscountCode?        @relation(fields: [discountCodeId], references: [id], onDelete: SetNull)
+  contractTemplate     ContractTemplate?    @relation(fields: [contractTemplateId], references: [id], onDelete: SetNull)
+  companySigner        Admin?               @relation("BookingCompanySigner", fields: [companySignerId], references: [id], onDelete: SetNull)
+  invoices             Invoice[]
+  inspections          BookingInspection[]
+  fines                Fine[]
+  redemptions          DiscountRedemption[]
+  discoveredDamages    VehicleDamage[]
 
   @@index([vehicleId])
   @@index([status])
   @@index([startDate, endDate])
+  @@index([customerEmail])
   @@map("bookings")
 }
 
@@ -229,18 +310,19 @@ model SiteSetting {
 // ─── Location (Standorte) ──────────────────────────────────────
 
 model Location {
-  id        String    @id @default(uuid())
-  name      String
-  address   String
-  zip       String
-  city      String
-  country   String    @default("CH")
-  phone     String?
-  email     String?
-  isActive  Boolean   @default(true) @map("is_active")
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime  @updatedAt @map("updated_at")
-  bookings  Booking[]
+  id           String    @id @default(uuid())
+  name         String
+  address      String
+  zip          String
+  city         String
+  country      String    @default("CH")
+  phone        String?
+  email        String?
+  openingHours String?   @map("opening_hours")
+  isActive     Boolean   @default(true) @map("is_active")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  bookings     Booking[]
 
   @@map("locations")
 }
@@ -275,10 +357,17 @@ enum NotificationType {
 model Invoice {
   id              String        @id @default(uuid())
   invoiceNumber   String        @unique @map("invoice_number")
-  bookingId       String        @map("booking_id")
+  type            InvoiceType   @default(RENTAL)
+  // Optional: damage / fine / other invoices can be issued without a booking.
+  bookingId       String?       @map("booking_id")
   customerName    String        @map("customer_name")
   customerEmail   String?       @map("customer_email")
+  // Legacy free-text address (kept); the structured debtor address below is used for the QR bill.
   customerAddress String?       @map("customer_address")
+  customerStreet  String?       @map("customer_street")
+  customerZip     String?       @map("customer_zip")
+  customerCity    String?       @map("customer_city")
+  customerCountry String?       @map("customer_country")
   periodStart     DateTime      @map("period_start")
   periodEnd       DateTime      @map("period_end")
   issueDate       DateTime      @map("issue_date")
@@ -292,13 +381,18 @@ model Invoice {
   status          InvoiceStatus @default(PENDING)
   parentInvoiceId String?       @map("parent_invoice_id")
   notes           String?
+  // Swiss QR bill: payment slip appended to the PDF; qrReference = QRR (27 digits) or SCOR (RF...).
+  withQrBill      Boolean       @default(false) @map("with_qr_bill")
+  qrReference     String?       @map("qr_reference")
   createdAt       DateTime      @default(now()) @map("created_at")
   updatedAt       DateTime      @updatedAt @map("updated_at")
-  booking         Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  booking         Booking?      @relation(fields: [bookingId], references: [id], onDelete: Cascade)
   parentInvoice   Invoice?      @relation("InvoiceReissue", fields: [parentInvoiceId], references: [id])
   reissues        Invoice[]     @relation("InvoiceReissue")
+  items           InvoiceItem[]
 
   @@index([bookingId])
+  @@index([type])
   @@map("invoices")
 }
 
@@ -307,16 +401,76 @@ enum InvoiceStatus {
   PAID
 }
 
+enum InvoiceType {
+  RENTAL
+  DAMAGE
+  FINE
+  OTHER
+}
+
+// ─── Invoice Items ─────────────────────────────────────────────
+
+model InvoiceItem {
+  id          String         @id @default(uuid())
+  invoiceId   String         @map("invoice_id")
+  description String         @db.Text
+  quantity    Decimal        @default(1) @db.Decimal(10, 2)
+  unitPrice   Decimal        @map("unit_price") @db.Decimal(10, 2)
+  // null = use the invoice's vat rate
+  vatRate     Decimal?       @map("vat_rate") @db.Decimal(5, 2)
+  total       Decimal        @db.Decimal(10, 2)
+  sortOrder   Int            @default(0) @map("sort_order")
+  feeId       String?        @map("fee_id")
+  damageId    String?        @map("damage_id")
+  fineId      String?        @map("fine_id")
+  createdAt   DateTime       @default(now()) @map("created_at")
+  invoice     Invoice        @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  fee         Fee?           @relation(fields: [feeId], references: [id], onDelete: SetNull)
+  damage      VehicleDamage? @relation(fields: [damageId], references: [id], onDelete: SetNull)
+  fine        Fine?          @relation(fields: [fineId], references: [id], onDelete: SetNull)
+
+  @@index([invoiceId])
+  @@map("invoice_items")
+}
+
+// ─── Fee catalog ───────────────────────────────────────────────
+
+model Fee {
+  id            String        @id @default(uuid())
+  name          String
+  category      FeeCategory   @default(OTHER)
+  defaultAmount Decimal       @map("default_amount") @db.Decimal(10, 2)
+  // null = invoice default
+  vatRate       Decimal?      @map("vat_rate") @db.Decimal(5, 2)
+  active        Boolean       @default(true)
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+  invoiceItems  InvoiceItem[]
+
+  @@map("fees")
+}
+
+enum FeeCategory {
+  DAMAGE
+  FINE_ADMIN
+  CLEANING
+  FUEL
+  LATE_RETURN
+  OTHER
+}
+
 // ─── Homepage Sections ─────────────────────────────────────────
 
 model HomepageSection {
-  id         String   @id @default(uuid())
-  sectionKey String   @unique @map("section_key")
-  isActive   Boolean  @default(true) @map("is_active")
-  sortOrder  Int      @default(0) @map("sort_order")
-  content    Json     @default("{}")
-  createdAt  DateTime @default(now()) @map("created_at")
-  updatedAt  DateTime @updatedAt @map("updated_at")
+  id           String   @id @default(uuid())
+  sectionKey   String   @unique @map("section_key")
+  isActive     Boolean  @default(true) @map("is_active")
+  sortOrder    Int      @default(0) @map("sort_order")
+  content      Json     @default("{}")
+  // Per-locale partial content blobs: { "en": { ...same shape as content }, "fr": { ... } }
+  translations Json?
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
   @@map("homepage_sections")
 }
@@ -324,16 +478,18 @@ model HomepageSection {
 // ─── Testimonials ──────────────────────────────────────────────
 
 model Testimonial {
-  id        String   @id @default(uuid())
-  name      String
-  location  String?
-  text      String   @db.Text
-  rating    Int      @default(5)
-  avatarUrl String?  @map("avatar_url")
-  isActive  Boolean  @default(true) @map("is_active")
-  sortOrder Int      @default(0) @map("sort_order")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id           String   @id @default(uuid())
+  name         String
+  location     String?
+  text         String   @db.Text
+  rating       Int      @default(5)
+  avatarUrl    String?  @map("avatar_url")
+  isActive     Boolean  @default(true) @map("is_active")
+  sortOrder    Int      @default(0) @map("sort_order")
+  // Per-locale overrides: { "en": { "text": "...", "location": "..." }, ... }
+  translations Json?
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
   @@map("testimonials")
 }
@@ -341,14 +497,330 @@ model Testimonial {
 // ─── FAQ Items ─────────────────────────────────────────────────
 
 model FaqItem {
-  id        String   @id @default(uuid())
-  question  String   @db.Text
-  answer    String   @db.Text
-  category  String   @default("general")
-  isActive  Boolean  @default(true) @map("is_active")
-  sortOrder Int      @default(0) @map("sort_order")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id           String   @id @default(uuid())
+  question     String   @db.Text
+  answer       String   @db.Text
+  category     String   @default("general")
+  isActive     Boolean  @default(true) @map("is_active")
+  sortOrder    Int      @default(0) @map("sort_order")
+  // Per-locale overrides: { "en": { "question": "...", "answer": "..." }, ... }
+  translations Json?
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
   @@map("faq_items")
+}
+
+// ─── Contract templates (fillable PDF forms) ───────────────────
+
+model ContractTemplate {
+  id               String    @id @default(uuid())
+  name             String
+  // Key in the private storage, e.g. "contract-templates/<id>.pdf"
+  storageKey       String    @map("storage_key")
+  originalFileName String?   @map("original_file_name")
+  // AcroForm analysis: { fields: string[], known: string[], unknown: string[], missingRequired: string[] }
+  fields           Json      @default("{}")
+  isActive         Boolean   @default(false) @map("is_active")
+  uploadedById     String    @map("uploaded_by_id")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  uploadedBy       Admin     @relation(fields: [uploadedById], references: [id])
+  bookings         Booking[]
+
+  @@map("contract_templates")
+}
+
+// ─── Vehicle damages & inspections ─────────────────────────────
+
+model VehicleDamage {
+  id                  String               @id @default(uuid())
+  vehicleId           String               @map("vehicle_id")
+  view                DamageView
+  // Position on the diagram of the view, 0..1 from the top-left corner
+  x                   Float
+  y                   Float
+  zone                String               @default("")
+  type                DamageType           @default(SONSTIGES)
+  severity            DamageSeverity       @default(minor)
+  description         String               @default("") @db.Text
+  status              DamageStatus         @default(OPEN)
+  repairedAt          DateTime?            @map("repaired_at")
+  // Return inspection of the rental during which the damage was found
+  discoveredBookingId String?              @map("discovered_booking_id")
+  reportedById        String               @map("reported_by_id")
+  createdAt           DateTime             @default(now()) @map("created_at")
+  updatedAt           DateTime             @updatedAt @map("updated_at")
+  vehicle             Vehicle              @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  discoveredBooking   Booking?             @relation(fields: [discoveredBookingId], references: [id], onDelete: SetNull)
+  reportedBy          Admin                @relation(fields: [reportedById], references: [id])
+  photos              VehicleDamagePhoto[]
+  invoiceItems        InvoiceItem[]
+
+  @@index([vehicleId, status])
+  @@map("vehicle_damages")
+}
+
+model VehicleDamagePhoto {
+  id         String        @id @default(uuid())
+  damageId   String        @map("damage_id")
+  // Key in the private storage, e.g. "damages/<damageId>/<uuid>.jpg"
+  storageKey String        @map("storage_key")
+  width      Int
+  height     Int
+  createdAt  DateTime      @default(now()) @map("created_at")
+  damage     VehicleDamage @relation(fields: [damageId], references: [id], onDelete: Cascade)
+
+  @@index([damageId])
+  @@map("vehicle_damage_photos")
+}
+
+enum DamageView {
+  top
+  left
+  right
+  front
+  rear
+}
+
+enum DamageType {
+  KRATZER
+  DELLE
+  STEINSCHLAG
+  RISS
+  LACK
+  FELGE
+  GLAS
+  INNENRAUM
+  SONSTIGES
+}
+
+enum DamageSeverity {
+  minor
+  medium
+  major
+}
+
+enum DamageStatus {
+  OPEN
+  REPAIRED
+}
+
+model BookingInspection {
+  id               String         @id @default(uuid())
+  bookingId        String         @map("booking_id")
+  type             InspectionType
+  at               DateTime       @default(now())
+  mileage          Int?
+  // Fuel / charge level in percent (0-100)
+  fuelLevel        Int?           @map("fuel_level")
+  notes            String         @default("") @db.Text
+  // Snapshot of the open damages at inspection time (array of damage ids)
+  damageIds        Json           @default("[]") @map("damage_ids")
+  reportStorageKey String?        @map("report_storage_key")
+  createdById      String?        @map("created_by_id")
+  createdAt        DateTime       @default(now()) @map("created_at")
+  booking          Booking        @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  createdBy        Admin?         @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([bookingId])
+  @@map("booking_inspections")
+}
+
+enum InspectionType {
+  PICKUP
+  RETURN
+}
+
+// ─── Fines (Bussen) ────────────────────────────────────────────
+
+model Fine {
+  id           String        @id @default(uuid())
+  // Normalised like Vehicle.licensePlate
+  licensePlate String        @map("license_plate")
+  occurredAt   DateTime      @map("occurred_at")
+  place        String        @default("")
+  authority    String        @default("")
+  reference    String        @default("")
+  amount       Decimal       @db.Decimal(10, 2)
+  currency     String        @default("CHF")
+  description  String        @default("") @db.Text
+  // Key in the private storage, e.g. "fines/<fineId>/<file>"
+  documentKey  String?       @map("document_key")
+  vehicleId    String?       @map("vehicle_id")
+  bookingId    String?       @map("booking_id")
+  status       FineStatus    @default(NEW)
+  notes        String        @default("") @db.Text
+  createdById  String?       @map("created_by_id")
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+  vehicle      Vehicle?      @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
+  booking      Booking?      @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+  invoiceItems InvoiceItem[]
+
+  @@index([licensePlate, occurredAt])
+  @@index([status])
+  @@map("fines")
+}
+
+enum FineStatus {
+  NEW
+  ASSIGNED
+  FORWARDED
+  INVOICED
+  CLOSED
+}
+
+// ─── Marketing: discount codes, campaigns, preferences ─────────
+
+model DiscountCode {
+  id             String               @id @default(uuid())
+  // Stored uppercase
+  code           String               @unique
+  // Internal description for the admin list
+  label          String?
+  type           DiscountType
+  // PERCENT: 0-100, FIXED: amount in `currency`
+  value          Decimal              @db.Decimal(10, 2)
+  currency       String?
+  validFrom      DateTime?            @map("valid_from")
+  validUntil     DateTime?            @map("valid_until")
+  maxRedemptions Int?                 @map("max_redemptions")
+  perEmailLimit  Int                  @default(1) @map("per_email_limit")
+  minDays        Int?                 @map("min_days")
+  active         Boolean              @default(true)
+  campaignId     String?              @map("campaign_id")
+  // Set for personal codes: only this address may redeem it
+  recipientEmail String?              @map("recipient_email")
+  createdById    String?              @map("created_by_id")
+  createdAt      DateTime             @default(now()) @map("created_at")
+  updatedAt      DateTime             @updatedAt @map("updated_at")
+  campaign       MarketingCampaign?   @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  redemptions    DiscountRedemption[]
+  bookings       Booking[]
+  recipients     MarketingRecipient[]
+
+  @@index([campaignId])
+  @@index([recipientEmail])
+  @@map("discount_codes")
+}
+
+enum DiscountType {
+  PERCENT
+  FIXED
+}
+
+model DiscountRedemption {
+  id               String          @id @default(uuid())
+  codeId           String          @map("code_id")
+  // Lowercase
+  email            String
+  contactRequestId String?         @map("contact_request_id")
+  bookingId        String?         @map("booking_id")
+  amount           Decimal         @db.Decimal(10, 2)
+  createdAt        DateTime        @default(now()) @map("created_at")
+  code             DiscountCode    @relation(fields: [codeId], references: [id], onDelete: Cascade)
+  contactRequest   ContactRequest? @relation(fields: [contactRequestId], references: [id], onDelete: SetNull)
+  booking          Booking?        @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+
+  @@index([codeId, email])
+  @@map("discount_redemptions")
+}
+
+model MarketingCampaign {
+  id          String               @id @default(uuid())
+  subject     String
+  message     String               @db.Text
+  codeMode    CampaignCodeMode     @default(NONE) @map("code_mode")
+  createdById String?              @map("created_by_id")
+  // Set once every recipient has been processed (sent or failed)
+  sentAt      DateTime?            @map("sent_at")
+  createdAt   DateTime             @default(now()) @map("created_at")
+  createdBy   Admin?               @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  recipients  MarketingRecipient[]
+  codes       DiscountCode[]
+
+  @@index([createdAt])
+  @@map("marketing_campaigns")
+}
+
+enum CampaignCodeMode {
+  NONE
+  SHARED
+  PERSONAL
+}
+
+model MarketingRecipient {
+  id             String            @id @default(uuid())
+  campaignId     String            @map("campaign_id")
+  email          String
+  name           String            @default("")
+  codeId         String?           @map("code_id")
+  status         RecipientStatus   @default(QUEUED)
+  error          String?
+  emailMessageId String?           @map("email_message_id")
+  sentAt         DateTime?         @map("sent_at")
+  createdAt      DateTime          @default(now()) @map("created_at")
+  campaign       MarketingCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  code           DiscountCode?     @relation(fields: [codeId], references: [id], onDelete: SetNull)
+
+  @@index([campaignId, status])
+  @@index([emailMessageId])
+  @@map("marketing_recipients")
+}
+
+enum RecipientStatus {
+  QUEUED
+  SENT
+  FAILED
+}
+
+model MarketingPreference {
+  id               String    @id @default(uuid())
+  // Lowercase
+  email            String    @unique
+  consent          Boolean   @default(false)
+  // 'contact_form' | 'customer' | 'admin' | 'unsubscribe_link'
+  source           String    @default("customer")
+  unsubscribeToken String    @unique @map("unsubscribe_token")
+  unsubscribedAt   DateTime? @map("unsubscribed_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  @@map("marketing_preferences")
+}
+
+// ─── Email outbox + log ────────────────────────────────────────
+
+model EmailMessage {
+  id                String      @id @default(uuid())
+  to                String
+  toName            String?     @map("to_name")
+  subject           String
+  // Template key, e.g. 'invoice', 'contact_confirmation' (see infrastructure/email/templates)
+  template          String
+  html              String      @db.Text
+  // [{ filename, storageKey, contentType }] - files live in the private storage
+  attachments       Json        @default("[]")
+  status            EmailStatus @default(QUEUED)
+  attempts          Int         @default(0)
+  nextAttemptAt     DateTime?   @map("next_attempt_at")
+  provider          String?
+  providerMessageId String?     @map("provider_message_id")
+  error             String?     @db.Text
+  relatedType       String?     @map("related_type")
+  relatedId         String?     @map("related_id")
+  sentAt            DateTime?   @map("sent_at")
+  createdAt         DateTime    @default(now()) @map("created_at")
+  updatedAt         DateTime    @updatedAt @map("updated_at")
+
+  @@index([status, nextAttemptAt])
+  @@index([createdAt])
+  @@index([relatedType, relatedId])
+  @@map("email_messages")
+}
+
+enum EmailStatus {
+  QUEUED
+  SENT
+  FAILED
 }

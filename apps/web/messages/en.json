@@ -1,0 +1,724 @@
+{
+  "common": {
+    "errorBoundary": "This section could not be loaded.",
+    "close": "Close",
+    "loadingVehicle": "Loading vehicle",
+    "breadcrumb": "Breadcrumb"
+  },
+  "labels": {
+    "type": {
+      "sedan": "Saloon",
+      "suv": "SUV",
+      "estate": "Estate",
+      "coupe": "Coupé",
+      "convertible": "Convertible",
+      "electric": "Electric vehicle",
+      "van": "Van"
+    },
+    "fuel": {
+      "petrol": "Petrol",
+      "diesel": "Diesel",
+      "electric": "Electric",
+      "hybrid": "Hybrid"
+    },
+    "transmission": {
+      "automatic": "Automatic",
+      "manual": "Manual"
+    },
+    "spec": {
+      "hp": "{hp} hp",
+      "seats": "{count, plural, one {# seat} other {# seats}}"
+    }
+  },
+  "category": {
+    "estate": {
+      "label": "Estate",
+      "rent": "Estate car rental"
+    },
+    "suv": {
+      "label": "SUV",
+      "rent": "SUV rental"
+    },
+    "sedan": {
+      "label": "Saloon",
+      "rent": "Saloon car rental"
+    },
+    "van": {
+      "label": "Van",
+      "rent": "Van rental"
+    },
+    "electric": {
+      "label": "Electric car",
+      "rent": "Electric car rental"
+    },
+    "coupe": {
+      "label": "Coupé",
+      "rent": "Coupé rental"
+    },
+    "convertible": {
+      "label": "Convertible",
+      "rent": "Convertible rental"
+    }
+  },
+  "categoryIntro": {
+    "estate": "The estate is the everyday hero for families and frequent drivers: plenty of boot space, comfortable on long journeys and still nimble enough for the city. At HoppDrive you can rent estates from well-known brands – ideal for moving house, holidays or transporting larger items.",
+    "suv": "SUVs offer a raised seating position, plenty of space and a secure feel on any road – in the city or on alpine passes. Our SUV fleet suits families, trips to the mountains and anyone who appreciates a little more room and ground clearance.",
+    "sedan": "Saloons score with a calm ride, a large boot and a smart appearance – perfect for business trips or relaxed long journeys. At HoppDrive you rent saloons at transparent daily rates, fully comprehensive insurance included.",
+    "van": "Vans offer maximum space for passengers and luggage and are the first choice for larger groups, families or club outings. Our vans can be rented flexibly – from a single weekend to several months.",
+    "electric": "Electric vehicles drive locally emission-free and quietly – ideal for discovering Switzerland with a low carbon footprint. At HoppDrive you rent electric cars with fully comprehensive insurance included, with no charging infrastructure of your own and no purchase costs.",
+    "coupe": "Coupés combine sporty design with a direct driving feel – for everyone who does not want to give up the fun of driving, even in a rental car. The two-door body brings style to every trip, from a weekend getaway to a special occasion.",
+    "convertible": "A convertible turns every drive into an experience – open-air motoring in the sunshine, whether along a Swiss lake or through the Alps. Rent a convertible at HoppDrive for a special outing or your holiday week."
+  },
+  "fleetCategory": {
+    "estate": "Estate",
+    "suv": "SUV",
+    "sedan": "Saloons",
+    "van": "Van",
+    "coupe": "Coupé",
+    "convertible": "Convertible",
+    "electric": "Electric",
+    "hybrid": "Hybrid"
+  },
+  "nav": {
+    "fleet": "Our fleet",
+    "pricing": "Pricing",
+    "faq": "FAQ",
+    "location": "Location",
+    "home": "HoppDrive home page",
+    "main": "Main navigation",
+    "mobile": "Mobile navigation",
+    "menu": "Menu",
+    "toggle": "Toggle navigation",
+    "closeMenu": "Close navigation",
+    "cta": "Send enquiry",
+    "questions": "Questions? Write to us."
+  },
+  "language": {
+    "label": "Language",
+    "switchLabel": "Choose language",
+    "current": "Current language: {name}"
+  },
+  "footer": {
+    "logoAlt": "HoppDrive – short and long-term car rental in Switzerland",
+    "tagline": "Affordable, flexible, fully comprehensive insurance included.",
+    "vehicles": "Vehicles",
+    "allVehicles": "All vehicles",
+    "legal": "Legal",
+    "imprint": "Legal notice",
+    "privacy": "Privacy policy",
+    "terms": "Terms and conditions",
+    "cookieSettings": "Cookie settings",
+    "contact": "Contact",
+    "locationHours": "Location & opening hours",
+    "copyright": "© {year} Euro-Abschleppservice GmbH. All rights reserved.",
+    "adminTitle": "Admin",
+    "adminAria": "Admin login",
+    "language": "Language"
+  },
+  "maintenance": {
+    "defaultMessage": "Our website is temporarily unavailable due to maintenance work. Please try again later.",
+    "title": "We will be right back.",
+    "urgent": "We are happy to answer urgent questions by email:"
+  },
+  "cookie": {
+    "dialogLabel": "Cookie notice",
+    "title": "Cookies on HoppDrive",
+    "text": "We use cookies to improve your experience and to analyse our traffic. By clicking “Accept” you agree to the use of cookies in accordance with the Swiss FADP and the EU GDPR. More in our <link>privacy policy</link>.",
+    "accept": "Accept",
+    "declineNonEssential": "Necessary only",
+    "manage": "Manage settings",
+    "settingsTitle": "Cookie settings",
+    "save": "Save settings",
+    "necessary": "Necessary",
+    "necessaryDescription": "Required for the website to work. Always active.",
+    "analytics": "Statistics",
+    "analyticsDescription": "Google Analytics: helps us understand which pages are used.",
+    "marketing": "Marketing",
+    "marketingDescription": "Brevo: promotional content and personalised offers."
+  },
+  "hero": {
+    "badge": "Short and long-term car rental in Switzerland",
+    "heading": "Travel affordably,",
+    "headingHighlight": "rent flexibly.",
+    "description": "Reliable vehicles such as the Škoda Superb, VW Passat and more – from {price} per day. The longer you rent, the more you save. Fully comprehensive insurance included.",
+    "ctaPrimary": "Discover the fleet",
+    "ctaSecondary": "Check availability",
+    "trustCover": "Fully comprehensive insurance included",
+    "trustFlexible": "Rentable from 1 day",
+    "trustDiscount": "Up to {percent} % long-term discount",
+    "imageAlt": "Modern car on a Swiss road – HoppDrive affordable car rental",
+    "from": "From",
+    "perDay": "per day",
+    "coverShort": ", fully comprehensive incl.",
+    "descriptionNoPrice": "Reliable vehicles such as the Škoda Superb, VW Passat and more. The longer you rent, the more you save. Fully comprehensive insurance included.",
+    "carousel": {
+      "label": "Vehicles of our fleet",
+      "roleDescription": "carousel",
+      "slideRole": "slide",
+      "slideLabel": "{current} of {total}",
+      "previous": "Previous vehicle",
+      "next": "Next vehicle",
+      "goTo": "Show vehicle {number}: {name}",
+      "dots": "Choose vehicle",
+      "pause": "Pause automatic rotation",
+      "play": "Start automatic rotation",
+      "live": "{name}, {current} of {total}",
+      "fromPerDay": "from {price} / day"
+    }
+  },
+  "why": {
+    "label": "Why HoppDrive",
+    "heading": "Clear prices, well-kept cars, one point of contact",
+    "priceTitle": "Unbeatable prices",
+    "priceText": "From {price} per day, and the daily rate gets cheaper with every week.",
+    "coverTitle": "Fully comprehensive insurance included",
+    "coverText": "Insurance cover is included in the price, with no hidden extra costs.",
+    "maintenanceTitle": "Excellently maintained",
+    "maintenanceText": "Every vehicle is inspected and serviced regularly before it comes to you.",
+    "serviceTitle": "Personal service",
+    "serviceText": "From enquiry to return, you deal with the same people.",
+    "priceTextNoPrice": "The daily rate gets cheaper with every week."
+  },
+  "how": {
+    "label": "How it works",
+    "heading": "On the road in three steps",
+    "step": "Step {number}: ",
+    "chooseTitle": "Choose a vehicle",
+    "chooseText": "Browse our fleet and find the right car for your needs.",
+    "requestTitle": "Enquire without obligation",
+    "requestText": "Send us a free enquiry with your preferred dates and we will reply as soon as possible.",
+    "driveTitle": "Hit the road",
+    "driveText": "Sign the contract, collect the keys and you are on your way, affordably and flexibly."
+  },
+  "pricing": {
+    "label": "Pricing",
+    "heading": "The longer you rent, the less you pay per day",
+    "descriptionVehicle": "The discount applies to every day from the respective tier onwards. The example shows the {name} with a base price of {price}.",
+    "description": "The discount applies to every day from the respective tier onwards. All prices include fully comprehensive insurance.",
+    "tierStandard": "Standard daily rate for short-term needs.",
+    "tierDiscount": "Automatic {percent}% discount on the daily rate for every day in this tier.",
+    "tierBadge": "{percent}% OFF",
+    "tierRange": "Day {from} – {to}",
+    "tierFrom": "From day {from}",
+    "tierDay": "Day {day}",
+    "includedTitle": "Always included – at no extra charge",
+    "included": [
+      "Fully comprehensive insurance",
+      "Maintenance & service",
+      "24/7 breakdown assistance",
+      "Transparent contracts"
+    ]
+  },
+  "ladder": {
+    "ariaLabel": "Price steps: {summary}",
+    "fullPrice": "full price",
+    "minus": "minus {percent} percent",
+    "zeroPercent": "0 %",
+    "standard": "Standard rate",
+    "standardShort": "Standard",
+    "discount": "{percent} % off"
+  },
+  "calculator": {
+    "title": "Price for your rental period",
+    "unavailable": "The price calculator is currently unavailable. We will gladly tell you the price for your rental period in your enquiry.",
+    "cta": "Enquire with these details",
+    "vehicle": "Vehicle",
+    "vehicleOption": "{name} · {price} / day",
+    "duration": "Rental period",
+    "days": "{days, plural, one {# day} other {# days}}",
+    "total": "Total price",
+    "average": "Ø {price} per day. ",
+    "noteCard": "Indicative price from the price calculation; the confirmation by email is binding.",
+    "noteSidebar": "Indicative price; the confirmation by email is binding.",
+    "proofFree": "Free & non-binding",
+    "proofCover": "Fully comprehensive insurance included"
+  },
+  "quick": {
+    "ariaLabel": "Quick enquiry",
+    "vehicle": "Vehicle",
+    "anyVehicle": "No specific vehicle",
+    "vehicleOption": "{name} · from {price}",
+    "from": "From",
+    "to": "To",
+    "dateOrderError": "The end date must not be before the start date.",
+    "cta": "Check availability"
+  },
+  "estimate": {
+    "label": "Indicative price",
+    "labelDays": "Indicative price · {days, plural, one {# day} other {# days}}",
+    "labelForDays": "Indicative price for {days, plural, one {# day} other {# days}}",
+    "invalidSub": "The end date must not be before the start date.",
+    "averageSub": "Ø {perDay} / day, {hint}",
+    "fromPerDay": "From {price} / day",
+    "pickPeriod": "Choose a start and end date for an indicative price.",
+    "pickVehicleAndPeriod": "Choose a vehicle and period for an indicative price.",
+    "discountFromDay": "discount from day {day}",
+    "noDiscount": "no discount"
+  },
+  "contact": {
+    "label": "Free & non-binding",
+    "heading": "Send enquiry",
+    "description": "Tell us what you need. We will get back to you with availability and price.",
+    "cta": "Send enquiry",
+    "formAria": "Rental enquiry",
+    "legend": "Your details",
+    "fields": {
+      "fullName": "Name",
+      "phone": "Phone",
+      "email": "Email",
+      "message": "Message",
+      "privacyConsent": "Privacy",
+      "desiredStartDate": "Start",
+      "desiredEndDate": "End date",
+      "discountCode": "Discount code"
+    },
+    "labels": {
+      "fullName": "Name",
+      "phone": "Phone",
+      "email": "Email",
+      "vehicle": "Vehicle of interest",
+      "start": "Desired start",
+      "end": "Desired end",
+      "message": "Message",
+      "discountCode": "Discount code"
+    },
+    "placeholders": {
+      "fullName": "Jane Smith",
+      "phone": "+41 79 123 45 67",
+      "email": "jane@example.com",
+      "message": "I would like to rent a vehicle from...",
+      "discountCode": "e.g. HD-AB12-CD34"
+    },
+    "anyVehicle": "No specific vehicle",
+    "errors": {
+      "fullName": {
+        "empty": "Please enter your name.",
+        "invalid": "Please enter your name."
+      },
+      "phone": {
+        "empty": "Please enter your phone number.",
+        "invalid": "The phone number is too short (at least 7 characters)."
+      },
+      "email": {
+        "empty": "Please enter your email address.",
+        "invalid": "Please enter a complete email address, e.g. laura@example.com."
+      },
+      "message": {
+        "empty": "Please tell us briefly what you need.",
+        "invalid": "Please tell us briefly what you need."
+      },
+      "privacyConsent": {
+        "empty": "We cannot process the enquiry without your consent.",
+        "invalid": "We cannot process the enquiry without your consent."
+      },
+      "desiredStartDate": {
+        "empty": "Please check the desired start date.",
+        "invalid": "Please check the desired start date."
+      },
+      "desiredEndDate": {
+        "empty": "Please check the desired end date.",
+        "invalid": "The end date must not be before the start date."
+      },
+      "discountCode": {
+        "empty": "Please correct the discount code or leave the field empty.",
+        "invalid": "Please correct the discount code or leave the field empty."
+      }
+    },
+    "summaryTitle": "{count, plural, one {# entry needs} other {# entries need}} your attention.",
+    "failedTitle": "The enquiry was not sent.",
+    "resend": "Send again",
+    "orWriteTo": "Or write to",
+    "failureNetwork": "The server is currently unreachable. Your entries are still here.",
+    "failureTooMany": "Too many enquiries have been received. Please try again in a few minutes. Your entries are still here.",
+    "failureGeneric": "An error occurred while sending. Your entries are still here.",
+    "picked": "Vehicle taken from your selection: <b>{name}</b>",
+    "change": "Change",
+    "privacyLabel": "I have read the <link>privacy policy<sr> (opens in a new tab)</sr></link> and agree to the processing of my details.",
+    "privacyDetail": "I consent to the processing of my personal data (name, email, phone) in order to handle this enquiry. The data is processed securely and may be transmitted to our email service provider (Brevo).",
+    "marketingLabel": "I agree to receive promotional emails about special offers and new vehicles.",
+    "optional": "(optional)",
+    "marketingDetail": "I can unsubscribe at any time.",
+    "sending": "Sending enquiry…",
+    "readyHint": "The button becomes active as soon as name, email and privacy consent are filled in.",
+    "dontClose": "Please do not close the page.",
+    "asideTitle": "What happens after you submit",
+    "nextConfirmTitle": "Confirmation by email",
+    "nextConfirmText": "You will immediately receive a copy of your enquiry.",
+    "nextCheckTitle": "We check availability",
+    "nextCheckText": "We will reply as soon as possible with a price and an offer.",
+    "nextHandoverTitle": "Handover on site",
+    "nextHandoverText": "Sign the rental contract, collect the keys.",
+    "successTitle": "Thank you. Your enquiry has reached us.",
+    "successTitleNamed": "Thank you, {name}. Your enquiry has reached us.",
+    "successText": "We will get back to you as soon as possible at <addr>{email}</addr>.",
+    "summaryVehicle": "Vehicle",
+    "summaryPeriod": "Period",
+    "summaryEstimate": "Indicative price",
+    "summaryDays": "({days, plural, one {# day} other {# days}})",
+    "afterConfirmTitle": "Confirmation by email",
+    "afterConfirmText": "Please also check your spam folder.",
+    "afterCheckTitle": "We check availability",
+    "afterCheckText": "You will then receive a price and an offer.",
+    "moreVehicles": "View more vehicles",
+    "toHome": "Back to home page",
+    "discount": {
+      "hint": "Have a code? We will include it in your offer.",
+      "check": "Check",
+      "checkAria": "Check discount code",
+      "checking": "Checking code…",
+      "valid": "Code valid: {label}",
+      "percentOff": "−{percent}%",
+      "unavailable": "The code could not be checked right now. You can still send it with your request and we will check it when we process it.",
+      "pillSub": "Code discount {label} included, avg. {perDay} / day",
+      "summaryCode": "Discount code",
+      "reasons": {
+        "not_found": "This code is not valid. Please check the spelling.",
+        "inactive": "This code is no longer active.",
+        "not_started": "This code is not valid yet.",
+        "expired": "This code has expired.",
+        "exhausted": "This code has already been redeemed too often.",
+        "email_limit": "This code has already been redeemed with this email address.",
+        "min_days": "This code only applies to a longer rental period.",
+        "wrong_recipient": "This code is intended for a different email address.",
+        "email_required": "Please enter your email address above so we can check the code.",
+        "currency_mismatch": "This code does not apply to the current currency.",
+        "generic": "This code cannot be applied."
+      },
+      "priceWas": "Was",
+      "priceNow": "now"
+    }
+  },
+  "social": {
+    "label": "Customer reviews",
+    "heading": "What our customers say",
+    "stars": "{value} out of 5 stars",
+    "fallback": {
+      "one": {
+        "name": "Marco S.",
+        "location": "Zurich",
+        "text": "Very straightforward and affordable. I had the VW Passat for 3 months – better than any leasing contract."
+      },
+      "two": {
+        "name": "Laura M.",
+        "location": "Basel",
+        "text": "Friendly service and the car was impeccably maintained. Fully comprehensive insurance included is a big plus."
+      },
+      "three": {
+        "name": "Thomas K.",
+        "location": "Bern",
+        "text": "Perfect for my interim period. The long-term discount really paid off – highly recommended!"
+      }
+    }
+  },
+  "faq": {
+    "label": "Frequently asked questions",
+    "heading": "Good to know before you enquire",
+    "askTitle": "Is your question missing?",
+    "askText": "Write to us and we will reply as soon as possible.",
+    "askCta": "Ask a question",
+    "discountSentence": " For longer rentals you benefit from automatic discounts: {parts}.",
+    "discountPart": "{percent}% from {days} days",
+    "discountPartMax": "up to {percent}% from {days} days",
+    "fallback": {
+      "priceQuestion": "How much does a rental at HoppDrive cost?",
+      "priceAnswer": "Our rental cars start from {price} per day.{discounts}",
+      "insuranceQuestion": "Is insurance included?",
+      "insuranceAnswer": "Yes, fully comprehensive insurance is included with every rental. There are no hidden extra costs for insurance cover.",
+      "durationQuestion": "How long can I rent a vehicle?",
+      "durationAnswer": "You can rent our vehicles from 1 day up to several months. The longer the rental period, the cheaper the daily rate.",
+      "documentsQuestion": "Which documents do I need?",
+      "documentsAnswer": "You need a valid driving licence and an ID document (passport or ID card). The rental contract is signed on site at handover.",
+      "extendQuestion": "Can I extend the rental period?",
+      "extendAnswer": "Yes, an extension is possible at any time, simply get in touch. The price adjusts automatically to the new total duration.",
+      "pickupQuestion": "Where can I collect the vehicle?",
+      "pickupAnswer": "The vehicle is handed over at our location. You will receive the exact address and directions after the booking confirmation.",
+      "priceAnswerNoPrice": "The price depends on the vehicle and the rental period.{discounts}"
+    }
+  },
+  "map": {
+    "kicker": "Location",
+    "defaultTitle": "Find us here",
+    "pickup": "Pick-up and return",
+    "hours": "Opening hours",
+    "email": "Email",
+    "phone": "Phone",
+    "route": "Get directions"
+  },
+  "fleet": {
+    "label": "Our fleet",
+    "headingCount": "{count, plural, one {# vehicle} other {# vehicles}}, rentable from 1 day",
+    "headingEmpty": "Affordable rental cars for every occasion",
+    "filterAria": "Filter by vehicle category",
+    "all": "All",
+    "emptyTitle": "No vehicles currently available",
+    "emptyText": "Please check back later or ask us directly.",
+    "emptyCta": "Send enquiry",
+    "liveCount": "{count, plural, one {# vehicle} other {# vehicles}}",
+    "priceAside": "Price and enquiry",
+    "viewAll": "{count, plural, one {View all # vehicle} other {View all # vehicles}}"
+  },
+  "vehicleCard": {
+    "available": "Available",
+    "reserved": "Reserved",
+    "from": "From",
+    "perDay": "/ day",
+    "month": "30 days in total: <num>{price}</num>",
+    "details": "Details",
+    "detailsAria": "Details of {name}",
+    "inquire": "Enquire",
+    "inquireAria": "Enquire about {name}",
+    "photoSoon": "Photo coming soon"
+  },
+  "gallery": {
+    "roleDescription": "Image gallery",
+    "groupLabel": "Images of {name}",
+    "previous": "Previous image",
+    "next": "Next image",
+    "counter": "{current} / {total}",
+    "live": "Image {current} of {total}",
+    "thumbnail": "Image {number}"
+  },
+  "vehiclePanel": {
+    "aria": "Price and enquiry",
+    "reservedTitle": "Vehicle reserved.",
+    "reservedText": "Take a look at similar vehicles or ask us about a different period.",
+    "from": "From",
+    "perDay": "/ day",
+    "ladderTitle": "Daily rate by rental period",
+    "duration": "Rental period",
+    "discount": "Discount",
+    "perDayColumn": "Per day",
+    "dateFrom": "From",
+    "dateTo": "To",
+    "dateOrderError": "The end date must not be before the start date.",
+    "averagePerDay": "Ø {price} / day",
+    "cta": "Enquire about this vehicle",
+    "ctaNote": "Free & non-binding. Vehicle and dates are carried over to the form.",
+    "stickyCta": "Enquire"
+  },
+  "browser": {
+    "filterTitle": "Filter",
+    "reset": "Reset",
+    "fuel": "Fuel type",
+    "seats": "Seats",
+    "seatsAny": "Any",
+    "seatsFive": "5 or more",
+    "seatsSeven": "7 or more",
+    "maxPrice": "Max. price per day",
+    "maxPriceValue": "{price} per day",
+    "onlyAvailable": "Available vehicles only",
+    "activeFilters": "{count} active",
+    "sortLabel": "Sort",
+    "sortPriceAsc": "Price ascending",
+    "sortPriceDesc": "Price descending",
+    "sortName": "Name A–Z",
+    "count": "<b>{shown}</b> of {total} {total, plural, one {vehicle} other {vehicles}}",
+    "loadMore": "Load {count} more {count, plural, one {vehicle} other {vehicles}}",
+    "emptyAllTitle": "No vehicles are currently available",
+    "emptyAllText": "Please check back later or ask us directly.",
+    "emptyAllCta": "Send enquiry",
+    "emptyFilterTitle": "No matching vehicles",
+    "emptyFilterText": "Try a different filter or view the whole fleet.",
+    "emptyFilterCta": "Reset filters",
+    "sheetCancel": "Cancel",
+    "sheetShow": "Show {count} {count, plural, one {vehicle} other {vehicles}}"
+  },
+  "categoryChips": {
+    "aria": "Vehicle categories",
+    "all": "All"
+  },
+  "fleetPage": {
+    "crumbHome": "Home",
+    "crumbFleet": "Vehicles",
+    "title": "Rental cars in Switzerland – our fleet",
+    "description": "All HoppDrive rental vehicles at a glance: saloons, SUVs, estates, vans and electric cars. Affordable daily rates, automatic long-term discount, fully comprehensive insurance included.",
+    "lead": "From the economical saloon to the spacious van: browse our entire fleet and find the right vehicle for your next trip. All prices include fully comprehensive insurance, with an automatic discount for longer rentals."
+  },
+  "categoryPage": {
+    "title": "{category} in Switzerland",
+    "titleWithPrice": "{category} in Switzerland from {price}/day",
+    "description": "{category} in Switzerland with HoppDrive. Flexible short and long-term rental, up to 40% long-term discount, fully comprehensive insurance included.",
+    "descriptionWithPrice": "{category} in Switzerland with HoppDrive from {price} per day. Flexible short and long-term rental, up to 40% long-term discount, fully comprehensive insurance included.",
+    "priceLine": "From <num>{price}</num> per day, including fully comprehensive insurance and an automatic long-term discount.",
+    "back": "View all vehicles"
+  },
+  "vehiclePage": {
+    "crumbHome": "Home",
+    "crumbFleet": "Vehicles",
+    "backToFleet": "All vehicles",
+    "notFoundTitle": "Vehicle not found",
+    "metaTitle": "Rent the {name} from {price}/day",
+    "metaDescription": "Rent the {name} ({year}) at an affordable price – {type} with {hp} hp, {seats} seats. From {price}/day, up to 40% long-term discount. Fully comprehensive insurance included. Enquire now without obligation at HoppDrive.",
+    "imageAlt": "{name} – HoppDrive long-term rental",
+    "specsTitle": "Technical data",
+    "specPower": "Power",
+    "specTransmission": "Transmission",
+    "specSeats": "Seats",
+    "specDrive": "Fuel type",
+    "specRange": "Range",
+    "specYear": "Year",
+    "specCategory": "Category",
+    "aboutTitle": "About this vehicle",
+    "kind": {
+      "sedan": "a saloon",
+      "suv": "an SUV",
+      "estate": "an estate car",
+      "coupe": "a coupé",
+      "convertible": "a convertible",
+      "electric": "an electric vehicle",
+      "van": "a van"
+    },
+    "transmissionLongAutomatic": "automatic transmission",
+    "transmissionLongManual": "manual transmission",
+    "fuelElectricRange": "It is purely electric with a range of {range}.",
+    "fuelElectric": "It is purely electric.",
+    "fuelHybrid": "It has an economical hybrid drive.",
+    "fuelOther": "It runs on {fuel}.",
+    "proseDiscount": " by up to {percent}%",
+    "prose": "The {name} ({year}) is {kind} with {hp} hp, {transmission} and {seats} seats. {fuelSentence} Rental price from {price} per day; for longer rentals the daily rate drops automatically{discount} – fully comprehensive insurance and breakdown assistance are always included.",
+    "includedTitle": "Included in the price",
+    "defaultFeatures": {
+      "coverTitle": "Fully comprehensive insurance",
+      "coverText": "No hidden extra costs for insurance cover.",
+      "maintenanceTitle": "Regular maintenance",
+      "maintenanceText": "Every vehicle is inspected before it comes to you.",
+      "extendTitle": "Extension at any time",
+      "extendText": "The price adjusts automatically to the new total duration."
+    },
+    "examplesTitle": "Price examples",
+    "exampleDuration": "Rental period",
+    "exampleTotal": "Total price",
+    "exampleDiscount": "Discount",
+    "exampleDays": "{days, plural, one {# day} other {# days}}",
+    "similarTitle": "Similar vehicles",
+    "similarAll": "All vehicles",
+    "jsonldDescription": "Rent the {name} ({year}) at an affordable price in Switzerland. {type} with {hp} hp. From {price}/day.",
+    "propPower": "Power",
+    "propTransmission": "Transmission",
+    "propSeats": "Seats",
+    "propDrive": "Fuel type",
+    "propRange": "Range",
+    "propYear": "Year",
+    "unitHp": "hp",
+    "fuelPetrol": "It runs on petrol.",
+    "fuelDiesel": "It runs on diesel."
+  },
+  "legal": {
+    "navLabel": "Legal pages",
+    "home": "Home",
+    "note": "The German version is legally binding.",
+    "pages": {
+      "impressum": "Legal notice",
+      "privacy": "Privacy policy",
+      "agb": "Terms and conditions"
+    },
+    "impressum": {
+      "title": "Legal notice",
+      "metaDescription": "Legal notice and company information of HoppDrive – your affordable car rental in Switzerland.",
+      "company": "Company details",
+      "contact": "Contact",
+      "emailLabel": "Email",
+      "phoneLabel": "Phone",
+      "representative": "Authorised representative",
+      "register": "Commercial register",
+      "vat": "VAT number",
+      "disclaimer": "Disclaimer",
+      "dataQuestions": "Please direct questions about your data to info@hoppdrive.ch."
+    },
+    "privacy": {
+      "title": "Privacy policy",
+      "metaTitle": "Privacy policy",
+      "metaDescription": "HoppDrive privacy policy and data protection information in accordance with the Swiss FADP and the GDPR. Find out how we protect your data.",
+      "lastUpdated": "Last updated: {date}",
+      "emailLabel": "Email",
+      "phoneLabel": "Phone",
+      "controller": "1. Controller",
+      "data": "2. Data collected",
+      "dataContact": "a) Contact form entries",
+      "dataAuto": "b) Automatically collected data",
+      "dataCookies": "c) Cookies and analytics (with consent only)",
+      "processors": "3. Processors (third-party providers)",
+      "retention": "4. Retention period",
+      "rights": "5. Your rights",
+      "security": "6. Security measures",
+      "complaints": "7. Right to lodge a complaint"
+    },
+    "agb": {
+      "title": "Terms and conditions",
+      "metaTitle": "Terms and conditions",
+      "metaDescription": "General terms and conditions of HoppDrive – your affordable car rental in Switzerland.",
+      "intro": "Below you will find our complete terms and conditions as a PDF document.",
+      "download": "Download terms and conditions as PDF",
+      "iframeTitle": "Terms and conditions – HoppDrive"
+    }
+  },
+  "notFound": {
+    "title": "Page not found",
+    "heading": "This page does not exist",
+    "text": "The link is outdated or the vehicle is no longer in our fleet.",
+    "allVehicles": "All vehicles",
+    "home": "Back to home page"
+  },
+  "unsubscribe": {
+    "metaTitle": "Unsubscribe",
+    "metaDescription": "Unsubscribe from HoppDrive newsletters and offers.",
+    "title": "Unsubscribe",
+    "home": "Back to home page",
+    "loading": "Checking your link…",
+    "readyTitle": "Unsubscribe from marketing emails",
+    "readyText": "Do you no longer want to receive offers and news from HoppDrive by email?",
+    "emailLine": "Address concerned: {email}",
+    "serviceNote": "You will still receive service emails about your rental contracts.",
+    "submit": "Unsubscribe",
+    "submitting": "Unsubscribing…",
+    "doneTitle": "You are unsubscribed.",
+    "doneText": "You will no longer receive marketing emails. You will still receive service emails about your rental contracts.",
+    "alreadyTitle": "You are already unsubscribed.",
+    "alreadyText": "No more marketing emails are sent to this address. You will still receive service emails about your rental contracts.",
+    "invalidTitle": "This link is invalid or has expired.",
+    "invalidText": "Please open the link from the latest email again. If it still does not work, write to us and we will unsubscribe you manually.",
+    "errorTitle": "That did not work.",
+    "errorText": "The server cannot be reached right now. Please try again in a few minutes.",
+    "retry": "Try again"
+  },
+  "meta": {
+    "keywords": [
+      "car rental Switzerland",
+      "cheap rental cars",
+      "long-term car rental Switzerland",
+      "short-term car rental",
+      "rent a car cheaply",
+      "rent a Škoda Switzerland",
+      "rent a VW Switzerland",
+      "car rental daily rate",
+      "long-term car rental discount",
+      "HoppDrive",
+      "rent an estate car",
+      "rent an SUV cheaply",
+      "family car rental Switzerland",
+      "car hire Switzerland",
+      "cheap car rental Switzerland",
+      "long term car rental",
+      "rental car Switzerland",
+      "car rental Zurich",
+      "cheap long-term rental car",
+      "long-term car rental fully comprehensive"
+    ],
+    "ogTitle": "HoppDrive – Affordable car rental in Switzerland | From {price}/day",
+    "ogDescription": "Affordable short and long-term car rental in Switzerland. Škoda Superb, Octavia, VW Passat and more. Dynamic pricing with up to 40% discount on long-term rentals. Fully comprehensive insurance included.",
+    "ogImageAlt": "HoppDrive – Affordable car rental in Switzerland",
+    "twitterDescription": "Škoda, VW, Toyota and more from {price}/day. Up to 40% long-term discount. Fully comprehensive insurance included.",
+    "homeTitle": "HoppDrive – Affordable car rental in Switzerland | Rental cars from {price}/day",
+    "homeDescription": "HoppDrive – affordable short and long-term car rental in Switzerland. Škoda, VW, Toyota and more from {price}/day. Up to 40% long-term discount. Fully comprehensive insurance included. Enquire now without obligation!",
+    "homeTitleNoPrice": "HoppDrive – Affordable car rental in Switzerland | Short- and long-term rental",
+    "homeDescriptionNoPrice": "HoppDrive – affordable short and long-term car rental in Switzerland. Škoda, VW, Toyota and more. Up to 40% long-term discount. Fully comprehensive insurance included. Enquire now without obligation!",
+    "ogTitleNoPrice": "HoppDrive – Affordable car rental in Switzerland",
+    "twitterDescriptionNoPrice": "Škoda, VW, Toyota and more. Up to 40% long-term discount. Fully comprehensive insurance included."
+  },
+  "jsonld": {
+    "organizationDescription": "Affordable short and long-term car rental in Switzerland. Škoda, VW, Toyota and more, fully comprehensive insurance included.",
+    "priceRange": "{min} – {max} / day",
+    "crumbHome": "Home",
+    "crumbFleet": "Vehicles"
+  }
+}

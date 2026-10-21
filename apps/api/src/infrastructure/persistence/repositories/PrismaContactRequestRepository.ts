@@ -51,6 +51,8 @@ export class PrismaContactRequestRepository implements IContactRequestRepository
         message: request.message,
         privacyConsent: request.privacyConsent,
         marketingConsent: request.marketingConsent,
+        discountCode: request.discountCode,
+        locale: request.locale,
         status: request.status,
       },
     });
@@ -89,6 +91,29 @@ export class PrismaContactRequestRepository implements IContactRequestRepository
     });
   }
 
+  async countByStatus(): Promise<Record<ContactRequestStatus, number>> {
+    const counts: Record<ContactRequestStatus, number> = {
+      pending: 0,
+      reviewed: 0,
+      responded: 0,
+      converted: 0,
+      denied: 0,
+      archived: 0,
+    };
+    const groups = await this.prisma.contactRequest.groupBy({
+      by: ['status'],
+      _count: { _all: true },
+    });
+    for (const g of groups) {
+      counts[g.status as ContactRequestStatus] = g._count._all;
+    }
+    return counts;
+  }
+
+  async countCreatedSince(since: Date): Promise<number> {
+    return this.prisma.contactRequest.count({ where: { createdAt: { gte: since } } });
+  }
+
   private toDomain(row: PrismaContactRequest): ContactRequest {
     return ContactRequest.create({
       id: row.id,
@@ -101,6 +126,8 @@ export class PrismaContactRequestRepository implements IContactRequestRepository
       message: row.message,
       privacyConsent: row.privacyConsent,
       marketingConsent: row.marketingConsent,
+      discountCode: row.discountCode,
+      locale: row.locale,
       status: row.status as ContactRequestStatus,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,

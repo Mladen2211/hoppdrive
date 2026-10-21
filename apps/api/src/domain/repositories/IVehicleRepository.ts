@@ -6,6 +6,8 @@ import { Vehicle } from '../entities/Vehicle';
  */
 export interface IVehicleRepository {
   findById(id: string): Promise<Vehicle | null>;
+  /** Looks a vehicle up by its NORMALISED licence plate. */
+  findByLicensePlate(normalisedPlate: string): Promise<Vehicle | null>;
   findAll(options?: { isAvailable?: boolean }): Promise<Vehicle[]>;
   save(vehicle: Vehicle): Promise<Vehicle>;
   update(vehicle: Vehicle): Promise<Vehicle>;

@@ -10,4 +10,502 @@
   ::selection {
     @apply bg-brand-600 text-white;
   }
+
+  /* Global focus ring (design system): 3 px blue, 2 px offset, visible on
+     every background including ruby. Elements that set their own focus
+     style (e.g. `focus:outline-none focus:ring-2`) keep it, because their
+     `:focus` selector is more specific. */
+  :focus-visible {
+    outline: 3px solid theme('colors.focus');
+    outline-offset: 2px;
+  }
+}
+
+/* ────────────────────────────────────────────────────────────────────
+   Theme. The Tailwind preset (packages/tailwind-config) declares every
+   colour token as a CSS variable of space-separated RGB channels and emits
+   the LIGHT values on :root. The dark palette below overrides them when
+   <html data-theme="dark"> is set (before first paint by the inline script
+   in app/layout.tsx; see components/shell/ThemeProvider). Wrap a subtree in
+   data-theme="light" to force the light palette inside a dark page (e.g.
+   the website preview in Inhalte).
+   Contrast (WCAG AA, checked): text pairs >= 4.5:1, focus / field / ruby
+   fill >= 3:1; white on the dark ruby fill 5.4:1.
+   ──────────────────────────────────────────────────────────────────── */
+:root {
+  color-scheme: light;
+  --skel-a: #e4e4e4;
+  --skel-b: #f1f1f1;
+}
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --skel-a: #2a2d30;
+  --skel-b: #34383c;
+    --c-charcoal: 214 216 218; /* #D6D8DA */
+    --c-graphite: 168 172 176; /* #A8ACB0 */
+    --c-gray-mid: 107 111 115; /* #6B6F73 */
+    --c-gray-soft: 58 62 66; /* #3A3E42 */
+    --c-surface: 21 23 24; /* #151718 */
+    --c-ruby: 208 31 38; /* #D01F26 */
+    --c-ruby-dark: 255 180 171; /* #FFB4AB */
+    --c-ruby-tint: 59 28 30; /* #3B1C1E */
+    --c-ruby-fg: 255 123 123; /* #FF7B7B */
+    --c-ruby-hover: 176 24 32; /* #B01820 */
+    --c-ink: 232 234 235; /* #E8EAEB */
+    --c-ink-dark: 250 250 250; /* #FAFAFA */
+    --c-on-ink: 21 23 24; /* #151718 */
+    --c-inverse: 58 62 66; /* #3A3E42 */
+    --c-on-inverse: 245 245 245; /* #F5F5F5 */
+    --c-on-fill: 21 23 24; /* #151718 */
+    --c-scrim: 0 0 0; /* #000000 */
+    --c-cool: 128 133 138; /* #80858A */
+    --c-dim: 154 158 162; /* #9A9EA2 */
+    --c-line: 60 64 68; /* #3C4044 */
+    --c-line-soft: 44 47 50; /* #2C2F32 */
+    --c-paper: 21 23 24; /* #151718 */
+    --c-card: 30 32 34; /* #1E2022 */
+    --c-row: 36 39 42; /* #24272A */
+    --c-field: 128 133 138; /* #80858A */
+    --c-focus: 107 165 255; /* #6BA5FF */
+    --c-ok: 92 203 150; /* #5CCB96 */
+    --c-ok-tint: 22 51 37; /* #163325 */
+    --c-ok-ink: 155 229 189; /* #9BE5BD */
+    --c-warn: 242 184 75; /* #F2B84B */
+    --c-warn-b2c: 242 184 75; /* #F2B84B */
+    --c-warn-tint: 58 45 18; /* #3A2D12 */
+    --c-warn-ink: 255 213 138; /* #FFD58A */
+    --c-err: 255 143 134; /* #FF8F86 */
+    --c-err-tint: 61 28 26; /* #3D1C1A */
+    --c-err-ink: 255 184 177; /* #FFB8B1 */
+    --c-err-strong: 255 168 160; /* #FFA8A0 */
+    --c-info: 125 178 255; /* #7DB2FF */
+    --c-info-tint: 23 42 71; /* #172A47 */
+    --c-info-ink: 168 204 255; /* #A8CCFF */
+    --c-info-ring: 107 165 255; /* #6BA5FF */
+    --c-vio: 185 160 245; /* #B9A0F5 */
+    --c-vio-tint: 42 33 66; /* #2A2142 */
+    --c-mute-tint: 46 50 53; /* #2E3235 */
+    --c-mute-ink: 185 189 193; /* #B9BDC1 */
+    --c-tile: 233 233 233; /* #E9E9E9 */
+    --c-canvas: 252 252 252; /* #FCFCFC */
+    --c-weekend: 37 40 43; /* #25282B */
+    --c-edge-ok: 46 106 76; /* #2E6A4C */
+    --c-edge-info: 58 94 154; /* #3A5E9A */
+    --c-edge-warn: 184 138 46; /* #B88A2E */
+    --c-edge-warn-soft: 107 83 32; /* #6B5320 */
+    --c-edge-gray: 85 89 93; /* #55595D */
+    --c-edge-err: 122 58 54; /* #7A3A36 */
+    --c-map: 42 45 48; /* #2A2D30 */
+    --c-map-road: 58 62 66; /* #3A3E42 */
+    --c-star: 242 184 75; /* #F2B84B */
+    --c-star-off: 74 78 82; /* #4A4E52 */
+    --c-chart-prev: 107 112 117; /* #6B7075 */
+    --c-stripe-a: 44 47 50; /* #2C2F32 */
+    --c-stripe-b: 52 56 60; /* #34383C */
+    --c-toast-ok: 127 209 166; /* #7FD1A6 */
+    --c-toast-err: 255 180 171; /* #FFB4AB */
+    --c-toast-info: 169 197 245; /* #A9C5F5 */
+}
+
+/* Logo: both SVG variants are in the markup, the theme picks one (no flash). */
+.logo-on-dark {
+  display: none;
+}
+:root[data-theme='dark'] .logo-on-light {
+  display: none;
+}
+:root[data-theme='dark'] .logo-on-dark {
+  display: block;
+}
+
+/* ────────────────────────────────────────────────────────────────────
+   Admin design-system components (docs/design/admin/source/admin.css).
+   Class names match the design export so boards (*.dc.html) can be
+   rebuilt 1:1; React wrappers live in src/components/ui.
+   Utilities in markup still override these (components < utilities).
+   The admin base font-size (15 px) is NOT set on <body> here; every class
+   below carries its own size so existing pages are unaffected.
+   Mobile (< 768 px) = max-md: touch targets grow to 48 px.
+   ──────────────────────────────────────────────────────────────────── */
+@layer components {
+  /* ── Type scale ────────────────────────────────────────────────── */
+  .h1 {
+    @apply text-[28px] font-bold leading-[1.15] tracking-[-0.015em];
+  }
+  .h2 {
+    @apply text-xl font-bold leading-[1.25] tracking-[-0.01em];
+  }
+  .h3 {
+    @apply text-base font-bold leading-[1.3];
+  }
+  .sm {
+    @apply text-[13px] leading-[1.4];
+  }
+  .mut {
+    @apply text-graphite;
+  }
+  /* Numbers, prices, KPI values: condensed with tabular figures */
+  .num {
+    @apply font-cond tabular-nums;
+  }
+
+  /* ── Buttons (44 px, mobile 48 px, small 36 px) ────────────────── */
+  .btn {
+    @apply inline-flex min-h-[44px] cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-10 border-2 border-transparent px-[18px] text-[15px] font-semibold leading-none no-underline transition-colors max-md:min-h-[48px];
+  }
+  .btn-p {
+    @apply bg-ruby text-white hover:bg-ruby-hover;
+  }
+  .btn-o {
+    @apply border-ink bg-card text-ink hover:bg-paper;
+  }
+  .btn-g {
+    @apply border-line bg-card text-ink hover:bg-paper;
+  }
+  .btn-d {
+    @apply bg-err text-on-fill hover:bg-err-strong;
+  }
+  .btn-s {
+    @apply min-h-[36px] rounded-lg px-3 text-sm max-md:min-h-[48px];
+  }
+  .btn-b {
+    @apply w-full;
+  }
+  /* Disabled: grey fill, never just opacity. A loading button keeps its
+     colour (data-loading) so the spinner state stays recognisable. */
+  .btn:disabled,
+  .btn[aria-disabled='true']:not([data-loading]) {
+    @apply cursor-not-allowed border-transparent bg-line-soft text-dim hover:bg-line-soft;
+  }
+  .btn[data-loading] {
+    @apply cursor-progress;
+  }
+
+  /* Icon buttons: .ib = quiet (tables, drawers), .icon-btn = bordered (top bar) */
+  .ib {
+    @apply relative inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-10 border-[1.5px] border-transparent bg-transparent text-graphite hover:bg-paper hover:text-ink max-md:h-12 max-md:w-12;
+  }
+  /* Invisible 2 px halo so the hit area reaches 44 px on desktop */
+  .ib::after {
+    content: '';
+    position: absolute;
+    inset: -2px;
+  }
+  .ib.pr {
+    @apply text-ruby-dark;
+  }
+  .icon-btn {
+    @apply relative inline-flex h-11 w-11 cursor-pointer items-center justify-center rounded-10 border-[1.5px] border-line bg-card text-ink hover:bg-paper max-md:h-12 max-md:w-12;
+  }
+  .ib .dot,
+  .icon-btn .dot {
+    @apply absolute -right-[5px] -top-[5px] flex h-5 min-w-[20px] items-center justify-center rounded-full border-2 border-card bg-ruby px-[5px] text-[11px] font-bold text-white;
+  }
+  .ib:disabled,
+  .icon-btn:disabled {
+    @apply cursor-not-allowed text-dim opacity-60 hover:bg-transparent;
+  }
+
+  /* ── Forms (44 px, mobile 48 px) ───────────────────────────────── */
+  .fld {
+    @apply flex min-w-0 flex-col gap-1.5;
+  }
+  .lbl,
+  .fld-label {
+    @apply text-sm font-semibold text-ink;
+  }
+  .in {
+    @apply h-11 w-full rounded-10 border-[1.5px] border-field bg-card px-3 text-[15px] text-ink placeholder:text-dim max-md:h-12 max-md:text-base;
+  }
+  textarea.in {
+    @apply h-auto min-h-[96px] resize-y py-2.5 max-md:h-auto;
+  }
+  select.in {
+    @apply cursor-pointer appearance-none pr-10;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%233E4144' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+  }
+  :root[data-theme='dark'] select.in {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23E8EAEB' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  }
+  .in:focus-visible {
+    outline: 3px solid theme('colors.focus');
+    outline-offset: 1px;
+    border-color: theme('colors.focus');
+  }
+  .in-bad,
+  .in[aria-invalid='true'] {
+    @apply border-err bg-err-tint;
+  }
+  .in:disabled {
+    @apply cursor-not-allowed border-line bg-paper text-dim;
+  }
+  .hint {
+    @apply text-[13px] text-graphite;
+  }
+  .errm {
+    @apply text-[13px] font-medium text-err;
+  }
+  .chk {
+    @apply flex min-h-[44px] items-center gap-2.5 max-md:min-h-[48px];
+  }
+  .chk input[type='checkbox'] {
+    @apply m-0 h-[22px] w-[22px] flex-none cursor-pointer accent-ruby;
+  }
+  .chips {
+    @apply flex flex-wrap gap-2;
+  }
+  .chip {
+    @apply inline-flex min-h-[40px] cursor-pointer items-center gap-2 whitespace-nowrap rounded-full border-[1.5px] border-line bg-card px-3.5 text-sm font-medium text-ink max-md:min-h-[48px];
+  }
+  .chip[aria-pressed='true'] {
+    @apply border-ink bg-ink text-on-ink;
+  }
+  .chip small {
+    @apply text-[13px] opacity-75;
+  }
+  /* Switch: 48 x 28 track; the React Switch wraps it in a 44 px hit area */
+  .sw {
+    @apply relative inline-block h-7 w-12 flex-none rounded-full bg-field transition-colors;
+  }
+  .sw::after {
+    content: '';
+    @apply absolute left-[3px] top-[3px] h-[22px] w-[22px] rounded-full bg-card transition-[left];
+  }
+  .sw-on,
+  .sw[aria-checked='true'],
+  [aria-checked='true'] > .sw {
+    @apply bg-ok;
+  }
+  .sw-on::after,
+  .sw[aria-checked='true']::after,
+  [aria-checked='true'] > .sw::after {
+    @apply left-[23px];
+  }
+
+  /* ── Panels, KPI cards, page header ────────────────────────────── */
+  .panel {
+    @apply min-w-0 rounded-2xl border border-line bg-card;
+  }
+  .panel-h {
+    @apply flex flex-wrap items-center justify-between gap-3 border-b border-line-soft px-5 py-4;
+  }
+  .panel-b {
+    @apply p-5;
+  }
+  .kpi {
+    @apply flex flex-col gap-2.5 rounded-2xl border border-line bg-card p-5;
+  }
+  .kpi .l {
+    @apply flex items-center justify-between font-medium text-graphite;
+  }
+  .kpi .ic {
+    @apply flex h-10 w-10 items-center justify-center rounded-xl bg-ruby-tint text-ruby-fg;
+  }
+  .kpi b {
+    @apply font-cond text-4xl font-bold leading-none tabular-nums;
+  }
+  /* :where() keeps this overridable by `text-err` etc. in markup */
+  :where(.kpi) .tr {
+    @apply text-[13px] font-semibold text-ok;
+  }
+  .pg-h {
+    @apply flex flex-wrap items-end justify-between gap-4;
+  }
+  .pg-h p {
+    @apply mt-1 text-graphite;
+  }
+  .av {
+    @apply flex h-[38px] w-[38px] flex-none items-center justify-center rounded-full bg-ink font-bold text-on-ink;
+  }
+
+  /* ── Segmented tabs ────────────────────────────────────────────── */
+  .tabs {
+    @apply flex flex-wrap gap-1 rounded-xl bg-paper p-1;
+  }
+  .tab {
+    @apply inline-flex min-h-[40px] cursor-pointer items-center gap-2 rounded-[9px] border-0 bg-transparent px-3.5 text-sm font-semibold text-graphite no-underline max-md:min-h-[48px];
+  }
+  .tab[aria-selected='true'],
+  .tab[aria-current='page'] {
+    @apply bg-card text-ink shadow-tab;
+  }
+  .tab small {
+    @apply font-semibold text-graphite;
+  }
+
+  /* ── Tables ────────────────────────────────────────────────────── */
+  .tbl {
+    @apply w-full border-collapse text-[15px];
+  }
+  .tbl th {
+    @apply whitespace-nowrap border-b border-line bg-row px-4 py-3 text-left text-[13px] font-semibold text-graphite;
+  }
+  .tbl td {
+    @apply border-b border-line-soft px-4 py-3.5 align-middle;
+  }
+  .tbl tbody tr:hover td {
+    @apply bg-row;
+  }
+  .tbl tr.sel td,
+  .tbl tr[aria-selected='true'] td {
+    @apply bg-ruby-tint;
+  }
+  .tbl .r {
+    @apply text-right;
+  }
+  .cell-2 {
+    @apply flex flex-col leading-[1.3];
+  }
+  .cell-2 > span {
+    @apply text-[13px] text-graphite;
+  }
+  .acts {
+    @apply flex justify-end gap-1.5;
+  }
+  .m-card {
+    @apply flex flex-col gap-2.5 rounded-14 border border-line bg-card p-3.5;
+  }
+
+  /* ── Status pills: always dot + word, never colour alone ───────── */
+  .st {
+    @apply inline-flex h-[26px] items-center gap-[7px] whitespace-nowrap rounded-full pl-[9px] pr-2.5 text-[13px] font-semibold;
+  }
+  .st::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    border-radius: 9999px;
+    flex: none;
+    background: currentColor;
+  }
+  .st-plain::before {
+    display: none;
+  }
+  .st-plain {
+    @apply pl-2.5;
+  }
+  .s-amber {
+    @apply bg-warn-tint text-warn;
+  }
+  .s-blue {
+    @apply bg-info-tint text-info;
+  }
+  .s-green {
+    @apply bg-ok-tint text-ok;
+  }
+  .s-red {
+    @apply bg-err-tint text-err-strong;
+  }
+  .s-gray {
+    @apply bg-mute-tint text-mute-ink;
+  }
+  .s-vio {
+    @apply bg-vio-tint text-vio;
+  }
+
+  /* ── Drawer, modal, toast ──────────────────────────────────────── */
+  .drawer {
+    @apply flex min-w-0 flex-col border-l border-line bg-card;
+  }
+  .drawer-h {
+    @apply flex items-start justify-between gap-3 border-b border-line-soft px-6 py-5 max-md:px-4;
+  }
+  .drawer-b {
+    @apply flex flex-1 flex-col gap-[18px] px-6 py-5 max-md:px-4;
+  }
+  .drawer-f {
+    @apply flex flex-wrap gap-2.5 border-t border-line-soft bg-card px-6 py-4 max-md:px-4;
+  }
+  .modal {
+    @apply flex flex-col gap-[18px] rounded-18 bg-card p-7 shadow-modal max-md:p-5;
+  }
+  .scrim {
+    @apply bg-scrim/[.62];
+  }
+  .toast {
+    @apply flex items-center gap-3 rounded-xl bg-inverse px-4 py-3.5 text-on-inverse shadow-toast;
+  }
+
+  /* ── Alerts ────────────────────────────────────────────────────── */
+  .alert {
+    @apply flex items-start gap-3 rounded-xl px-4 py-3.5 text-[15px];
+  }
+  .al-ok {
+    @apply bg-ok-tint text-ok-ink;
+  }
+  .al-err {
+    @apply bg-err-tint text-err-ink;
+  }
+  .al-warn {
+    @apply bg-warn-tint text-warn-ink;
+  }
+  .al-info {
+    @apply bg-info-tint text-info-ink;
+  }
+
+  /* ── Skeleton ──────────────────────────────────────────────────── */
+  .skel {
+    @apply animate-shimmer rounded-lg;
+    background: linear-gradient(90deg, var(--skel-a) 0%, var(--skel-b) 50%, var(--skel-a) 100%);
+    background-size: 200% 100%;
+  }
+
+  /* ── Booking progress (Vertrag → Signiert → Rechnung → Bezahlt) ── */
+  .prog {
+    @apply m-0 flex list-none items-center p-0;
+  }
+  .prog-step {
+    @apply flex items-center gap-2 text-[13px] font-semibold text-graphite;
+  }
+  .prog-dot {
+    @apply flex h-[22px] w-[22px] flex-none items-center justify-center rounded-full border-2 border-line bg-card;
+  }
+  .prog-line {
+    @apply mx-2 h-0.5 min-w-[14px] flex-1 bg-line;
+  }
+  .prog-step[data-state='done'] {
+    @apply text-ok;
+  }
+  .prog-step[data-state='done'] .prog-dot {
+    @apply border-ok bg-ok text-on-fill;
+  }
+  .prog-step[data-state='now'] {
+    @apply text-ink;
+  }
+  .prog-step[data-state='now'] .prog-dot {
+    @apply border-ruby;
+  }
+  .prog-line[data-state='done'] {
+    @apply bg-ok;
+  }
+  /* compact: inside table rows so the row never outgrows its panel */
+  .prog-compact .prog-step {
+    @apply gap-[5px] text-xs;
+  }
+  .prog-compact .prog-line {
+    @apply mx-1 min-w-[8px];
+  }
+}
+
+/* Reduced motion: every named animation/transition from the design system
+   is switched off. Kept outside `@layer` so it wins over the utilities.
+   (`animate-spin` stays: it signals "loading" rather than decorating.) */
+@media (prefers-reduced-motion: reduce) {
+  .skel,
+  [class*='animate-shimmer'],
+  [class*='animate-fade-in'],
+  [class*='animate-slide-up'],
+  [class*='animate-sheet-up'],
+  [class*='animate-slide-in-right'],
+  [class*='animate-pop'] {
+    /* !important: responsive variants (md:animate-pop) are emitted later */
+    animation: none !important;
+  }
+  .btn,
+  .sw,
+  .sw::after {
+    transition: none;
+  }
 }

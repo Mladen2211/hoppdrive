@@ -1,15 +1,24 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { v4 as uuid } from 'uuid';
+import { ADMIN_ROLES, can } from '@hoppdrive/shared';
 import type { Container } from '../../infrastructure/config/container';
 import { validate, createContactRequestSchema } from '../validators';
 import { createAuthMiddleware } from '../middleware/authMiddleware';
-import { createAuditMiddleware } from '../middleware/auditMiddleware';
+import { createAuditMiddleware, setAuditDetails } from '../middleware/auditMiddleware';
+import { createPermissionMiddleware } from '../middleware/permissionMiddleware';
+import { describeInquiry, vehicleLabelById } from '../middleware/auditDescribers';
 import { eventBus } from '../../infrastructure/services/EventBus';
+import { AppError } from '../../application/errors';
+import { normalizeDiscountCode } from '../../infrastructure/services/DiscountService';
+import { mapBooking } from './bookingRoutes';
 
 export function contactRoutes(container: Container): Router {
   const router = Router();
   const auth = createAuthMiddleware(container.tokenService);
   const audit = createAuditMiddleware(container.auditLogRepo);
+  const access = createPermissionMiddleware(container.prisma);
+  // The whole admin side of the pipeline is the "inquiries" area (GET = view, mutations = edit).
+  const inquiries = access.requirePermission('inquiries');
 
   /** POST /api/contact – Submit new contact request (public) */
   router.post(
@@ -22,9 +31,13 @@ export function contactRoutes(container: Container): Router {
         // Notify connected admin clients in real-time
         eventBus.broadcast('new-inquiry', { id: request.id });
 
-        // Create notification for all admins
+        // Create notification for every active admin who may see inquiries
         try {
-          const admins = await container.prisma.admin.findMany({ select: { id: true } });
+          const rolesWithAccess = ADMIN_ROLES.filter((role) => can(role, 'inquiries', 'view'));
+          const admins = await container.prisma.admin.findMany({
+            where: { deletedAt: null, inviteTokenHash: null, role: { in: rolesWithAccess } },
+            select: { id: true },
+          });
           await container.prisma.notification.createMany({
             data: admins.map((a: { id: string }) => ({
               adminId: a.id,
@@ -49,15 +62,22 @@ export function contactRoutes(container: Container): Router {
     },
   );
 
-  /** GET /api/contact – List all requests (admin) */
-  router.get('/', auth, async (req: Request, res: Response, next: NextFunction) => {
+  /**
+   * GET /api/contact – List requests (inquiries: view).
+   * statusCounts covers ALL requests (every status key present), not just the current page/filter,
+   * so the pipeline tiles stay correct while a tab or page is selected.
+   */
+  router.get('/', auth, inquiries, async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { status, page, pageSize } = req.query;
-      const result = await container.getContactRequests.execute({
-        status: status as any,
-        page: page ? Number(page) : undefined,
-        pageSize: pageSize ? Number(pageSize) : undefined,
-      });
+      const [result, statusCounts] = await Promise.all([
+        container.getContactRequests.execute({
+          status: status as any,
+          page: page ? Number(page) : undefined,
+          pageSize: pageSize ? Number(pageSize) : undefined,
+        }),
+        container.contactRepo.countByStatus(),
+      ]);
       res.json({
         success: true,
         data: {
@@ -66,6 +86,7 @@ export function contactRoutes(container: Container): Router {
           page: Number(page) || 1,
           pageSize: Number(pageSize) || 20,
           totalPages: Math.ceil(result.total / (Number(pageSize) || 20)),
+          statusCounts,
         },
       });
     } catch (err) {
@@ -77,7 +98,8 @@ export function contactRoutes(container: Container): Router {
   router.patch(
     '/:id/status',
     auth,
-    audit('contact-request', 'update-status'),
+    inquiries,
+    audit('contact-request', 'update-status', describeInquiry(container, (req) => ({ status: req.body?.status }))),
     async (req: Request, res: Response, next: NextFunction) => {
       try {
         const VALID_STATUSES = ['pending', 'reviewed', 'responded', 'converted', 'denied', 'archived'];
@@ -103,11 +125,24 @@ export function contactRoutes(container: Container): Router {
    * POST /api/contact/:id/approve – Assign a vehicle and create the booking
    * in one atomic transaction (fixes the previous non-atomic two-call client
    * flow: create booking, then separately mark the inquiry converted).
+   *
+   * Body: { vehicleId, totalPrice?, discountCode? }
+   *  - totalPrice = price BEFORE the discount (computed from the pricing rules when omitted)
+   *  - discountCode: omitted = the code the visitor typed into the inquiry form; null or '' = no discount;
+   *    a string = use this code instead. The code is re-validated (window, limits, personal recipient,
+   *    minimum days) and redeemed in the same transaction. An invalid code answers 422 code
+   *    'discount_invalid' (+ reason): retry with discountCode:null to approve without it.
+   * The booking copies name, e-mail, phone and language of the inquiry.
    */
   router.post(
     '/:id/approve',
     auth,
-    audit('contact-request', 'approve'),
+    inquiries,
+    audit(
+      'contact-request',
+      'approve',
+      describeInquiry(container, async (req) => ({ vehicle: await vehicleLabelById(container, req.body?.vehicleId) })),
+    ),
     async (req: Request, res: Response, next: NextFunction) => {
       try {
         const { id } = req.params;
@@ -159,34 +194,78 @@ export function contactRoutes(container: Container): Router {
           (inquiry.desiredEndDate.getTime() - inquiry.desiredStartDate.getTime()) / (1000 * 60 * 60 * 24),
         ));
 
-        let price = totalPrice;
-        if (price === undefined || price === null) {
+        let basePrice = totalPrice;
+        if (basePrice === undefined || basePrice === null) {
           const pricing = await container.calculatePricing.execute({ vehicleId, totalDays: days });
-          price = pricing.totalPrice.amount;
+          basePrice = pricing.totalPrice.amount;
         }
+        basePrice = Number(basePrice);
+
+        // Which code applies: the override from the admin, else the one the visitor entered.
+        const requested =
+          req.body.discountCode === undefined ? inquiry.discountCode : (req.body.discountCode as string | null);
+        const codeText = requested ? normalizeDiscountCode(requested) : '';
 
         const bookingId = uuid();
-        const [booking] = await container.prisma.$transaction([
-          container.prisma.booking.create({
-            data: {
-              id: bookingId,
-              vehicleId,
-              customerName: inquiry.fullName,
-              customerEmail: inquiry.email,
-              startDate: inquiry.desiredStartDate,
-              endDate: inquiry.desiredEndDate,
-              totalPrice: price,
-              status: 'reserved',
-              notes: `Aus Anfrage übernommen (${inquiry.email})`,
-            },
-            include: { vehicle: true },
-          }),
-          container.prisma.contactRequest.update({
-            where: { id },
-            data: { status: 'converted' },
-          }),
-        ], { isolationLevel: 'Serializable' });
+        const booking = await container.prisma.$transaction(
+          async (tx) => {
+            let discountAmount = 0;
+            let discountCodeId: string | null = null;
+            if (codeText) {
+              const check = await container.discountService.check(
+                { code: codeText, email: inquiry.email, days, baseTotal: basePrice, currency: vehicle.currency },
+                tx,
+              );
+              if (!check.valid || !check.code) {
+                throw new AppError(
+                  check.message ?? 'Der Rabattcode ist ungültig.',
+                  422,
+                  'discount_invalid',
+                  { reason: check.reason },
+                );
+              }
+              discountAmount = check.discount;
+              discountCodeId = check.code.id;
+            }
 
+            const created = await tx.booking.create({
+              data: {
+                id: bookingId,
+                vehicleId,
+                customerName: inquiry.fullName,
+                customerEmail: inquiry.email,
+                customerPhone: inquiry.phone,
+                customerLocale: inquiry.locale,
+                startDate: inquiry.desiredStartDate!,
+                endDate: inquiry.desiredEndDate!,
+                totalPrice: Math.max(0, Math.round((basePrice - discountAmount) * 100) / 100),
+                discountCodeId,
+                discountAmount,
+                currency: vehicle.currency,
+                status: 'reserved',
+                notes: `Aus Anfrage übernommen (${inquiry.email})`,
+              },
+              include: { vehicle: true, discountCode: { select: { id: true, code: true } } },
+            });
+            if (discountCodeId) {
+              await container.discountService.redeem(tx, {
+                codeId: discountCodeId,
+                email: inquiry.email,
+                amount: discountAmount,
+                bookingId,
+                contactRequestId: inquiry.id,
+              });
+            }
+            await tx.contactRequest.update({ where: { id }, data: { status: 'converted' } });
+            return created;
+          },
+          { isolationLevel: 'Serializable' },
+        );
+
+        setAuditDetails(res, {
+          bookingId: booking.id,
+          ...(booking.discountCode ? { discountCode: booking.discountCode.code, discount: Number(booking.discountAmount) } : {}),
+        });
         res.status(201).json({ success: true, data: mapBooking(booking) });
       } catch (err) {
         next(err);
@@ -200,7 +279,8 @@ export function contactRoutes(container: Container): Router {
   router.post(
     '/:id/deny',
     auth,
-    audit('contact-request', 'deny'),
+    inquiries,
+    audit('contact-request', 'deny', describeInquiry(container)),
     async (req: Request, res: Response, next: NextFunction) => {
       try {
         const { id } = req.params;
@@ -234,24 +314,6 @@ export function contactRoutes(container: Container): Router {
   return router;
 }
 
-function mapBooking(b: any) {
-  return {
-    id: b.id,
-    vehicleId: b.vehicleId,
-    customerName: b.customerName,
-    customerEmail: b.customerEmail ?? null,
-    startDate: b.startDate,
-    endDate: b.endDate,
-    totalPrice: Number(b.totalPrice),
-    currency: b.currency,
-    status: b.status,
-    notes: b.notes,
-    contractStatus: b.contractStatus ?? 'PENDING',
-    createdAt: b.createdAt,
-    vehicle: b.vehicle ? { brand: b.vehicle.brand, model: b.vehicle.model } : null,
-  };
-}
-
 function mapContact(c: any) {
   return {
     id: c.id,
@@ -264,6 +326,8 @@ function mapContact(c: any) {
     message: c.message,
     privacyConsent: c.privacyConsent,
     marketingConsent: c.marketingConsent,
+    discountCode: c.discountCode ?? null,
+    locale: c.locale ?? null,
     status: c.status,
     createdAt: c.createdAt,
     updatedAt: c.updatedAt,

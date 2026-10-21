@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Neue Buchung</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./admin.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fira+Sans:wght@400;500;600;700&family=Fira+Sans+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>body{margin:0;background:#5B5E61}</style>
+</helmet>
+<div class="ad" style="min-height:100%;background:#5B5E61;padding:48px;display:flex;justify-content:center;align-items:flex-start">
+<div class="modal" role="dialog" aria-modal="true" aria-labelledby="nb-h" style="width:680px;max-width:94%">
+    <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start">
+      <div><h2 class="h2" id="nb-h">Neue Buchung</h2><p class="mut" style="margin-top:4px">Direkt im System anlegen, ohne Anfrage</p></div>
+      <button class="ib" type="button" aria-label="Dialog schliessen"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div class="grid2">
+      <div class="fld"><label for="nb1">Name</label><input class="in" id="nb1" value="Anja Steiner"></div>
+      <div class="fld"><label for="nb2">Telefon</label><input class="in" id="nb2" value="+41 79 555 04 18"></div>
+    </div>
+    <div class="fld"><label for="nb3">E-Mail</label><input class="in" id="nb3" type="email" value="anja.steiner@beispiel.ch"></div>
+    <div class="grid3">
+      <div class="fld"><label for="nb4">Fahrzeug</label><select class="in" id="nb4"><option>Škoda Kodiaq</option></select></div>
+      <div class="fld"><label for="nb5">Von</label><input class="in" id="nb5" value="20.12.2026"></div>
+      <div class="fld"><label for="nb6">Bis</label><input class="in" id="nb6" value="03.01.2027"></div>
+    </div>
+    <div class="alert al-warn"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0zM12 9v4M12 17h.01"/></svg><span><b>Zeitraum überschneidet sich.</b> Für den Škoda Kodiaq liegt am 20.12. eine offene Anfrage (Anja Steiner) vor. Beim Speichern wird sie als Buchung übernommen.</span></div>
+    <div style="display:flex;justify-content:space-between;align-items:baseline;border:1.5px solid var(--line);border-radius:12px;padding:12px 16px"><span class="mut">Richtpreis, 15 Tage</span><b class="num" style="font-size:24px">CHF 1’151.20</b></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap">
+      <button class="btn btn-g" type="button">Abbrechen</button>
+      <button class="btn btn-p" type="button">Buchung speichern</button>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":820,"height":780}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

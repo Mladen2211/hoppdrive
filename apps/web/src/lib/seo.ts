@@ -1,13 +1,20 @@
 /**
  * Shared SEO helpers. One source of truth for site URLs, canonical host,
- * asset/vehicle URL building, category metadata and the Metadata object
- * every page builds from. Deliberately free of server-only imports (no
+ * asset/vehicle URL building, category slugs, label translation and the Metadata
+ * object every page builds from. Deliberately free of server-only imports (no
  * `next/headers`, no Node APIs) so it can also be imported from client
  * components such as VehicleCard.
+ *
+ * All user-facing text (category names and intros, vehicle type / fuel / transmission labels)
+ * lives in messages/<locale>.json; the helpers below take a translator for it.
  */
 
 import type { Metadata } from 'next';
 import type { VehicleType } from '@hoppdrive/shared';
+import { ogLocale } from '@/i18n/locales';
+import { localizedPath, type PathParams } from '@/i18n/paths';
+import { DEFAULT_LOCALE, LOCALES, type AppPathname, type Locale } from '@/i18n/routing';
+import type { Translate } from '@/i18n/types';
 
 export const SITE_NAME = 'HoppDrive';
 
@@ -27,6 +34,15 @@ export const CANONICAL_HOST = (() => {
 export function absoluteUrl(path: string): string {
   if (/^https?:\/\//i.test(path)) return path;
   return `${SITE_URL}${path.startsWith('/') ? path : `/${path}`}`;
+}
+
+/**
+ * Absolute URL of a page in a locale, without a trailing slash on the home page
+ * (`https://hoppdrive.ch`, `https://hoppdrive.ch/en`): for JSON-LD, the sitemap and llms.txt.
+ */
+export function pageUrl(locale: Locale | string, pathname: AppPathname, params: PathParams = {}): string {
+  const path = localizedPath(locale, pathname, params);
+  return path === '/' ? SITE_URL : `${SITE_URL}${path}`;
 }
 
 /**
@@ -57,6 +73,7 @@ function slugify(input: string): string {
  * The trailing segment is the first 8 hex characters of the vehicle's UUID
  * (its first UUID segment), so no DB migration is needed — the id remains
  * the source of truth and the slug can always be recomputed from it.
+ * The slug is the same in every language.
  */
 export function vehicleSlug(vehicle: { id: string; brand: string; model: string; year: number }): string {
   const base = slugify(`${vehicle.brand}-${vehicle.model}-${vehicle.year}`);
@@ -64,91 +81,68 @@ export function vehicleSlug(vehicle: { id: string; brand: string; model: string;
   return base ? `${base}-${hash}` : hash;
 }
 
-export interface CategoryInfo {
-  slug: string;
-  label: string;
-  intro: string;
-}
-
-// German category slugs + unique, non-spammy intro copy (2-3 sentences each)
-// for the /mieten/[kategorie] landing pages.
-export const CATEGORIES: Record<VehicleType, CategoryInfo> = {
-  estate: {
-    slug: 'kombi',
-    label: 'Kombi',
-    intro:
-      'Der Kombi ist der Alltagsheld für Familien und Vielfahrer: viel Stauraum im Kofferraum, komfortabel auf langen Strecken und trotzdem wendig genug für die Stadt. Bei HoppDrive mieten Sie Kombis bekannter Marken – ideal für Umzüge, Ferien oder den Transport grösserer Gegenstände.',
-  },
-  suv: {
-    slug: 'suv',
-    label: 'SUV',
-    intro:
-      'SUVs bieten eine erhöhte Sitzposition, viel Platz und ein sicheres Fahrgefühl auf jeder Strasse – ob in der Stadt oder auf alpinen Pässen. Unsere SUV-Flotte eignet sich für Familien, Ausflüge in die Berge und alle, die etwas mehr Raum und Bodenfreiheit schätzen.',
-  },
-  sedan: {
-    slug: 'limousine',
-    label: 'Limousine',
-    intro:
-      'Limousinen punkten mit ruhigem Fahrverhalten, grossem Kofferraum und einem repräsentativen Auftritt – perfekt für Geschäftsreisen oder entspannte Langstrecken. Bei HoppDrive mieten Sie Limousinen zu transparenten Tagespreisen, inklusive Vollkasko.',
-  },
-  van: {
-    slug: 'van',
-    label: 'Van',
-    intro:
-      'Vans bieten maximalen Platz für Passagiere und Gepäck und sind die erste Wahl für grössere Gruppen, Familien oder Vereinsausflüge. Unsere Vans lassen sich flexibel mieten – vom einzelnen Wochenende bis zur mehrmonatigen Nutzung.',
-  },
-  electric: {
-    slug: 'elektroauto',
-    label: 'Elektroauto',
-    intro:
-      'Elektrofahrzeuge fahren lokal emissionsfrei und leise – ideal, um die Schweiz CO2-bewusst zu entdecken. Bei HoppDrive mieten Sie Elektroautos inklusive Vollkasko, ganz ohne eigene Ladeinfrastruktur oder Anschaffungskosten.',
-  },
-  coupe: {
-    slug: 'coupe',
-    label: 'Coupé',
-    intro:
-      'Coupés verbinden sportliches Design mit direktem Fahrgefühl – für alle, die auch beim Mietwagen nicht auf Fahrfreude verzichten möchten. Die zweitürige Bauweise bringt Stil auf jede Fahrt, vom Wochenendausflug bis zum besonderen Anlass.',
-  },
-  convertible: {
-    slug: 'cabrio',
-    label: 'Cabrio',
-    intro:
-      'Ein Cabrio macht aus jeder Fahrt ein Erlebnis – offenes Fahren bei Sonnenschein, ob entlang eines Schweizer Sees oder durch die Alpen. Mieten Sie bei HoppDrive ein Cabrio für den besonderen Ausflug oder die Ferienwoche.',
-  },
+// Category slugs of the /mieten/[kategorie] landing pages. They are German on purpose and
+// identical in every language (only the pathname segment before them is localised).
+export const CATEGORY_SLUGS: Record<VehicleType, string> = {
+  estate: 'kombi',
+  suv: 'suv',
+  sedan: 'limousine',
+  van: 'van',
+  electric: 'elektroauto',
+  coupe: 'coupe',
+  convertible: 'cabrio',
 };
 
-export function translateType(type: string): string {
-  const labels: Record<string, string> = {
-    sedan: 'Limousine',
-    suv: 'SUV',
-    estate: 'Kombi',
-    coupe: 'Coupé',
-    convertible: 'Cabrio',
-    electric: 'Elektrofahrzeug',
-    van: 'Van',
-  };
-  return labels[type] || type;
+export const CATEGORY_TYPES = Object.keys(CATEGORY_SLUGS) as VehicleType[];
+
+export function findCategoryType(slug: string): VehicleType | undefined {
+  return CATEGORY_TYPES.find((type) => CATEGORY_SLUGS[type] === slug);
 }
 
-export function translateFuel(fuel: string): string {
-  const labels: Record<string, string> = {
-    petrol: 'Benzin',
-    diesel: 'Diesel',
-    electric: 'Elektrisch',
-    hybrid: 'Hybrid',
-  };
-  return labels[fuel] || fuel;
+export function isCategoryType(type: string): type is VehicleType {
+  return Object.prototype.hasOwnProperty.call(CATEGORY_SLUGS, type);
 }
 
-export function translateTransmission(transmission: string): string {
-  return transmission === 'automatic' ? 'Automatik' : 'Schaltgetriebe';
+/** "Kombi" / "Estate": the short category name. `t` = translator of the `category` namespace. */
+export function categoryLabel(type: VehicleType, t: Translate): string {
+  return t(`${type}.label`);
+}
+
+/** "Kombi mieten" / "Estate car rental": the rental phrase used in headings, links and breadcrumbs. */
+export function categoryRent(type: VehicleType, t: Translate): string {
+  return t(`${type}.rent`);
+}
+
+/** Unique intro copy of a category landing page. `t` = translator of the `categoryIntro` namespace. */
+export function categoryIntro(type: VehicleType, t: Translate): string {
+  return t(type);
+}
+
+const VEHICLE_TYPES = new Set(['sedan', 'suv', 'estate', 'coupe', 'convertible', 'electric', 'van']);
+const FUEL_TYPES = new Set(['petrol', 'diesel', 'electric', 'hybrid']);
+
+/** `t` = translator of the `labels` namespace for the three functions below. */
+export function translateType(type: string, t: Translate): string {
+  return VEHICLE_TYPES.has(type) ? t(`type.${type}`) : type;
+}
+
+export function translateFuel(fuel: string, t: Translate): string {
+  return FUEL_TYPES.has(fuel) ? t(`fuel.${fuel}`) : fuel;
+}
+
+export function translateTransmission(transmission: string, t: Translate): string {
+  return transmission === 'automatic' ? t('transmission.automatic') : t('transmission.manual');
 }
 
 interface BuildMetadataOptions {
+  /** Locale of the page (drives canonical, hreflang alternates and og:locale). */
+  locale: Locale | string;
   title: string;
   description: string;
-  /** Site-relative path, e.g. `/fahrzeuge/skoda-octavia-2023-1a2b3c4d`. */
-  path: string;
+  /** Internal pathname (a key of the routing table), e.g. `/fahrzeuge/[slug]`. */
+  pathname: AppPathname;
+  /** Values for the dynamic segments of `pathname`, e.g. `{ slug }`. */
+  params?: PathParams;
   /** Relative (`/uploads/...`) or absolute image URL. Falls back to the default OG image. */
   image?: string | null;
   imageAlt?: string;
@@ -157,7 +151,8 @@ interface BuildMetadataOptions {
 }
 
 /**
- * Returns a complete Metadata object: a canonical resolved through
+ * Returns a complete Metadata object: a canonical (the localised URL of THIS page), hreflang
+ * alternates for all five languages plus `x-default` (the German URL), resolved through
  * metadataBase, and full openGraph + twitter blocks (Next replaces the whole
  * openGraph/twitter object per page rather than merging it key-by-key with
  * the parent, so a partial override silently drops fields — this always
@@ -166,7 +161,17 @@ interface BuildMetadataOptions {
  * contain the brand. openGraph/twitter titles don't get the template, so the
  * brand is appended to them here.
  */
-export function buildMetadata({ title, description, path, image, imageAlt, absoluteTitle }: BuildMetadataOptions): Metadata {
+export function buildMetadata({
+  locale,
+  title,
+  description,
+  pathname,
+  params,
+  image,
+  imageAlt,
+  absoluteTitle,
+}: BuildMetadataOptions): Metadata {
+  const path = localizedPath(locale, pathname, params);
   const url = absoluteUrl(path);
   const resolvedImage = assetUrl(image);
   const usingDefaultImage = !resolvedImage;
@@ -174,18 +179,24 @@ export function buildMetadata({ title, description, path, image, imageAlt, absol
   const fullTitle = absoluteTitle ? title : `${title} | ${SITE_NAME}`;
   const alt = imageAlt || fullTitle;
 
+  const languages: Record<string, string> = {};
+  for (const loc of LOCALES) languages[loc] = localizedPath(loc, pathname, params);
+  languages['x-default'] = localizedPath(DEFAULT_LOCALE, pathname, params);
+
   return {
     title: absoluteTitle ? { absolute: title } : title,
     description,
     alternates: {
       canonical: path,
+      languages,
     },
     openGraph: {
       title: fullTitle,
       description,
       url,
       siteName: SITE_NAME,
-      locale: 'de_CH',
+      locale: ogLocale(locale),
+      alternateLocale: LOCALES.filter((loc) => loc !== locale).map(ogLocale),
       type: 'website',
       images: [
         usingDefaultImage
