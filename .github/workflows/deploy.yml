@@ -67,8 +67,8 @@ jobs:
           provenance: false
           tags: ghcr.io/mladen2211/hoppdrive-web:latest
           build-args: |
-            NEXT_PUBLIC_API_URL=https://api-hoppdrive.mraguz.me/api
-            NEXT_PUBLIC_ADMIN_URL=https://hoppdrive-admin.mraguz.me
+            NEXT_PUBLIC_API_URL=https://api-hoppdrive.mraguz.com/api
+            NEXT_PUBLIC_ADMIN_URL=https://hoppdrive-admin.mraguz.com
             NEXT_PUBLIC_MAPBOX_TOKEN=${{ vars.NEXT_PUBLIC_MAPBOX_TOKEN }}
             NEXT_PUBLIC_GA4_ID=${{ vars.NEXT_PUBLIC_GA4_ID }}
             NEXT_PUBLIC_GSC_VERIFICATION=${{ vars.NEXT_PUBLIC_GSC_VERIFICATION }}
@@ -82,5 +82,5 @@ jobs:
           provenance: false
           tags: ghcr.io/mladen2211/hoppdrive-admin:latest
           build-args: |
-            NEXT_PUBLIC_API_URL=https://api-hoppdrive.mraguz.me/api
+            NEXT_PUBLIC_API_URL=https://api-hoppdrive.mraguz.com/api
             NEXT_PUBLIC_MAPBOX_TOKEN=${{ vars.NEXT_PUBLIC_MAPBOX_TOKEN }}
